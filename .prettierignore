@@ -1,0 +1,45 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+.next/
+dist/
+build/
+out/
+**/.next/
+**/dist/
+**/build/
+**/out/
+
+# Python virtual environments
+word-mcp-server/.venv/
+**/.venv/
+
+# Logs
+*.log
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Version control
+.git/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Misc
+coverage/
+.nyc_output/
+.cache/
+.parcel-cache/
+tmp/
+temp/
+*.tgz
+*.swp
+*.swo
+*~ 

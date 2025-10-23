@@ -1,0 +1,135 @@
+import { describe, it, expect } from "vitest";
+import { LegitPathParser } from "./LegitPathParser.js";
+
+describe("LegitPathParser", () => {
+  describe("parse", () => {
+    it("should parse status path", () => {
+      const result = LegitPathParser.parse("/.legit/status");
+      expect(result).toEqual({
+        type: "status",
+        originalPath: "/.legit/status",
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse commit file path", () => {
+      const result = LegitPathParser.parse(
+        "/.legit/commits/ab/cdef1234567890abcdef1234567890abcdef12/src/index.js",
+      );
+      expect(result).toEqual({
+        type: "commit-file",
+        originalPath:
+          "/.legit/commits/ab/cdef1234567890abcdef1234567890abcdef12/src/index.js",
+        commitSha: "abcdef1234567890abcdef1234567890abcdef12",
+        filePath: "src/index.js",
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse commit root path", () => {
+      const result = LegitPathParser.parse(
+        "/.legit/commits/ab/cdef1234567890abcdef1234567890abcdef12",
+      );
+      expect(result).toEqual({
+        type: "commit-file",
+        originalPath:
+          "/.legit/commits/ab/cdef1234567890abcdef1234567890abcdef12",
+        commitSha: "abcdef1234567890abcdef1234567890abcdef12",
+        filePath: undefined,
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse branches list path", () => {
+      const result = LegitPathParser.parse("/.legit/branches");
+      expect(result).toEqual({
+        type: "branches-list",
+        originalPath: "/.legit/branches",
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse branch file path", () => {
+      const result = LegitPathParser.parse(
+        "/.legit/branches/feature-x/src/api.js",
+      );
+      expect(result).toEqual({
+        type: "branch-file",
+        originalPath: "/.legit/branches/feature-x/src/api.js",
+        branchName: "feature-x",
+        filePath: "src/api.js",
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse branch root path", () => {
+      const result = LegitPathParser.parse("/.legit/branches/main");
+      expect(result).toEqual({
+        type: "branch-file",
+        originalPath: "/.legit/branches/main",
+        branchName: "main",
+        filePath: "",
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse branch head path", () => {
+      const result = LegitPathParser.parse("/.legit/branches/main/.legit/head");
+      expect(result).toEqual({
+        type: "branch-head",
+        originalPath: "/.legit/branches/main/.legit/head",
+        branchName: "main",
+        isLegitPath: true,
+      });
+    });
+
+    it("should parse branch tip path", () => {
+      const result = LegitPathParser.parse(
+        "/.legit/branches/feature/.legit/tip",
+      );
+      expect(result).toEqual({
+        type: "branch-tip",
+        originalPath: "/.legit/branches/feature/.legit/tip",
+        branchName: "feature",
+        isLegitPath: true,
+      });
+    });
+
+    it("should handle non-legit paths", () => {
+      const result = LegitPathParser.parse("/regular/file/path.txt");
+      expect(result).toEqual({
+        type: "unknown",
+        originalPath: "/regular/file/path.txt",
+        isLegitPath: false,
+      });
+    });
+
+    it("should handle nested .legit directories", () => {
+      const result = LegitPathParser.parse("/some/path/.legit/status");
+      expect(result).toEqual({
+        type: "status",
+        originalPath: "/some/path/.legit/status",
+        isLegitPath: true,
+      });
+    });
+
+    it("should handle invalid commit SHA format", () => {
+      const result = LegitPathParser.parse(
+        "/.legit/commits/zz/invalid/file.txt",
+      );
+      expect(result).toEqual({
+        type: "unknown",
+        originalPath: "/.legit/commits/zz/invalid/file.txt",
+        isLegitPath: true,
+      });
+    });
+  });
+
+  describe("isLegitPath", () => {
+    it("should identify legit paths", () => {
+      expect(LegitPathParser.isLegitPath("/.legit/status")).toBe(true);
+      expect(LegitPathParser.isLegitPath("/path/.legit/branches")).toBe(true);
+      expect(LegitPathParser.isLegitPath("/regular/path")).toBe(false);
+    });
+  });
+});

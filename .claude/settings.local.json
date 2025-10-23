@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(node:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(MCP_TRANSPORT=sse MCP_HOST=127.0.0.1 MCP_PORT=8000 MCP_SSE_PATH=/sse ./electron/python-bin/word-mcp)",
+      "Bash(npm start)",
+      "Bash(pip install:*)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "WebFetch(domain:www.assistant-ui.com)",
+      "Bash(rg:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm electron:build:*)",
+      "Bash(NODE_ENV=production pnpm start)",
+      "Bash(pnpm install:*)",
+      "Bash(npm install)",
+      "Bash(pnpm start:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(pip3 list:*)",
+      "Bash(python:*)",
+      "Bash(npm run electron:start:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(pnpm --filter frontend run dev)",
+      "WebFetch(domain:chatgpt.com)"
+    ],
+    "deny": []
+  }
+}
