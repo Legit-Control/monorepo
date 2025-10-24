@@ -55,19 +55,26 @@ What actually happened?
 
 ---
 
-### ⚙️ Usage context
 
-Where does the issue occur?
-- [ ] Node.js
-- [ ] Browser
-- [ ] CLI / Terminal
-- [ ] Other (please specify):
+
+
+### 🖥️ Environment details
+
+| Key | Value |
+|-----|-------|
+| **OS** | (e.g. macOS 15.0, Windows 11, Ubuntu 24.04) |
+| **Legit SDK Version** | (e.g. 0.2.3) |
+| **Node.js / TypeScript Version** | (e.g. Node 20.10, TS 5.4) |
+
+
 
 ---
 
-### 🧾 Legit version output
+### 🧠 Contributor interest
 
-Run this command and paste the result below:
+- [ ] I’d like to work on a fix for this issue
 
-```bash
-npx legit --version
+---
+
+
+
