@@ -137,6 +137,24 @@ describe('createCompositFs', () => {
     expect(text).toBe('hello world');
   });
 
+  it('should provide a history file', async () => {
+    const historyPath = repoPath + '/.legit/branches/main/.legit/history';
+
+    const branchFilePath =
+      repoPath + '/.legit/branches/main/path/to/file/' + 'new_file.md';
+
+    await compositeFs.promises.writeFile(branchFilePath, 'new File');
+
+    const handle = await compositeFs.promises.open(historyPath, 'r');
+
+    const content = await compositeFs.promises.readFile(historyPath, 'utf-8');
+
+    const parsed = JSON.parse(content);
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed.length).toBe(2);
+    
+  });
+
   it('it should write a branch file', async () => {
     const branchFilePath = repoPath + '/.legit/branches/main/' + 'new_file.md';
 
