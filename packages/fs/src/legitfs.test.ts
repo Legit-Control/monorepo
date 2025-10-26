@@ -15,7 +15,6 @@ const files = {
 // mv('legit____main-operation', 'legit__my_awesem_branch_name__main-operation)
 // writeFile('.legit/branches/main/.legit/metaname', 'my awesome path name')
 
-
 let memfs: any;
 let legitfs: ReturnType<typeof createLegitFs>;
 
@@ -85,6 +84,17 @@ describe('createLegitFs', () => {
     await legitfs.promises.writeFile(newFilePath, 'New file');
     const content = await legitfs.promises.readFile(newFilePath, 'utf-8');
     expect(content).toBe('New file');
+  });
+
+  it('should override the file content and truncate the file if needed', async () => {
+    const newFilePath = `${repoPath}/.legit/branches/main/new.txt`;
+    await legitfs.promises.writeFile(newFilePath, 'Content before truncate');
+    const contentBefor = await legitfs.promises.readFile(newFilePath, 'utf-8');
+    expect(contentBefor).toBe('Content before truncate');
+
+    await legitfs.promises.writeFile(newFilePath, 'Content after');
+    const contentAfter = await legitfs.promises.readFile(newFilePath, 'utf-8');
+    expect(contentAfter).toBe('Content after');
   });
 
   it('should create, rename, and move folders and files in branch', async () => {
@@ -361,7 +371,10 @@ describe('createLegitFs', () => {
     expect(opCommits1[0]?.commit.parent[0]).toBe(mainCommit1);
 
     // Read the operation file and expect its content is the commit sha of opCommits1[0]?.commit
-    const operationFileContent = await legitfs.promises.readFile(operationFilePath, 'utf-8');
+    const operationFileContent = await legitfs.promises.readFile(
+      operationFilePath,
+      'utf-8'
+    );
     expect(operationFileContent.trim()).toBe(opCommits1[0]?.oid);
 
     // 3. Overwrite operation file with "second operation"
@@ -406,13 +419,14 @@ describe('createLegitFs', () => {
 
     // Read the operation history file and check if all operations are present
     const operationHistoryPath = `${repoPath}/.legit/branches/main/.legit/operationHistory`;
-    const operationHistoryContent = await legitfs.promises.readFile(operationHistoryPath, 'utf-8');
+    const operationHistoryContent = await legitfs.promises.readFile(
+      operationHistoryPath,
+      'utf-8'
+    );
     expect(operationHistoryContent).toContain('first operation');
     expect(operationHistoryContent).toContain('second operation');
     expect(operationHistoryContent).toContain('third operation');
   });
-
-
 
   it.todo('should read files from previous commit');
   it.todo('should list files from previous commit');

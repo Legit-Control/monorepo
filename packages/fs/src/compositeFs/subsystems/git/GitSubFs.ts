@@ -404,7 +404,7 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       readSha: undefined,
       unflushed: [],
     };
-    if (flags.includes('x')) {
+    if (flags.includes('x') || flags.includes('w')) {
       // NOTE workaround for created files that don't exist in the git history yet
       // Added to allow stats call (that is used in the create call) that is not aware of the open flags
       // to return the stats from the memory file
@@ -893,7 +893,7 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     const setOffset = offset ?? 0;
     const startPos = position ?? 0;
 
-    // Mark as dirty by setting the content hash to undefined
+    // Mark as dirty by adding the written range to unflushed
     openFh.unflushed.push({
       start: startPos,
       length: length ? length : buffer.byteLength - setOffset + startPos,
