@@ -1,14 +1,44 @@
 import * as nodeFs from 'node:fs';
+import git from 'isomorphic-git';
 
 import { CompositeFs } from './compositeFs/CompositeFs.js';
 import { EphemeralSubFs } from './compositeFs/subsystems/EphemeralFileSubFs.js';
 import { GitSubFs } from './compositeFs/subsystems/git/GitSubFs.js';
 import { HiddenFileSubFs } from './compositeFs/subsystems/HiddenFileSubFs.js';
 
+export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
+  let gitFolderExisted = false;
+  try {
+    storageFs.promises.readdir(gitRoot + '/.git');
+    gitFolderExisted = true;
+  } catch (e) {
+    // ignore
+    // TODO check if the error is an folder doesnt exists error!
+  }
+
+  if (gitFolderExisted) {
+    throw new Error(
+      `cant use initLegitFs on a folder with a git repo (${gitRoot}), use openLegitFs instead`
+    );
+  }
+
+  await git.init({ fs: storageFs, dir: '/', defaultBranch: 'main' });
+  await storageFs.promises.writeFile(gitRoot + '/.keep', '');
+  await git.add({ fs: storageFs, dir: '/', filepath: '/.keep' });
+  await git.commit({
+    fs: storageFs,
+    dir: '/',
+    message: 'Initial commit',
+    author: { name: 'Test', email: 'test@example.com' },
+  });
+
+  return openLegitFs(storageFs, gitRoot);
+}
+
 /**
  * Creates and configures a LegitFs instance with CompositeFs, GitSubFs, HiddenFileSubFs, and EphemeralSubFs.
  */
-export function createLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
+export function openLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
   // rootFs is the top-level CompositeFs
   // it propagates operations to the real filesystem (storageFs)
   // it allows the child copmositeFs to define file behavior while tunneling through to the real fs

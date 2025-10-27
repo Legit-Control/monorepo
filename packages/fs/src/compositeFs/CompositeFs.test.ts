@@ -184,12 +184,6 @@ describe('createCompositFs', () => {
     // await memfs.promises.close(handle.subFsFileDescriptor);
   });
 
-  it.todo('should test lookup functionality', async () => {
-    await expect(
-      compositeFs.lookup(repoPath + '/' + TEST_FILE)
-    ).rejects.toThrow(/lookup is not implemented/);
-  });
-
   it.todo('should test resolvePath functionality', async () => {
     // const handle = await compositeFs.promises.open(
     //   repoPath + "/" + TEST_FILE,

@@ -9,7 +9,89 @@ import { PassThroughSubFs } from './subsystems/PassThroughSubFs.js';
 import { PassThroughToAsyncFsSubFs } from './/subsystems/PassThroughToAsyncFsSubFs.js';
 import { IStats } from 'memfs/lib/node/types/misc.js';
 
+/**
+ *
+ * The CompositFs handles distribution of file operations to its sub filesystems and keeps track of open file handles.
+ * open returns a CompositFsFileHandle that wraps the real filehandle from the responsible SubFs and allows
+ * to forward operations
+ *
+ * Each SubFs determines if it is responsible for a given path. The Composite fs probes each subsystem for responsibility.
+ *
+ * The responisbility is probed in the following order:
+ *
+ * hiddenFilesFileSystem -> ephemeralFilesFileSystem -> other subFs in order of addition -> passThroughFileSystem
+ *
+ * Composit fs consists of two special sub filesystems:
+ *
+ * HiddenFilesSubFs - a filesystem that makes files inaccessible from the user
+ *   -> this is useful if you want to protect files like .git from being accessed or modified by the user
+ *
+ * EphemeralFilesSubFs - a filesystem that provides files that only exist in memory and are not persisted
+ *   -> this is usefull when you mount the compositfs as a Network drive for example via NFS to provide a space OS specific User files like .DS_
+ *
+ * Beyond those special subsystems additional systems cann be plugged in - the order matters
+ * and "the other" sub systems added via addSubFs
+ *
+ 
+ * 
+ * Renames over subfs bounderies are are managed by this fs
+ * 
+ * writeFile and readFile open a short living filehandle to execute the operations
+ * 
+ * 
+ */
 export class CompositeFs {
+  promises: {
+    access: (filePath: string, mode?: number) => Promise<void>;
+    opendir: (
+      dirPath: nodeFs.PathLike,
+      options?: nodeFs.OpenDirOptions
+    ) => Promise<CompositeFsDir>;
+    mkdir: (dirPath: string, options?: any) => Promise<void>;
+    readdir: (dirPath: nodeFs.PathLike, options?: any) => Promise<string[]>;
+    open: (
+      filePath: string,
+      flags: string,
+      mode?: number
+    ) => Promise<CompositFsFileHandle>;
+    stat: (
+      path: nodeFs.PathLike,
+      opts?: { bigint?: boolean }
+    ) => Promise<nodeFs.Stats | nodeFs.BigIntStats>;
+    lstat: (
+      path: nodeFs.PathLike,
+      opts?: { bigint?: boolean }
+    ) => Promise<nodeFs.Stats | nodeFs.BigIntStats>;
+    link: (
+      existingPath: nodeFs.PathLike,
+      newPath: nodeFs.PathLike
+    ) => Promise<void>;
+    readlink: (
+      path: nodeFs.PathLike,
+      options?: nodeFs.ObjectEncodingOptions | BufferEncoding | null
+    ) => Promise<any>;
+    unlink: (filePath: nodeFs.PathLike) => Promise<void>;
+    rename: (
+      oldPath: nodeFs.PathLike,
+      newPath: nodeFs.PathLike
+    ) => Promise<void>;
+    rmdir: (
+      dirPath: nodeFs.PathLike,
+      options?: nodeFs.RmDirOptions
+    ) => Promise<void>;
+    symlink: (
+      target: nodeFs.PathLike,
+      path: nodeFs.PathLike,
+      type?: string | null
+    ) => Promise<void>;
+    readFile: (typeof nodeFs.promises)['readFile'];
+    writeFile: (
+      file: nodeFs.PathOrFileDescriptor,
+      data: string | Buffer | Uint8Array,
+      options?: any
+    ) => Promise<void>;
+    getFilehandle: (fd: number) => CompositFsFileHandle | undefined;
+  };
   gitRoot: string;
   ephemeralFilesFileSystem: CompositeSubFs | undefined;
   hiddenFilesFileSystem: CompositeSubFs | undefined;
@@ -31,10 +113,6 @@ export class CompositeFs {
     return fds.length === 0 ? 1 : Math.max(...fds) + 1;
   }
 
-  getFilehandle(fd: number) {
-    return this.openFileHandles.get(fd);
-  }
-
   constructor({
     name,
     parentFs,
@@ -49,6 +127,25 @@ export class CompositeFs {
     this.name = name;
     this.parentFs = parentFs;
     this.gitRoot = gitRoot;
+
+    this.promises = {
+      access: this.access.bind(this),
+      opendir: this.opendir.bind(this),
+      mkdir: this.mkdir.bind(this),
+      readdir: this.readdir.bind(this),
+      open: this.open.bind(this),
+      stat: this.stat.bind(this),
+      lstat: this.lstat.bind(this),
+      link: this.link.bind(this),
+      readlink: this.readlink.bind(this),
+      unlink: this.unlink.bind(this),
+      rename: this.rename.bind(this),
+      rmdir: this.rmdir.bind(this),
+      symlink: this.symlink.bind(this),
+      readFile: this.readFile.bind(this),
+      writeFile: this.writeFile.bind(this),
+      getFilehandle: this.getFilehandle.bind(this),
+    } as any;
 
     if (!parentFs && storageFs) {
       this.passThroughFileSystem = new PassThroughToAsyncFsSubFs({
@@ -70,6 +167,10 @@ export class CompositeFs {
     throw new Error('invalid configuration');
   }
 
+  getFilehandle(fd: number) {
+    return this.openFileHandles.get(fd);
+  }
+
   setEphemeralFilesSubFs(subFs: CompositeSubFs) {
     this.ephemeralFilesFileSystem = subFs;
   }
@@ -83,18 +184,10 @@ export class CompositeFs {
   }
 
   /**
-   * TODO this might be a leftover from nf3 - check useage
-   * @param path
+   * helper function that takes a filePath and returns the fs that is responsible Sub filesystem for it
+   * @param filePath
+   * @returns
    */
-  async lookup(path: string) {
-    throw new Error('lookup - not implemented');
-  }
-
-  async resolvePath(fd: Buffer) {
-    // return this.fileHandleManager.getPathFromHandle(fd);
-    throw new Error('resolvePath - not implemented');
-  }
-
   private async getResponsibleFs(filePath: nodeFs.PathLike) {
     if (
       !filePath.toString().startsWith(this.gitRoot) &&
@@ -171,11 +264,11 @@ export class CompositeFs {
    * @returns
    */
   async readdir(dirPath: nodeFs.PathLike, options?: any) {
-    const fsToUse = await this.getResponsibleFs(dirPath);
+    const responsibleFs = await this.getResponsibleFs(dirPath);
 
-    // does one internal sub fs declare to be the only responsible fs?
-    if (fsToUse !== this.passThroughFileSystem) {
-      return fsToUse.readdir(dirPath, options);
+    // in case of the passsThrough fs - we don't enrich the result
+    if (responsibleFs !== this.passThroughFileSystem) {
+      return responsibleFs.readdir(dirPath, options);
     }
 
     // Create a Union of all files from the filesystems
@@ -235,8 +328,8 @@ export class CompositeFs {
   }
 
   async open(filePath: string, flags: string, mode?: number) {
-    const fsToUse = await this.getResponsibleFs(filePath);
-    const fileHandle = await fsToUse.open(filePath, flags, mode);
+    const responsibleFs = await this.getResponsibleFs(filePath);
+    const fileHandle = await responsibleFs.open(filePath, flags, mode);
 
     const nextDescriptor = this.getNextFileDescriptor();
     fileHandle.realize(nextDescriptor);
@@ -509,23 +602,4 @@ export class CompositeFs {
       }
     }
   }
-
-  promises = {
-    access: this.access.bind(this),
-    opendir: this.opendir.bind(this),
-    mkdir: this.mkdir.bind(this),
-    readdir: this.readdir.bind(this),
-    open: this.open.bind(this),
-    stat: this.stat.bind(this),
-    lstat: this.lstat.bind(this),
-    link: this.link.bind(this),
-    readlink: this.readlink.bind(this),
-    unlink: this.unlink.bind(this),
-    rename: this.rename.bind(this),
-    rmdir: this.rmdir.bind(this),
-    symlink: this.symlink.bind(this),
-    readFile: this.readFile.bind(this),
-    writeFile: this.writeFile.bind(this),
-    getFilehandle: this.getFilehandle.bind(this),
-  };
 }

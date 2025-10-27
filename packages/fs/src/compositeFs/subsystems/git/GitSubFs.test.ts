@@ -152,7 +152,6 @@ describe('createCompositFs', () => {
     const parsed = JSON.parse(content);
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed.length).toBe(2);
-    
   });
 
   it('it should write a branch file', async () => {

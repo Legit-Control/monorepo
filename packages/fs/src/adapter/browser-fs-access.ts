@@ -2,7 +2,7 @@ import type {
   fileSave as fileSaveType,
   FileWithHandle,
 } from 'browser-fs-access';
-import { createLegitFs } from '../legitfs.js';
+import { openLegitFs } from '../legitfs.js';
 import CompositFsFileHandle from '../compositeFs/CompositeFsFileHandle.js';
 import { Buffer } from 'buffer';
 
@@ -96,7 +96,7 @@ async function fileSystemFileHandleToFileWithHandle(
 }
 
 export async function getLegitFsAccess(
-  legitFs: ReturnType<typeof createLegitFs>
+  legitFs: ReturnType<typeof openLegitFs>
 ): Promise<
   FileAccess & { openFile: (filePath: string) => Promise<FileWithHandle> }
 > {

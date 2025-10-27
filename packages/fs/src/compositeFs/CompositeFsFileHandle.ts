@@ -73,13 +73,6 @@ export default class CompositFsFileHandle implements ICompositFsFileHandle {
   // the filedescriptor from the sub fs
   private _subFsFileDescriptor: number;
 
-  /**
-   * a file in a subsystem might be represented by multiple files within the parent fs
-   * this array contains the filedescriptor pointing to the open files in the parent fs
-   *
-   * NOTE in case of virtual files - the parentfs might not have any file representing the file
-   */
-  private _parentFsFileDescriptors: number[];
 
   get subFsFileDescriptor(): number {
     return this._subFsFileDescriptor;
@@ -106,7 +99,6 @@ export default class CompositFsFileHandle implements ICompositFsFileHandle {
   }) {
     this.delegate = args.fs;
     this._subFsFileDescriptor = args.subFsFileDescriptor;
-    this._parentFsFileDescriptors = args.parentFsFileDescriptors;
     this._compositFsFileDescriptor = -1;
 
     let typeNumber = args.fs.fileType();

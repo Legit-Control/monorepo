@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Volume, createFsFromVolume } from 'memfs';
 import * as isogit from 'isomorphic-git';
-import { createLegitFs } from './legitfs.js';
+import { openLegitFs } from './legitfs.js';
 
 const repoPath = '/repo';
 const files = {
@@ -16,7 +16,7 @@ const files = {
 // writeFile('.legit/branches/main/.legit/metaname', 'my awesome path name')
 
 let memfs: any;
-let legitfs: ReturnType<typeof createLegitFs>;
+let legitfs: ReturnType<typeof openLegitFs>;
 
 async function setupRepo() {
   memfs = createFsFromVolume(
@@ -44,10 +44,10 @@ async function setupRepo() {
   });
 }
 
-describe('createLegitFs', () => {
+describe('openLegitFs', () => {
   beforeEach(async () => {
     await setupRepo();
-    legitfs = createLegitFs(memfs, repoPath);
+    legitfs = openLegitFs(memfs, repoPath);
   });
 
   it('should read files from branch', async () => {
