@@ -45,7 +45,7 @@ async function main() {
     '/.legit/branches/main/.legit/history',
     'utf8'
   );
-  console.log(content); // → "Hello world"
+  console.log(content);
 }
 main();
 ```
