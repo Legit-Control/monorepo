@@ -9,7 +9,7 @@ import { HiddenFileSubFs } from './compositeFs/subsystems/HiddenFileSubFs.js';
 export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
   let gitFolderExisted = false;
   try {
-    storageFs.promises.readdir(gitRoot + '/.git');
+    await storageFs.promises.readdir(gitRoot + '/.git');
     gitFolderExisted = true;
   } catch (e) {
     // ignore
@@ -24,7 +24,7 @@ export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
 
   await git.init({ fs: storageFs, dir: '/', defaultBranch: 'main' });
   await storageFs.promises.writeFile(gitRoot + '/.keep', '');
-  await git.add({ fs: storageFs, dir: '/', filepath: '/.keep' });
+  await git.add({ fs: storageFs, dir: '/', filepath: '.keep' });
   await git.commit({
     fs: storageFs,
     dir: '/',
