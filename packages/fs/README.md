@@ -1,4 +1,7 @@
-# Legit SDK
+# Legit SDK (Alpha) - Feedback-only version
+
+**This software is being shared publicly to gather early feedback on its API and underlying concepts.**
+It represents the first small component of our upcoming SDK. At this stage, it’s intended for evaluation and personal use only — the license will transition to Apache when the official release is published.
 
 ## The easiest way to build fail-safe applications.
 

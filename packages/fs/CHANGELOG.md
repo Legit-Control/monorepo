@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.1.4
+
+### Patch Changes
+
+- Improve bundling with rollup for types
+
 ## 0.1.3
 
 ### Patch Changes

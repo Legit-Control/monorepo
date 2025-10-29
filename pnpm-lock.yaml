@@ -63,6 +63,12 @@ importers:
       querystring-es3:
         specifier: ^0.2.1
         version: 0.2.1
+      rollup:
+        specifier: ^4.52.5
+        version: 4.52.5
+      rollup-plugin-dts:
+        specifier: ^6.2.3
+        version: 6.2.3(rollup@4.52.5)(typescript@5.9.3)
       stream-browserify:
         specifier: ^3.0.0
         version: 3.0.0
@@ -89,6 +95,14 @@ importers:
         version: 3.2.4(@types/node@22.14.1)
 
 packages:
+
+  '@babel/code-frame@7.27.1':
+    resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/helper-validator-identifier@7.28.5':
+    resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
+    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.28.4':
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
@@ -1411,6 +1425,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  js-tokens@4.0.0:
+    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
+
   js-tokens@9.0.1:
     resolution: {integrity: sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ==}
 
@@ -1661,6 +1678,13 @@ packages:
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
+
+  rollup-plugin-dts@6.2.3:
+    resolution: {integrity: sha512-UgnEsfciXSPpASuOelix7m4DrmyQgiaWBnvI0TM4GxuDh5FkqW8E5hu57bCxXB90VvR1WNfLV80yEDN18UogSA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      rollup: ^3.29.4 || ^4
+      typescript: ^4.5 || ^5.0
 
   rollup@4.52.5:
     resolution: {integrity: sha512-3GuObel8h7Kqdjt0gxkEzaifHTqLVW56Y/bjN7PSQtkKr0w3V/QYSdt6QWYtd7A1xUtYQigtdUfgj1RvWVtorw==}
@@ -2053,6 +2077,16 @@ packages:
     engines: {node: '>=10'}
 
 snapshots:
+
+  '@babel/code-frame@7.27.1':
+    dependencies:
+      '@babel/helper-validator-identifier': 7.28.5
+      js-tokens: 4.0.0
+      picocolors: 1.1.1
+    optional: true
+
+  '@babel/helper-validator-identifier@7.28.5':
+    optional: true
 
   '@babel/runtime@7.28.4': {}
 
@@ -3273,6 +3307,9 @@ snapshots:
       sha.js: 2.4.12
       simple-get: 4.0.1
 
+  js-tokens@4.0.0:
+    optional: true
+
   js-tokens@9.0.1: {}
 
   js-yaml@3.14.1:
@@ -3480,6 +3517,14 @@ snapshots:
   resolve-from@5.0.0: {}
 
   reusify@1.1.0: {}
+
+  rollup-plugin-dts@6.2.3(rollup@4.52.5)(typescript@5.9.3):
+    dependencies:
+      magic-string: 0.30.19
+      rollup: 4.52.5
+      typescript: 5.9.3
+    optionalDependencies:
+      '@babel/code-frame': 7.27.1
 
   rollup@4.52.5:
     dependencies:

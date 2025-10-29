@@ -40,13 +40,13 @@ async function build() {
     // Browser build - bundle everything
     await esbuild.build({
       ...buildConfig,
-      outfile: 'dist/legit-sdk.js',
+      outfile: 'dist/index.js',
     });
 
     console.log('✅ Build completed successfully!');
     console.log('📦 Output files:');
-    console.log('  - dist/legit-sdk.js (Browser ESM - everything bundled)');
-    console.log('  - dist/legit-sdk.js.map (Source map)');
+    console.log('  - dist/index.js (Browser ESM - everything bundled)');
+    console.log('  - dist/index.js.map (Source map)');
   } catch (error) {
     console.error('❌ Build failed:', error);
     process.exit(1);

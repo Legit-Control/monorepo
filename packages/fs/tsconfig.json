@@ -21,5 +21,14 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "exclude": ["vitest.config.ts", "esbuild.config.js", "dist"]
+  "include": ["src"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "vitest.config.ts",
+    "esbuild.config.js",
+    "rollup.*",
+    "*.config.js",
+    "*.config.mjs"
+  ]
 }
