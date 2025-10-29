@@ -8,8 +8,8 @@ const buildConfig = {
   format: 'esm',
   outExtension: { '.js': '.js' },
   external: [],
-  sourcemap: true,
-  minify: false,
+  sourcemap: false,
+  minify: true,
   keepNames: true,
   define: {
     'process.env.NODE_ENV': '"production"',
