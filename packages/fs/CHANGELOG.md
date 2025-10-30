@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.1.7
+
+### Patch Changes
+
+- remove readme
+
 ## 0.1.6
 
 ### Patch Changes
