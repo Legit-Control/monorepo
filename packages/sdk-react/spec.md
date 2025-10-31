@@ -56,6 +56,14 @@ function useLegitContext(): LegitContextValue;
 ## Hook: useLegitFile
 
 ```ts
+// from sdk
+type HistoryItem = {
+  oid: string;
+  message: string;
+  parent: string[];
+  author: User;
+};
+
 interface UseLegitFileReturn {
   content: string; // current file content (reactive)
   setContent: (newText: string) => Promise<void>; // writes + commits
