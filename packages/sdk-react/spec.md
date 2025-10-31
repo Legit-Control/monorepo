@@ -56,6 +56,15 @@ function useLegitContext(): LegitContextValue;
 ## Hook: useLegitFile
 
 ```ts
+interface UseLegitFileReturn {
+  content: string; // current file content (reactive)
+  setContent: (newText: string) => Promise<void>; // writes + commits
+  history: HistoryItem[]; // from sdk
+  getPastState: (commitHash: string) => Promise<string>; // read file content at commit
+  loading: boolean; // true while FS or history is initializing / polling
+  error?: Error; // set if any FS operation fails
+}
+
 function useLegitFile(path: string): UseLegitFileReturn;
 ```
 
