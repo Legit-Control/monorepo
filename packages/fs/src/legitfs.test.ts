@@ -428,6 +428,46 @@ describe('openLegitFs', () => {
     expect(operationHistoryContent).toContain('third operation');
   });
 
+  it.todo('should handle undo and redo operations', async () => {
+    const textFilePath = `${repoPath}/.legit/branches/main/text.txt`;
+    const operationFilePath = `${repoPath}/.legit/branches/main/.legit/operation`;
+    const operationBranch = `refs/heads/${'legit____main-operation'}`;
+
+    // Create text.txt in main branch
+    // await legitfs.promises.writyxeFile(textFilePath, 'hello world');
+
+    const undoFilePath = `${repoPath}/.legit/branches/main/.legit/undo`;
+    const undoHash = await legitfs.promises.readFile(undoFilePath, 'utf-8');
+    expect(undoHash.trim()).toBe('');
+
+    await legitfs.promises.writeFile(textFilePath, 'hello legit');
+
+    // read the undo file to see if we can undo
+    // read the redo file - it should be empty at this point
+    const redoFilePath = `${repoPath}/.legit/branches/main/.legit/redo`;
+    const redoHash = await legitfs.promises.readFile(redoFilePath, 'utf-8');
+    expect(redoHash.trim()).toBe('');
+
+    // now perform the undo by writing the undo hash to the operation file
+    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    await legitfs.promises.writeFile(headFilePath, `${undoHash.trim()}`);
+
+    // read the undo file to see if we can undo
+    const updatedUndoHash = await legitfs.promises.readFile(
+      undoFilePath,
+      'utf-8'
+    );
+    // hash should be different now
+    expect(updatedUndoHash.trim()).not.toBe(undoHash.trim());
+
+    const updatedRedoHash = await legitfs.promises.readFile(
+      redoFilePath,
+      'utf-8'
+    );
+
+    expect(redoHash.trim()).toBe(undoHash);
+  });
+
   it.todo('should read files from previous commit');
   it.todo('should list files from previous commit');
   it.todo('should handle branch creation and switching');
