@@ -55,10 +55,13 @@ describe('useLegitFile', () => {
     unmount();
   });
 
-  it('sets hook error when file read fails', async () => {
-    // make content read fail
-    mockLegitFs.promises.readFile.mockImplementationOnce(() =>
-      Promise.reject(new Error('read fail'))
+  it('defaults to empty content/history when reads fail (ENOENT-safe)', async () => {
+    // make both reads fail
+    mockLegitFs.promises.readFile.mockRejectedValueOnce(
+      new Error('missing content')
+    );
+    mockLegitFs.promises.readFile.mockRejectedValueOnce(
+      new Error('missing history')
     );
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <LegitProvider>{children}</LegitProvider>
@@ -66,7 +69,9 @@ describe('useLegitFile', () => {
     const { result } = renderHook(() => useLegitFile('/file.txt'), { wrapper });
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-      expect(result.current.error).toBeTruthy();
+      expect(result.current.content).toBe('');
+      expect(result.current.history).toEqual([]);
+      expect(result.current.error).toBeUndefined();
     });
   });
 });

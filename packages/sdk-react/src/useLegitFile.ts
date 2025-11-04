@@ -25,15 +25,32 @@ export function useLegitFile(path: string): UseLegitFileReturn {
     const load = async () => {
       setLoading(true);
       try {
-        const [text, _history] = await Promise.all([
+        const [textResult, historyResult] = await Promise.allSettled([
           legitFs.promises.readFile(`/.legit/branches/main${path}`, 'utf8'),
           legitFs.promises.readFile(
             `/.legit/branches/main/.legit/history`,
             'utf8'
           ),
         ]);
+
+        const text =
+          textResult.status === 'fulfilled'
+            ? (textResult.value as unknown as string)
+            : '';
+
+        let parsedHistory: HistoryItem[] = [];
+        if (historyResult.status === 'fulfilled') {
+          try {
+            parsedHistory = JSON.parse(
+              historyResult.value as unknown as string
+            );
+          } catch {
+            parsedHistory = [];
+          }
+        }
+
         setContent(text);
-        setHistory(JSON.parse(_history));
+        setHistory(parsedHistory);
         setError(undefined);
       } catch (err) {
         setError(err as Error);
@@ -56,11 +73,15 @@ export function useLegitFile(path: string): UseLegitFileReturn {
 
   const getPastState = async (oid: string) => {
     if (!legitFs) return '';
-    const past = await legitFs.promises.readFile(
-      `/.legit/commits/${oid}${path}`,
-      'utf8'
-    );
-    return past as unknown as string;
+    try {
+      const past = await legitFs.promises.readFile(
+        `/.legit/commits/${oid}${path}`,
+        'utf8'
+      );
+      return past as unknown as string;
+    } catch {
+      return '';
+    }
   };
 
   return {
