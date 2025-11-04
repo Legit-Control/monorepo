@@ -39,6 +39,7 @@ interface LegitProviderProps {
 interface LegitContextValue {
   legitFs: Awaited<ReturnType<typeof initLegitFs>> | null;
   loading: boolean;
+  head: string | null;
   error?: Error;
 }
 
