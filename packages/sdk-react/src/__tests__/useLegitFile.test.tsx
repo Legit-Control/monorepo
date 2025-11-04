@@ -58,7 +58,7 @@ describe('useLegitFile', () => {
   it('defaults to empty content/history when reads fail (ENOENT-safe)', async () => {
     // make both reads fail
     mockLegitFs.promises.readFile.mockRejectedValueOnce(
-      new Error('missing content')
+      Object.assign(new Error('missing content'), { code: 'ENOENT' })
     );
     mockLegitFs.promises.readFile.mockRejectedValueOnce(
       new Error('missing history')
@@ -69,7 +69,7 @@ describe('useLegitFile', () => {
     const { result } = renderHook(() => useLegitFile('/file.txt'), { wrapper });
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
-      expect(result.current.content).toBe('');
+      expect(result.current.content).toBe(null);
       expect(result.current.history).toEqual([]);
       expect(result.current.error).toBeUndefined();
     });

@@ -33,10 +33,17 @@ export function useLegitFile(path: string): UseLegitFileReturn {
           ),
         ]);
 
-        const text =
-          textResult.status === 'fulfilled'
-            ? (textResult.value as unknown as string)
-            : '';
+        let text: string | null = null;
+        if (textResult.status === 'fulfilled') {
+          text = textResult.value as string;
+        } else if (
+          (textResult.reason as any)?.code &&
+          (textResult.reason as any).code === 'ENOENT'
+        ) {
+          text = null;
+        } else {
+          throw textResult.reason;
+        }
 
         let parsedHistory: HistoryItem[] = [];
         if (historyResult.status === 'fulfilled') {
@@ -53,13 +60,7 @@ export function useLegitFile(path: string): UseLegitFileReturn {
         setHistory(parsedHistory);
         setError(undefined);
       } catch (err) {
-        if ((err as Error).message.includes('ENOENT')) {
-          // don't throw an error, just set the content and history to empty if file doesnt exist
-          setContent(null);
-          setHistory([]);
-        } else {
-          setError(err as Error);
-        }
+        setError(err as Error);
       } finally {
         setLoading(false);
       }

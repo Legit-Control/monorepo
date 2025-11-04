@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -14,12 +15,20 @@ vi.mock('@legit-sdk/core', () => ({
   initLegitFs: mockedInitLegitFs,
 }));
 
-import { LegitProvider } from '../LegitProvider';
+afterEach(() => {
+  vi.clearAllMocks();
+  cleanup(); // ✅ remove all rendered components
+});
 
+import { LegitProvider } from '../LegitProvider';
 const TestPage = () => {
-  const { content, setContent, history } = useLegitFile('/doc.txt');
-  const [text, setText] = React.useState(content);
-  React.useEffect(() => setText(content), [content]);
+  const { content, setContent, history, loading } = useLegitFile('/doc.txt');
+  const [text, setText] = React.useState(content ?? '');
+  React.useEffect(() => {
+    setText(content ?? '');
+  }, [content]);
+  if (loading) return <div>Loading...</div>;
+
   return (
     <div>
       <input
@@ -29,13 +38,15 @@ const TestPage = () => {
       />
       <button onClick={() => setContent(text)}>Save</button>
       <div data-testid="history-count">{history.length}</div>
+      <pre data-testid="content">
+        {content === null ? 'is_null' : 'not_null'}
+      </pre>
     </div>
   );
 };
 
 describe('React wrapper integration', () => {
   it('loads, edits, saves, and reacts to HEAD changes', async () => {
-    // Capture interval callback instead of relying on fake timers
     let captured: (() => void) | null = null;
     const setIntervalSpy = vi
       .spyOn(global, 'setInterval')
@@ -44,7 +55,6 @@ describe('React wrapper integration', () => {
         return 1 as any;
       });
 
-    // Seed fs reads: history + content, then head ticks
     let content = 'hello';
     mockLegitFs.promises.readFile.mockImplementation((p: string) => {
       if (p.endsWith('/.legit/branches/main/.legit/history'))
@@ -68,12 +78,10 @@ describe('React wrapper integration', () => {
     );
     expect(screen.getByTestId('history-count').textContent).toBe('1');
 
-    // Establish initial head once
     await act(async () => {
       await (captured as () => void)();
     });
 
-    // Edit and save
     fireEvent.change(input, { target: { value: 'edited text' } });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() =>
@@ -82,5 +90,55 @@ describe('React wrapper integration', () => {
     expect((input as HTMLInputElement).value).toBe('edited text');
 
     setIntervalSpy.mockRestore();
+  });
+
+  it('handles ENOENT on initialization and creates file on save', async () => {
+    // Simulate missing file -> ENOENT
+    mockLegitFs.promises.readFile.mockImplementation((p: string) => {
+      if (p.endsWith('/.legit/branches/main/.legit/history'))
+        return Promise.reject(
+          Object.assign(new Error('ENOENT: no such file or directory'), {
+            code: 'ENOENT',
+          })
+        );
+      if (p.endsWith('/.legit/branches/main/.legit/head'))
+        return Promise.resolve('h1');
+      if (p.endsWith('/.legit/branches/main/doc.txt'))
+        return Promise.reject(
+          Object.assign(new Error('ENOENT: no such file or directory'), {
+            code: 'ENOENT',
+          })
+        );
+      return Promise.resolve('');
+    });
+
+    render(
+      <LegitProvider>
+        <TestPage />
+      </LegitProvider>
+    );
+
+    // Wait for hook to initialize
+    await waitFor(() =>
+      expect(screen.getByTestId('content').textContent).toBe('is_null')
+    );
+
+    // Saving should create file
+    const input = await screen.findByLabelText('editor');
+    fireEvent.change(input, { target: { value: 'created file' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(mockLegitFs.promises.writeFile).toHaveBeenCalledWith(
+        '/.legit/branches/main/doc.txt',
+        'created file',
+        'utf8'
+      )
+    );
+
+    // Verify content updated in hook
+    await waitFor(() =>
+      expect(screen.getByTestId('content').textContent).toBe('not_null')
+    );
   });
 });
