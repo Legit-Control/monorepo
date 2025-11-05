@@ -83,7 +83,7 @@ export function useLegitFile(path: string): UseLegitFileReturn {
     if (!legitFs) return '';
     try {
       const past = await legitFs.promises.readFile(
-        `/.legit/commits/${oid}${path}`,
+        `/.legit/commits/${oid.slice(0, 2)}/${oid.slice(2)}${path}`,
         'utf8'
       );
       return past as unknown as string;

@@ -1,5 +1,17 @@
 # @legit-sdk/react
 
+## 0.1.6
+
+### Patch Changes
+
+- Fix id placement in commit path @legit-sdk/react
+
+## 0.1.5
+
+### Patch Changes
+
+- Add latest types in legit-sdk/react
+
 ## 0.1.4
 
 ### Patch Changes
