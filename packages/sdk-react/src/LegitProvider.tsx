@@ -31,7 +31,7 @@ export interface LegitProviderProps {
   children: ReactNode;
 }
 
-const DEFAULT_POLL_INTERVAL = 200;
+const DEFAULT_POLL_INTERVAL = 100; // Increased from 200ms to reduce polling frequency
 
 export const LegitProvider = ({ children }: LegitProviderProps) => {
   const [legitFs, setLegitFs] = useState<Awaited<
@@ -46,7 +46,6 @@ export const LegitProvider = ({ children }: LegitProviderProps) => {
     let isMounted = true;
     let pollHead: NodeJS.Timeout | undefined;
     let lastSeenHead = '';
-    let debounceTimeout: NodeJS.Timeout | undefined;
 
     const initFs = async () => {
       try {
@@ -60,30 +59,27 @@ export const LegitProvider = ({ children }: LegitProviderProps) => {
         setLegitFs(_legitFs);
         setLoading(false);
 
-        // Optional: setup HEAD polling
+        // Setup HEAD polling - simple and straightforward
         pollHead = setInterval(async () => {
-          if (!_legitFs) return;
+          if (!isMounted || !_legitFs) return;
           try {
             const newHead = await _legitFs.promises.readFile(
               '/.legit/branches/main/.legit/head',
               'utf8'
             );
-            if (newHead !== lastSeenHead) {
+            // Only update if HEAD actually changed
+            if (newHead !== lastSeenHead && newHead !== headRef.current) {
               lastSeenHead = newHead;
-              clearTimeout(debounceTimeout);
-              debounceTimeout = setTimeout(() => {
-                if (newHead !== headRef.current) {
-                  headRef.current = newHead;
-                  setHead(newHead);
-                }
-              }, DEFAULT_POLL_INTERVAL);
+              headRef.current = newHead;
+              setHead(newHead);
             }
           } catch (e) {
-            console.error('Polling head failed:', e);
+            // Silently ignore polling errors - HEAD might not exist yet
+            if (isMounted && (e as any)?.code !== 'ENOENT') {
+              console.error('Polling head failed:', e);
+            }
           }
         }, DEFAULT_POLL_INTERVAL);
-
-        return () => clearInterval(pollHead);
       } catch (err) {
         if (isMounted) {
           setError(err as Error);

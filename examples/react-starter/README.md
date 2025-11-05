@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Legit SDK React Starter
+
+A starter template demonstrating how to use `@legit-sdk/react` for local-first document editing and version control in a Next.js application.
+
+## Features
+
+- ✅ **Auto-initialization**: Files are automatically created with initial content if they don't exist
+- ✅ **Version history**: View commit history with visual diffs
+- ✅ **Commit checkout**: Browse historical commits and view their content
+- ✅ **Safe editing**: Save button is disabled when viewing non-HEAD commits
+- ✅ **Real-time sync**: Changes are automatically synced via HEAD polling
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- pnpm (or npm/yarn)
+
+### Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Run development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the demo.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This starter demonstrates a simple document editor with version control:
+
+1. **LegitProvider**: Initializes the Legit FS instance and polls for HEAD changes
+2. **useLegitFile**: Hook that manages file content, history, and save operations
+3. **Editor Component**: Simple textarea with save button and history list
+
+### Key Implementation
+
+```tsx
+import { LegitProvider, useLegitFile } from '@legit-sdk/react';
+
+function Editor() {
+  // Auto-create file with initial content if it doesn't exist
+  const { content, setContent, history, getPastState } = useLegitFile(
+    '/document.txt',
+    { initialContent: 'This is a document that you can edit! 🖋️' }
+  );
+
+  // ... rest of component
+}
+```
+
+## Customization
+
+### Change the File Path
+
+Edit `FILE_PATH` in `app/page.tsx`:
+
+```tsx
+const FILE_PATH = '/your-file.txt';
+```
+
+### Change Initial Content
+
+Edit `INITIAL_TEXT` in `app/page.tsx`:
+
+```tsx
+const INITIAL_TEXT = 'Your initial content here';
+```
+
+### Manual File Creation
+
+Remove `initialContent` option to handle file creation manually:
+
+```tsx
+const { content, setContent } = useLegitFile('/document.txt');
+```
+
+## Features Explained
+
+### Auto-initialization
+
+When `initialContent` is provided, the hook automatically creates the file if it doesn't exist:
+
+```tsx
+useLegitFile('/document.txt', { initialContent: 'Hello World' });
+```
+
+### History & Checkout
+
+- Click any history item to view that commit's content
+- Active commit is highlighted
+- Save button is disabled when viewing non-HEAD commits
+
+### Sync Behavior
+
+- Content syncs automatically when HEAD changes
+- User edits are preserved (won't be overwritten by sync)
+- Save clears checkout state and returns to HEAD
+
+## Project Structure
+
+```
+app/
+  page.tsx          # Main editor component
+  layout.tsx        # Next.js layout
+  globals.css       # Global styles
+public/
+  logo.svg          # Legit logo
+  avatar.svg        # Avatar icon
+  file.svg          # File icon
+```
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+- [Legit SDK Documentation](../../packages/sdk-react/spec.md)
+- [Next.js Documentation](https://nextjs.org/docs)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Building Your Own Starter
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Copy this starter to your project
+2. Customize `FILE_PATH` and `INITIAL_TEXT`
+3. Modify the UI to match your needs
+4. Add more files with multiple `useLegitFile` hooks

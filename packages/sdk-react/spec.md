@@ -65,6 +65,10 @@ type HistoryItem = {
   author: User;
 };
 
+interface UseLegitFileOptions {
+  initialContent?: string; // auto-create file with this content if it doesn't exist
+}
+
 interface UseLegitFileReturn {
   content: string; // current file content (reactive)
   setContent: (newText: string) => Promise<void>; // writes + commits
@@ -74,7 +78,10 @@ interface UseLegitFileReturn {
   error?: Error; // set if any FS operation fails
 }
 
-function useLegitFile(path: string): UseLegitFileReturn;
+function useLegitFile(
+  path: string,
+  options?: UseLegitFileOptions
+): UseLegitFileReturn;
 ```
 
 ## Lifecycle
@@ -88,6 +95,7 @@ function useLegitFile(path: string): UseLegitFileReturn;
    - Use provider `legitFs`
    - Read file and seed local state
    - Fetch `history` and optionally resolve past content
+   - If file doesn't exist and `initialContent` is provided, auto-create file with that content
 
 3. Updates / commits
    - `setContent(text)` writes to FS and commits; provider polling picks up changes
@@ -102,7 +110,11 @@ function useLegitFile(path: string): UseLegitFileReturn;
 
 ```ts
 const Page = () => {
-  const { content, setContent, history, getPastState } = useLegitFile("/document.txt");
+  // Auto-create file with initial content if it doesn't exist
+  const { content, setContent, history, getPastState } = useLegitFile(
+    "/document.txt",
+    { initialContent: "Hello, World!" }
+  );
   const [text, setText] = useState(content);
 
   useEffect(() => { setText(content) }, [content]);
@@ -124,6 +136,15 @@ const Page = () => {
   );
 };
 ```
+
+### Auto-initialization
+
+When `initialContent` is provided:
+
+- If the file doesn't exist, it will be automatically created with the provided content
+- Initialization happens once per mount, after the initial file load completes
+- If initialization fails, it's logged but doesn't crash the component
+- Omit `initialContent` to handle file creation manually
 
 ## Why this design
 

@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 'use client';
 
-import { LegitProvider, useLegitFile } from '@legit-sdk/react';
+import { LegitProvider, useLegitFile, useLegitContext } from '@legit-sdk/react';
 import { HistoryItem } from '@legit-sdk/core';
 import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
@@ -14,56 +13,43 @@ const INITIAL_TEXT = 'This is a document that you can edit! 🖋️';
 
 function Editor() {
   // ✅ The hook handles reading, writing, and history tracking
-  const {
-    content,
-    setContent,
-    history,
-    getPastState,
-    loading,
-    error,
-    legitFs,
-  } = useLegitFile(FILE_PATH);
+  const { content, setContent, history, getPastState, loading, error } =
+    useLegitFile(FILE_PATH, { initialContent: INITIAL_TEXT });
+  const { head } = useLegitContext();
   const [text, setText] = useState('');
-  const [initialized, setInitialized] = useState(false);
-
-  //@ts-ignore
-  // window.legitFs = legitFs;
+  const [checkedOutCommit, setCheckedOutCommit] = useState<string | null>(null);
 
   useEffect(() => {
-    const setInitialContent = async () => {
-      await setContent(INITIAL_TEXT);
-      setText(INITIAL_TEXT);
-      console.log('Content initially set', INITIAL_TEXT);
-      setInitialized(true);
-    };
-    if (!initialized && loading === false) setInitialContent();
-  }, [initialized, loading]);
+    if (content !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setText(content);
+    }
+  }, [content]);
 
   // Checkout a commit by loading its content from history
   const handleCheckout = async (oid: string) => {
     const past = await getPastState(oid);
     setText(past);
+    setCheckedOutCommit(oid);
   };
-
-  // useEffect(() => {
-  //   console.log("content", content)
-  //   setText(content ?? '')
-  // }, [content])
-
-  useEffect(() => {
-    console.log('history', history);
-  }, [history]);
 
   // Save changes → triggers legit commit under the hood
   const handleSave = async () => {
-    console.log('setContent', text);
     await setContent(text);
-    // setText(text)
+    setCheckedOutCommit(null); // Clear checkout after save
   };
+
+  // Disable save if:
+  // 1. Text hasn't changed from content (no changes to save)
+  // 2. A commit is checked out that's not the current HEAD
+  const isSaveDisabled =
+    text === content ||
+    (checkedOutCommit !== null && checkedOutCommit !== head);
 
   if (loading)
     return <div className="p-8 text-gray-500">Loading repository…</div>;
-  if (error) console.log(error); // return <div className="p-8 text-red-500">Error {error.message}</div>;
+  if (error)
+    return <div className="p-8 text-red-500">Error {error.message}</div>;
 
   return (
     <div className="flex min-h-screen max-w-xl mx-auto flex-col p-8 gap-4">
@@ -86,7 +72,7 @@ function Editor() {
           </div>
           <button
             onClick={handleSave}
-            disabled={text === content}
+            disabled={isSaveDisabled}
             className="bg-[#FF611A] text-white px-3 py-1 rounded-lg font-semibold hover:opacity-80 cursor-pointer disabled:opacity-50"
           >
             Save
@@ -109,7 +95,7 @@ function Editor() {
           <HistoryListItem
             key={h.oid}
             item={h}
-            isActive={false}
+            isActive={h.oid === checkedOutCommit}
             onCheckout={handleCheckout}
             getPastState={getPastState}
           />
@@ -156,7 +142,7 @@ function HistoryListItem({
 
         setOldContent(oldRes ?? '');
         setNewContent(newRes ?? '');
-      } catch (err) {
+      } catch {
         // swallow fetch errors for UI resilience — keep empty strings
         if (!mounted) return;
         setOldContent('');
