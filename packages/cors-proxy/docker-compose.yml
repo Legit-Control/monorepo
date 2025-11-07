@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  cors-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9999:9999"
+    environment:
+      NODE_ENV: production
+      PORT: 9999
+      LOG_LEVEL: info
+      CORS_ORIGIN: "*"
+      GITHUB_API_URL: https://api.github.com
+      GITLAB_API_URL: https://gitlab.com
+      # New naming (recommended):
+      ACCESS_SERVICE_PUB_KEY: |
+        -----BEGIN PUBLIC KEY-----
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+        -----END PUBLIC KEY-----
+      PROXY_SERVICE_PRIVATE_KEY: |
+        -----BEGIN PRIVATE KEY-----
+        MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...
+        -----END PRIVATE KEY-----
+      # Legacy naming (still supported):
+      # RSA_PUBLIC_KEY: |
+      #   -----BEGIN PUBLIC KEY-----
+      #   MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+      #   -----END PUBLIC KEY-----
+      # RSA_PRIVATE_KEY: |
+      #   -----BEGIN PRIVATE KEY-----
+      #   MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...
+      #   -----END PRIVATE KEY-----
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9999/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  cors-proxy-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9999:9999"
+    environment:
+      NODE_ENV: development
+      PORT: 9999
+      LOG_LEVEL: debug
+      CORS_ORIGIN: "*"
+      GITHUB_API_URL: https://api.github.com
+      GITLAB_API_URL: https://gitlab.com
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["pnpm", "dev"]
+    profiles:
+      - dev

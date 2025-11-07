@@ -1,0 +1,55 @@
+service: legit-cors-proxy
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: production
+  memorySize: 512
+  timeout: 30
+  environment:
+    NODE_ENV: production
+    LOG_LEVEL: info
+    PORT: 9999
+    GITHUB_API_URL: https://api.github.com
+    GITLAB_API_URL: https://gitlab.com
+
+functions:
+  corsProxy:
+    handler: dist/index.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - User-Agent
+              - Git-Protocol
+            allowCredentials: true
+      - http:
+          path: /
+          method: ANY
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - User-Agent
+              - Git-Protocol
+            allowCredentials: true
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+custom:
+  serverless-offline:
+    httpPort: 9999
+    websocketPort: 9991
+    lambdaPort: 9992
+    noPrependStageInUrl: true

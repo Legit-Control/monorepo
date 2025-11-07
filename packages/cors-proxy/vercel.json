@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "name": "legit-cors-proxy",
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/index.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "9999",
+    "LOG_LEVEL": "info"
+  },
+  "functions": {
+    "dist/index.js": {
+      "maxDuration": 30,
+      "memory": 512
+    }
+  },
+  "regions": ["iad1"]
+}
