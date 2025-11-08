@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 37, "column": 0}, "map": {"version":3,"sources":["file:///Users/nilsjacobsen/Work/monorepo/examples/ai-form-example/app/api/chat/route.ts"],"sourcesContent":["import { openai } from \"@ai-sdk/openai\";\nimport { frontendTools } from \"@assistant-ui/react-ai-sdk\";\nimport { convertToModelMessages, streamText } from \"ai\";\n\nexport const maxDuration = 30;\n\nexport async function POST(req: Request) {\n  const { messages, system, tools } = await req.json();\n\n  const result = streamText({\n    model: openai(\"gpt-4o\"),\n    messages: convertToModelMessages(messages),\n    system,\n    tools: {\n      ...frontendTools(tools),\n    },\n  });\n\n  return result.toUIMessageStreamResponse();\n}\n"],"names":[],"mappings":";;;;;;AAAA;AACA;AACA;;;;AAEO,MAAM,cAAc;AAEpB,eAAe,KAAK,GAAY;IACrC,MAAM,EAAE,QAAQ,EAAE,MAAM,EAAE,KAAK,EAAE,GAAG,MAAM,IAAI,IAAI;IAElD,MAAM,SAAS,IAAA,wOAAU,EAAC;QACxB,OAAO,IAAA,0PAAM,EAAC;QACd,UAAU,IAAA,oPAAsB,EAAC;QACjC;QACA,OAAO;YACL,GAAG,IAAA,yZAAa,EAAC,MAAM;QACzB;IACF;IAEA,OAAO,OAAO,yBAAyB;AACzC","debugId":null}}]
+}

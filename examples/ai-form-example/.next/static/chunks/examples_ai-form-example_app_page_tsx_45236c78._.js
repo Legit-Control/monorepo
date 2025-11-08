@@ -8,7 +8,7 @@
   "static/chunks/e734c_@assistant-ui_react_dist_71e6e266._.js",
   "static/chunks/f545a_micromark_dev_lib_2a08bc19._.js",
   "static/chunks/b5ecd_micromark-core-commonmark_dev_lib_bc76a96f._.js",
-  "static/chunks/node_modules__pnpm_8b768271._.js",
+  "static/chunks/node_modules__pnpm_9a8e5cd6._.js",
   "static/chunks/da540_@assistant-ui_react-markdown_styles_dot_c2f21d54.css"
 ],
     source: "dynamic"
