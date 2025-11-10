@@ -101,15 +101,12 @@
   :root, :host {
     --color-green-600: #00a544;
     --color-blue-500: #3080ff;
-    --color-blue-600: #155dfc;
     --color-gray-200: #e5e7eb;
-    --color-zinc-200: #e4e4e7;
     --color-zinc-900: #18181b;
     --color-black: #000;
     --color-white: #fff;
     --spacing: .25rem;
     --container-sm: 24rem;
-    --container-xl: 36rem;
     --container-6xl: 72rem;
     --text-xs: .75rem;
     --text-xs--line-height: calc(1 / .75);
@@ -145,9 +142,7 @@
     :root, :host {
       --color-green-600: color(display-p3 .243882 .640824 .294808);
       --color-blue-500: color(display-p3 .266422 .491219 .988624);
-      --color-blue-600: color(display-p3 .174493 .358974 .950247);
       --color-gray-200: color(display-p3 .899787 .906171 .92106);
-      --color-zinc-200: color(display-p3 .894477 .894477 .905114);
       --color-zinc-900: color(display-p3 .0937957 .093793 .104806);
     }
   }
@@ -156,9 +151,7 @@
     :root, :host {
       --color-green-600: lab(59.0978% -58.6621 41.2579);
       --color-blue-500: lab(54.1736% 13.3369 -74.6839);
-      --color-blue-600: lab(44.0605% 29.0279 -86.0352);
       --color-gray-200: lab(91.6229% -.159115 -2.26791);
-      --color-zinc-200: lab(90.6853% .399232 -1.45452);
       --color-zinc-900: lab(8.30603% .618205 -2.16572);
     }
   }
@@ -664,10 +657,6 @@
     margin-block: calc(var(--spacing) * 5);
   }
 
-  .my-8 {
-    margin-block: calc(var(--spacing) * 8);
-  }
-
   .mt-2\.5 {
     margin-top: calc(var(--spacing) * 2.5);
   }
@@ -862,10 +851,6 @@
 
   .max-w-sm {
     max-width: var(--container-sm);
-  }
-
-  .max-w-xl {
-    max-width: var(--container-xl);
   }
 
   .min-w-0 {
@@ -1112,10 +1097,6 @@
     border-color: rgba(0, 0, 0, 0);
   }
 
-  .border-zinc-200 {
-    border-color: var(--color-zinc-200);
-  }
-
   .bg-background {
     background-color: var(--background);
   }
@@ -1212,10 +1193,6 @@
     padding-inline: calc(var(--spacing) * 6);
   }
 
-  .px-8 {
-    padding-inline: calc(var(--spacing) * 8);
-  }
-
   .py-1 {
     padding-block: calc(var(--spacing) * 1);
   }
@@ -1234,10 +1211,6 @@
 
   .py-4 {
     padding-block: calc(var(--spacing) * 4);
-  }
-
-  .py-8 {
-    padding-block: calc(var(--spacing) * 8);
   }
 
   .pt-4 {
@@ -1365,10 +1338,6 @@
 
   .text-blue-500 {
     color: var(--color-blue-500);
-  }
-
-  .text-blue-600 {
-    color: var(--color-blue-600);
   }
 
   .text-destructive {
