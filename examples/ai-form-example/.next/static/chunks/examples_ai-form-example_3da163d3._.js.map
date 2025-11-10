@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/nilsjacobsen/Work/monorepo/examples/ai-form-example/lib/useLegitRuntime.ts"],"sourcesContent":["import { useChatRuntime } from '@assistant-ui/react-ai-sdk';\n\n/**\n * Temporary shim for a future Legit-aware runtime.\n * Currently just delegates to the AI SDK chat runtime.\n */\nexport function useLegitRuntime() {\n  return useChatRuntime();\n}\n"],"names":[],"mappings":";;;;AAAA;;;AAMO,SAAS;;IACd,OAAO,IAAA,ibAAc;AACvB;GAFgB;;QACP,ibAAc","debugId":null}},
+    {"offset": {"line": 27, "column": 0}, "map": {"version":3,"sources":["file:///Users/nilsjacobsen/Work/monorepo/examples/ai-form-example/app/MyRuntimeProvider.tsx"],"sourcesContent":["'use client';\n\nimport { AssistantRuntimeProvider } from '@assistant-ui/react';\n\nimport { useLegitRuntime } from '@/lib/useLegitRuntime';\n\nexport function MyRuntimeProvider({\n  children,\n}: Readonly<{\n  children: React.ReactNode;\n}>) {\n  const runtime = useLegitRuntime();\n\n  return (\n    <AssistantRuntimeProvider runtime={runtime}>\n      {children}\n    </AssistantRuntimeProvider>\n  );\n}\n"],"names":[],"mappings":";;;;;AAEA;AAEA;;;AAJA;;;AAMO,SAAS,kBAAkB,KAIhC;QAJgC,EAChC,QAAQ,EAGR,GAJgC;;IAKhC,MAAM,UAAU,IAAA,iLAAe;IAE/B,qBACE,oWAAC,4bAAwB;QAAC,SAAS;kBAChC;;;;;;AAGP;GAZgB;;QAKE,iLAAe;;;KALjB","debugId":null}}]
+}
