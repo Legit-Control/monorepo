@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { AssistantRuntimeProvider } from "@assistant-ui/react";
-import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
+import { AssistantRuntimeProvider } from '@assistant-ui/react';
+import { useChatRuntime } from '@assistant-ui/react-ai-sdk';
 
 export function MyRuntimeProvider({
   children,

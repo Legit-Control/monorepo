@@ -11,7 +11,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$assistant$2d$ui$2b$react$2d$ai$2d$sdk$40$1$2e$1$2e$9_$40$assistant$2d$ui$2b$react$40$0$2e$11$2e$37_$40$types$2b$react$2d$dom$40$19$2e$2$2e$2_$40$types$2b$r_33hphprhob62dzty3jpsbnolpm$2f$node_modules$2f40$assistant$2d$ui$2f$react$2d$ai$2d$sdk$2f$dist$2f$ui$2f$use$2d$chat$2f$useChatRuntime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/@assistant-ui+react-ai-sdk@1.1.9_@assistant-ui+react@0.11.37_@types+react-dom@19.2.2_@types+r_33hphprhob62dzty3jpsbnolpm/node_modules/@assistant-ui/react-ai-sdk/dist/ui/use-chat/useChatRuntime.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
-"use client";
+'use client';
 ;
 ;
 function MyRuntimeProvider(param) {

@@ -9,6 +9,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@legit-sdk/core": "workspace:*",
+    "memfs": "^4.11.1",
     "@ai-sdk/azure": "^2.0.66",
     "@assistant-ui/react": "^0.11.37",
     "@assistant-ui/react-ai-sdk": "^1.1.9",
