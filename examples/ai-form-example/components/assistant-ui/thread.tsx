@@ -4,8 +4,8 @@ import {
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
-} from "@assistant-ui/react";
-import type { FC } from "react";
+} from '@assistant-ui/react';
+import type { FC } from 'react';
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -15,19 +15,20 @@ import {
   PencilIcon,
   RefreshCwIcon,
   SendHorizontalIcon,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-import { Button } from "@/components/ui/button";
-import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import { Button } from '@/components/ui/button';
+import { MarkdownText } from '@/components/assistant-ui/markdown-text';
+import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button';
+import Changes from './changes';
 
 export const Thread: FC = () => {
   return (
     <ThreadPrimitive.Root
       className="bg-background box-border flex h-full flex-col overflow-hidden"
       style={{
-        ["--thread-max-width" as string]: "42rem",
+        ['--thread-max-width' as string]: '42rem',
       }}
     >
       <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-y-scroll scroll-smooth bg-inherit px-4 pt-8">
@@ -203,10 +204,9 @@ const AssistantMessage: FC = () => {
     <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
         <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
+        <Changes />
       </div>
-
       <AssistantActionBar />
-
       <BranchPicker className="col-start-2 row-start-2 -ml-2 mr-2" />
     </MessagePrimitive.Root>
   );
@@ -247,8 +247,8 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
     <BranchPickerPrimitive.Root
       hideWhenSingleBranch
       className={cn(
-        "text-muted-foreground inline-flex items-center text-xs",
-        className,
+        'text-muted-foreground inline-flex items-center text-xs',
+        className
       )}
       {...rest}
     >

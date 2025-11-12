@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk';
 
@@ -15,6 +15,7 @@ export type LegitRuntimeApi = {
   saveMessages: (messages?: readonly unknown[]) => Promise<void>;
   saveForm: (formState: Record<string, unknown>) => Promise<void>;
   getHistory: () => Promise<AuditEntry[]>;
+  getRawHistory: () => Promise<string>;
   rollback: (oid: string) => Promise<{
     messages: unknown[] | null;
     forms: Record<string, unknown> | null;
@@ -35,6 +36,7 @@ function stableStringify(value: unknown) {
 
 export function useLegitRuntime() {
   const runtime = useChatRuntime() as RuntimeWithLegit;
+  const [, forceUpdate] = useState(0);
   const legitApiRef = useRef<LegitRuntimeApi | null>(null);
   const lastMessagesHashRef = useRef<string | undefined>(undefined);
   const lastFormHashRef = useRef<string | undefined>(undefined);
@@ -83,6 +85,15 @@ export function useLegitRuntime() {
       return loadAuditTrail(context);
     };
 
+    const getRawHistory = async () => {
+      const context = await getClientLegitFs();
+      const history = await context.legitFs.promises.readFile(
+        '/.legit/branches/main/.legit/history',
+        'utf8'
+      );
+      return history;
+    };
+
     const rollback = async (oid: string) => {
       const context = await getClientLegitFs();
       const snapshot = await loadCommitSnapshot(context, oid);
@@ -103,6 +114,7 @@ export function useLegitRuntime() {
       saveMessages,
       saveForm,
       getHistory,
+      getRawHistory,
       rollback,
     };
 
@@ -112,7 +124,10 @@ export function useLegitRuntime() {
   const legitApi = ensureLegitApi();
 
   useEffect(() => {
-    runtime.__legit = legitApi;
+    if (runtime.__legit !== legitApi) {
+      runtime.__legit = legitApi;
+      forceUpdate(x => x + 1);
+    }
   }, [runtime, legitApi]);
 
   useEffect(() => {

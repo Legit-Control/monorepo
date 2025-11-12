@@ -24226,6 +24226,7 @@ function stableStringify(value) {
 }
 function useLegitRuntime() {
     const runtime = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$assistant$2d$ui$2b$react$2d$ai$2d$sdk$40$1$2e$1$2e$9_$40$assistant$2d$ui$2b$react$40$0$2e$11$2e$37_$40$types$2b$react$2d$dom$40$19$2e$2$2e$2_$40$types$2b$r_33hphprhob62dzty3jpsbnolpm$2f$node_modules$2f40$assistant$2d$ui$2f$react$2d$ai$2d$sdk$2f$dist$2f$ui$2f$use$2d$chat$2f$useChatRuntime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useChatRuntime"])();
+    const [, forceUpdate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$5$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(0);
     const legitApiRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$5$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
     const lastMessagesHashRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$5$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(undefined);
     const lastFormHashRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$5$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(undefined);
@@ -24256,6 +24257,11 @@ function useLegitRuntime() {
             const context = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$examples$2f$ai$2d$form$2d$example$2f$lib$2f$legit$2f$fs$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getClientLegitFs"])();
             return (0, __TURBOPACK__imported__module__$5b$project$5d2f$examples$2f$ai$2d$form$2d$example$2f$lib$2f$legit$2f$history$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["loadAuditTrail"])(context);
         };
+        const getRawHistory = async ()=>{
+            const context = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$examples$2f$ai$2d$form$2d$example$2f$lib$2f$legit$2f$fs$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getClientLegitFs"])();
+            const history = await context.legitFs.promises.readFile('/.legit/branches/main/.legit/history', 'utf8');
+            return history;
+        };
         const rollback = async (oid)=>{
             const context = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$examples$2f$ai$2d$form$2d$example$2f$lib$2f$legit$2f$fs$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getClientLegitFs"])();
             const snapshot = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$examples$2f$ai$2d$form$2d$example$2f$lib$2f$legit$2f$history$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["loadCommitSnapshot"])(context, oid);
@@ -24272,6 +24278,7 @@ function useLegitRuntime() {
             saveMessages,
             saveForm,
             getHistory,
+            getRawHistory,
             rollback
         };
         return legitApiRef.current;
@@ -24280,7 +24287,10 @@ function useLegitRuntime() {
     ]);
     const legitApi = ensureLegitApi();
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$15$2e$5$2e$4_$40$opentelemetry$2b$api$40$1$2e$9$2e$0_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        runtime.__legit = legitApi;
+        if (runtime.__legit !== legitApi) {
+            runtime.__legit = legitApi;
+            forceUpdate((x)=>x + 1);
+        }
     }, [
         runtime,
         legitApi
