@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"],
+      // Point to dist files for type checking (source files are used via webpack/turbopack aliases)
+      "@legit-sdk/core": ["../../packages/sdk/dist/index.d.ts"],
+      "@legit-sdk/core/*": ["../../packages/sdk/dist/*"],
+      "@legit-sdk/react": ["../../packages/sdk-react/dist/index.d.ts"],
+      "@legit-sdk/react/*": ["../../packages/sdk-react/dist/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "../../packages/sdk/src",
+    "../../packages/sdk-react/src"
+  ]
+}

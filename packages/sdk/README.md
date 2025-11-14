@@ -35,7 +35,7 @@ For this guide, we focus on **Node.js**. Later guides will cover Python, Java, a
 ### 1. Install the SDK
 
 ```bash
-npm install legit-sdk
+npm install @legit-sdk/core
 ```
 
 > This package provides everything you need: creating a LegitFS instance, reading/writing files, and accessing version history.
@@ -44,7 +44,7 @@ npm install legit-sdk
 
 ```typescript
 import { fs } from 'memfs';
-import { initLegitFs } from 'legit-sdk';
+import { initLegitFs } from '@legit-sdk/core';
 
 async function main() {
   // create a LegitFS instance backed by memfs

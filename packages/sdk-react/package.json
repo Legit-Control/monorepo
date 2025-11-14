@@ -1,0 +1,49 @@
+{
+  "name": "@legit-sdk/react",
+  "version": "0.1.9",
+  "description": "React wrapper for @legit-sdk/core",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "build": "tsc && rollup -c rollup.dts.config.js && node esbuild.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "PolyForm Noncommercial License 1.0.0",
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts"
+  ],
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^18.3.12",
+    "happy-dom": "^14.12.3",
+    "memfs": "^4.14.0",
+    "esbuild": "^0.24.0",
+    "rollup": "^4.24.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  },
+  "dependencies": {
+    "@legit-sdk/core": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "packageManager": "pnpm@10.4.1"
+}
