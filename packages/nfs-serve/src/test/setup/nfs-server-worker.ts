@@ -1,10 +1,10 @@
 // nfs-server-worker.js
 import { parentPort, workerData } from 'worker_threads';
-import { createNfs3Server } from './server.js';
+import { createNfs3Server } from '../../server.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createAsyncNfsHandler } from './createAsyncNfsHandler.js';
-import { createFileHandleManager } from './createFileHandleManager.js';
+import { createAsyncNfsHandler } from '../../createAsyncNfsHandler.js';
+import { createFileHandleManager } from '../../createFileHandleManager.js';
 
 // Extract configuration from workerData
 const { port, nfsPath } = workerData as { port: number; nfsPath: string };
