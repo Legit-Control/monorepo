@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/martinlysk/legit/monorepo-private/**)",
+      "Bash(pnpm install)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

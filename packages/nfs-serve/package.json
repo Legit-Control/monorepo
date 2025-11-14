@@ -1,0 +1,33 @@
+{
+  "name": "@legit/nfs-serve",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node  --loader ts-node/esm --inspect ./node_modules/vite-node/dist/cli.mjs --watch src/vite.ts",
+    "build": "tsc --build",
+    "build:watch": "tsc --build --watch",
+    "test:watch": "vitest --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.4.1",
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "ts-node": "^10.9.2",
+    "vite": "^6.2.5",
+    "vite-node": "^3.1.1",
+    "vite-plugin-commonjs": "^0.10.4",
+    "vitest": "^3.1.1"
+  },
+  "dependencies": {
+    "typescript": "^5.8.3"
+  }
+}
