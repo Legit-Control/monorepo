@@ -308,7 +308,10 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     const parsed = this.getRouteHandler(filePath);
     if (!parsed) throw new Error('Not a virtual legit file');
     const isWritable = parsed?.handler.writeFile !== undefined;
-    if (!isWritable && (flags.includes('w') || flags.includes('a'))) {
+    if (
+      !isWritable &&
+      (flags.includes('w') || flags.includes('a') || flags.includes('r+'))
+    ) {
       throw new Error(
         `Write operations not allowed for ${parsed?.handler.type}`
       );
@@ -518,6 +521,10 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     if (!openFh) {
       throw new Error('Invalid file handle');
     }
+    openFh.unflushed.push({
+      start: 0,
+      length: 0,
+    });
     return await openFh.fh.truncate(len);
   }
 
