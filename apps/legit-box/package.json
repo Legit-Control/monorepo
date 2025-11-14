@@ -1,0 +1,61 @@
+{
+  "name": "legit-box",
+  "version": "1.0.0",
+  "description": "An Electron application with React and TypeScript",
+  "main": "./out/main/index.js",
+  "author": "example.com",
+  "homepage": "https://electron-vite.org",
+  "scripts": {
+    "format": "prettier --write .",
+    "lint": "eslint --cache .",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "start": "electron-vite preview",
+    "dev": "electron-vite dev --inspect=5555 --sourcemap",
+    "build": "npm run typecheck && electron-vite build",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac_extension": "xcodebuild -workspace ../../packages/MacOsXFinderExtensions/legit-box.xcodeproj/project.xcworkspace -scheme \"legit-box Extension\" -configuration Debug && BUILD_DIR=$(xcodebuild -workspace ../../packages/MacOsXFinderExtensions/legit-box.xcodeproj/project.xcworkspace -scheme \"legit-box Extension\" -configuration Debug -showBuildSettings | grep -m 1 'CONFIGURATION_BUILD_DIR' | sed 's/.*= //') && echo $BUILD_DIR && rm -rf ./includes/mac/universal/PlugIns/* && cp -r \"$BUILD_DIR/legit-box Extension.appex\" ./includes/mac/universal/PlugIns",
+    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "build:mac_extension_build_only": "xcodebuild -workspace ../../packages/MacOsXFinderExtensions/legit-box.xcodeproj/project.xcworkspace -scheme \"legit-box Extension\" -configuration Debug"
+  },
+  "dependencies": {
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^4.0.0",
+    "@legit-sdk/core": "workspace:*",
+    "@legit/nfs-serve": "workspace:*",
+    "@tailwindcss/postcss": "^4",
+    "isomorphic-git": "^1.30.1",
+    "memfs": "^4.14.0",
+    "spyfs": "^1.0.2"
+  },
+  "devDependencies": {
+    "@electron-toolkit/eslint-config-prettier": "^3.0.0",
+    "@electron-toolkit/eslint-config-ts": "^3.0.0",
+    "@electron-toolkit/tsconfig": "^1.0.1",
+    "@types/node": "22.14.1",
+    "@types/react": "^19.1.1",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.15",
+    "electron-vite": "^4.0.0",
+    "eslint": "^9.24.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "prettier": "^3.5.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.2.6"
+  },
+  "onlyBuiltDependencies": [
+    "electron",
+    "esbuild"
+  ]
+}
