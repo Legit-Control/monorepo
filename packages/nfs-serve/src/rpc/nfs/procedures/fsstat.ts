@@ -61,6 +61,14 @@ export async function fsstat(
     const handle = readHandle(data);
     console.log(`FSSTAT request: handle=${handle.toString("hex")}`);
 
+    // Check if handle contains only zeros (invalid handle)
+    const isZeroHandle = handle.every(byte => byte === 0);
+    if (isZeroHandle) {
+      console.error("Invalid handle: contains only zeros");
+      sendNfsError(socket, xid, nfsstat3.ERR_BADHANDLE);
+      return;
+    }
+
     const result = await fsstatHandler(handle);
 
     if (result.status !== 0) {

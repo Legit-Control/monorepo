@@ -82,21 +82,22 @@ export const createAsyncNfsHandler = (args: {
 
   return {
     mount: async _dirPath => {
+      // NOTE _dirPath is the path used for mounting - for now only / later we can use this to specify the path to serve
+
       console.log('Mount handler called');
 
-      const rootPath = fileHandleManager.getPathFromHandle(Buffer.alloc(0))!;
-      console.log(`Root path: ${rootPath}`);
-
       // Check if the directory exists
-      if (!(await fileExists(rootPath))) {
-        console.error(`Directory not found: ${rootPath}`);
+      if (!(await fileExists(fileHandleManager.rootPath))) {
+        console.error(`Directory not found: ${fileHandleManager.rootPath}`);
         return {
           status: nfsstat3.ERR_NOENT,
         };
       }
 
       // add the root folder handle
-      const rootFolderHandle = fileHandleManager.getHandleByPath(rootPath)!;
+      const rootFolderHandle = fileHandleManager.getHandleByPath(
+        fileHandleManager.rootPath
+      )!;
       return {
         status: nfsstat3.OK,
         fileHandle: rootFolderHandle.nfsHandle,
@@ -1277,7 +1278,7 @@ export const createAsyncNfsHandler = (args: {
       }
 
       // TODO proper dir check
-      if (fsHandle.readFile === undefined) {
+      if (fsHandle.read === undefined) {
         return {
           status: 21, // NFS3ERR_ISDIR
         };

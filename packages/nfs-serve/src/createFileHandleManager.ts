@@ -16,7 +16,6 @@ export const createFileHandleManager = (
 ) => {
   let currentFileHandle = startingHandle;
   const nfsHandleToFsHandle = new Map<string, FsHandleEntry>();
-  const rootNfsHandle = Buffer.alloc(64).toString('hex');
 
   const rootFsHandle: FsHandleEntry = {
     pathSegment: '',
@@ -25,10 +24,17 @@ export const createFileHandleManager = (
     parentNfsHandle: null,
   };
 
-  nfsHandleToFsHandle.set(rootNfsHandle, rootFsHandle);
+  const rootHandle = currentFileHandle.toString(16).padStart(128, '0');
+  currentFileHandle++;
+  nfsHandleToFsHandle.set(rootHandle, rootFsHandle);
+  const rootNfsHandle = rootHandle;
 
   const isRootHandle = (handle: Buffer): boolean => {
-    return handle.length === 0 || handle.every(byte => byte === 0);
+    const handleHex = handle.toString('hex');
+    if (handleHex === rootNfsHandle) {
+      return true;
+    }
+    return false;
   };
 
   const getPathFromHandle = (handle: Buffer): string | null => {
@@ -62,6 +68,7 @@ export const createFileHandleManager = (
   };
 
   const fileHandleManager = {
+    rootPath,
     getPathFromHandle,
 
     getHandle(parentHandle: Buffer) {
