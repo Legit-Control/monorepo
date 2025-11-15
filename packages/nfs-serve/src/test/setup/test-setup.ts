@@ -16,6 +16,8 @@ const MOUNT_POINT = path.join(PROJECT_ROOT, 'testdata', 'testmount');
 const SERVE_POINT = path.join(PROJECT_ROOT, 'testdata', 'testserve');
 const MOUNT_COMMAND = `mount_nfs -o soft,timeo=5,retrans=2,nolocks,vers=3,tcp,rsize=131072,actimeo=120,port=${NFS_PORT},mountport=${NFS_PORT} localhost:/ ${MOUNT_POINT}`;
 
+let nfsServer: ReturnType<typeof createNfs3Server> | null = null;
+
 const startNfsServer = async () => {
   const fhM = createFileHandleManager(
     SERVE_POINT,
@@ -27,22 +29,13 @@ const startNfsServer = async () => {
     asyncFs: fs.promises,
   });
 
-  const nfsServer = createNfs3Server(asyncHandlers);
+  nfsServer = createNfs3Server(asyncHandlers);
 
   nfsServer.listen(NFS_PORT, () => {
     console.log(
       `NFS server listening on port ${NFS_PORT} for path ${SERVE_POINT}`
     );
   });
-
-  // parentPort?.on('message', msg => {
-  //   if (msg === 'close') {
-  //     console.log('Closing NFS server...');
-  //     nfsServer.close(() => {
-  //       parentPort?.postMessage({ type: 'closed' });
-  //     });
-  //   }
-  // });
 };
 
 export default async function () {
@@ -80,6 +73,8 @@ export default async function () {
       if (mountOutput.stdout.includes(MOUNT_POINT)) {
         throw new Error('Unmount failed');
       }
+
+      nfsServer?.close();
 
       // Ignore unmount errors
       console.log('Unmount error (expected if not mounted)');

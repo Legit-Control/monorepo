@@ -25,40 +25,17 @@ afterAll(async () => {
 
 it('should work with two parallel mounts', async () => {
   try {
-    await new Promise(resolve => process.nextTick(resolve));
-
-    // const MOUNT_COMMAND = `mount_nfs -o soft,timeo=5,retrans=2,nolocks,vers=3,tcp,rsize=131072,actimeo=120,port=${NFS_PORT},mountport=${NFS_PORT} localhost:/ ${MOUNT_POINT}`;
-    // await execAsync(MOUNT_COMMAND);
-
-    const sstats = fs.statSync(MOUNT_POINT);
-
-    const dir = fs.opendirSync(MOUNT_POINT);
-    dir.closeSync(); // close old handle
-    const newDir = fs.opendirSync(MOUNT_POINT); // reopen after mount
     fs.readdirSync(MOUNT_POINT);
-
-    // Attempt the mount
-
-    // Check if mount was successful
-
-    // Create a test file to verify write access
     const testFile = path.join(MOUNT_POINT, 'test-file.txt');
+
     const testContent = 'Test content ' + Date.now();
-    const stat = await fs.promises.stat(MOUNT_POINT);
-    const rootDirContent = await fs.promises.readdir(
-      '/Users/martinlysk/legit/monorepo-private/packages/nfs-serve',
-      {
-        withFileTypes: true,
-      }
-    );
-    console.log('Root directory content:', rootDirContent);
     await fs.promises.writeFile(testFile, testContent);
-
     expect(await fs.promises.readFile(testFile, 'utf8')).toBe(testContent);
-
-    // Clean up test file
-    await fs.promises.unlink(testFile);
   } catch (err) {
+    // If you get an error here -this might be due to missing permissions for
+    // mounting NFS shares on your system. On macOS, you can grant the terminal
+    // or IDE full disk access in System Preferences > Security & Privacy >
+    // Privacy > Full Disk Access.
     console.error('Mount test failed:', err);
     throw err;
   }
