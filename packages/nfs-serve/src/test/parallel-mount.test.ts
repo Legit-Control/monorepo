@@ -1,13 +1,36 @@
-import { expect, it } from 'vitest';
+import { afterAll, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'node:util';
+import child_process, { spawn } from 'node:child_process';
+
+const execAsync = promisify(child_process.exec);
 
 const PROJECT_ROOT = path.resolve(__dirname, 'setup');
 const MOUNT_POINT = path.join(PROJECT_ROOT, 'testdata', 'testmount');
 
-it('should successfully mount NFS share', async () => {
+const NFS_PORT = 12345;
+
+afterAll(async () => {
+  try {
+    // Unmount if mounted
+    await execAsync(`umount ${MOUNT_POINT}`);
+  } catch (e) {
+    const mountOutput = await execAsync('mount');
+    if (mountOutput.stdout.includes(MOUNT_POINT)) {
+      console.error('Error during cleanup: ', e);
+    }
+  }
+});
+
+it('should work with two parallel mounts', async () => {
   try {
     await new Promise(resolve => process.nextTick(resolve));
+
+    // const MOUNT_COMMAND = `mount_nfs -o soft,timeo=5,retrans=2,nolocks,vers=3,tcp,rsize=131072,actimeo=120,port=${NFS_PORT},mountport=${NFS_PORT} localhost:/ ${MOUNT_POINT}`;
+    // await execAsync(MOUNT_COMMAND);
+
+    const sstats = fs.statSync(MOUNT_POINT);
 
     const dir = fs.opendirSync(MOUNT_POINT);
     dir.closeSync(); // close old handle
