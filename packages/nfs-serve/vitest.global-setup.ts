@@ -4,19 +4,14 @@ import child_process, { spawn } from 'node:child_process';
 import * as path from 'path';
 
 import * as fs from 'fs';
-import { createAsyncNfsHandler } from '../../createAsyncNfsHandler.js';
-import { createNfs3Server } from '../../server.js';
-import { createFileHandleManager } from '../../createFileHandleManager.js';
+import { createAsyncNfsHandler } from './src/createAsyncNfsHandler.js';
+import { createNfs3Server } from './src/server.js';
+import { createFileHandleManager } from './src/createFileHandleManager.js';
 const server = require('net').createServer();
 
 const execAsync = promisify(child_process.exec);
 
 const NFS_PORT = 12345;
-const PROJECT_ROOT = path.resolve(__dirname);
-const MOUNT_POINT = path.join(PROJECT_ROOT, 'testdata', 'testmount');
-
-const SERVE_POINT = path.join(PROJECT_ROOT, 'testdata', 'testserve');
-const MOUNT_COMMAND = `mount_nfs -o soft,timeo=5,retrans=2,nolocks,vers=3,tcp,rsize=131072,actimeo=120,port=${NFS_PORT},mountport=${NFS_PORT} localhost:/ ${MOUNT_POINT}`;
 
 let nfsServer: ReturnType<typeof createNfs3Server> | null = null;
 let runOnce = false;
@@ -24,25 +19,30 @@ let runOnce = false;
 declare module 'vitest' {
   export interface ProvidedContext {
     mountpoint: string;
+    servepoint: string;
   }
 }
 
 export default async function (project: TestProject) {
   // Probe for 2 seconds if port is in use
-  const startTime = Date.now();
-  while (Date.now() - startTime < 2000) {
-    if (await isPortInUse(NFS_PORT)) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    } else {
-      break;
-    }
-  }
+  await waitForPort(NFS_PORT, 2000);
 
-  if (await isPortInUse(NFS_PORT)) {
-    throw new Error(`Port ${NFS_PORT} is still in use after 2 seconds`);
-  }
-
+  const PROJECT_ROOT = path.resolve(__dirname);
+  const MOUNT_POINT = path.join(PROJECT_ROOT, 'testdata', 'testmount');
   project.provide('mountpoint', MOUNT_POINT);
+
+  const SERVE_POINT = path.join(PROJECT_ROOT, 'testdata', 'testserve');
+  project.provide('servepoint', SERVE_POINT);
+
+  // Ensure directories exist
+  if (!fs.existsSync(MOUNT_POINT)) {
+    fs.mkdirSync(MOUNT_POINT, { recursive: true });
+  }
+
+  if (!fs.existsSync(SERVE_POINT)) {
+    fs.mkdirSync(SERVE_POINT, { recursive: true });
+  }
+
   // if the test was killed (happens during development), we want to make sure
   // we remove orphaned mounts
   try {
@@ -52,9 +52,10 @@ export default async function (project: TestProject) {
   if (runOnce) {
     return;
   }
-  // sstart the NFS server
+
+  // Start the NFS server
   try {
-    await startNfsServer();
+    await startNfsServer(SERVE_POINT);
   } catch (err) {
     console.error('Error during NFS test environment setup:', err);
     throw err;
@@ -62,7 +63,9 @@ export default async function (project: TestProject) {
 
   // Mount the NFS share
   try {
-    const result = await execAsync(MOUNT_COMMAND, { maxBuffer: 1024 * 1024 });
+    const MOUNT_COMMAND = `mount_nfs -o soft,timeo=5,retrans=2,nolocks,vers=3,tcp,rsize=131072,actimeo=120,port=${NFS_PORT},mountport=${NFS_PORT} localhost:/ ${MOUNT_POINT}`;
+
+    await execAsync(MOUNT_COMMAND, { maxBuffer: 1024 * 1024 });
   } catch (err) {
     console.error('Error during NFS test environment setup:', err);
     throw err;
@@ -109,9 +112,9 @@ export default async function (project: TestProject) {
   };
 }
 
-const startNfsServer = async () => {
+const startNfsServer = async (servePoint: string) => {
   const fhM = createFileHandleManager(
-    SERVE_POINT,
+    servePoint,
     Math.floor(Date.now() / 1000 - 25 * 365.25 * 24 * 60 * 60) * 1000000
   );
 
@@ -124,9 +127,21 @@ const startNfsServer = async () => {
 
   nfsServer.listen(NFS_PORT, () => {
     console.log(
-      `NFS server listening on port ${NFS_PORT} for path ${SERVE_POINT}`
+      `NFS server listening on port ${NFS_PORT} for path ${servePoint}`
     );
   });
+};
+
+const waitForPort = async (port: number, timeoutMs: number) => {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const inUse = await isPortInUse(port);
+    if (!inUse) {
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw new Error(`Timeout waiting for port ${port} to be in use`);
 };
 
 // Check if port is already in use
