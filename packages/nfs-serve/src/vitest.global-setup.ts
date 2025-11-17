@@ -5,9 +5,9 @@ import child_process, { spawn } from 'node:child_process';
 import * as path from 'path';
 
 import * as fs from 'fs';
-import { createAsyncNfsHandler } from './src/createAsyncNfsHandler.js';
-import { createNfs3Server } from './src/server.js';
-import { createFileHandleManager } from './src/createFileHandleManager.js';
+import { createAsyncNfsHandler } from './createAsyncNfsHandler.js';
+import { createNfs3Server } from './server.js';
+import { createFileHandleManager } from './createFileHandleManager.js';
 
 const execAsync = promisify(child_process.exec);
 

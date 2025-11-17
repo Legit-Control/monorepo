@@ -183,7 +183,9 @@ describe('State & Persistence Tests', () => {
 
       // Read and verify final state
       const finalContent = await fs.promises.readFile(filePath, 'utf8');
-      expect(finalContent).toBe(initialContent + '\nAppended line 1\nAppended line 2\nAppended line 3');
+      expect(finalContent).toBe(
+        initialContent + '\nAppended line 1\nAppended line 2\nAppended line 3'
+      );
 
       // Verify file stats are consistent
       const stats = await fs.promises.stat(filePath);
@@ -208,7 +210,7 @@ describe('State & Persistence Tests', () => {
 
       const [result1, result2] = await Promise.all([
         fd1.read(buffer1, 0, content.length, 0),
-        fd2.read(buffer2, 0, content.length, 0)
+        fd2.read(buffer2, 0, content.length, 0),
       ]);
 
       expect(buffer1.toString('utf8')).toBe(content);
@@ -289,7 +291,7 @@ describe('State & Persistence Tests', () => {
 
       // Simulate a partial write by writing at an offset
       const fd = await fs.promises.open(filePath, 'r+');
-      await fd.write('PARTIAL', 0, 7, 10);
+      await fd.write(Buffer.from('PARTIAL'), 0, 7, 10);
       await fd.close();
 
       // Read back and verify the partial write
@@ -479,7 +481,7 @@ describe('State & Persistence Tests', () => {
 
       // Write new content
       const newContent = 'New handle state content';
-      await fd.write(newContent, 0, newContent.length, 0);
+      await fd.write(Buffer.from(newContent), 0, newContent.length, 0);
 
       // Read back new content
       result = await fd.read(buffer, 0, newContent.length, 0);

@@ -244,8 +244,8 @@ describe('Directory Operations', () => {
         withFileTypes: true,
       });
       expect(contents).toHaveLength(1);
-      expect(contents[0].name).toBe('attr-file.txt');
-      expect(contents[0].isFile()).toBe(true);
+      expect(contents[0]!.name).toBe('attr-file.txt');
+      expect(contents[0]!.isFile()).toBe(true);
 
       await fs.promises.unlink(filePath);
       await fs.promises.rmdir(dirPath);

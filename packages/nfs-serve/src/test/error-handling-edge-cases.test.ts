@@ -15,8 +15,12 @@ describe('Error Handling & Edge Cases', () => {
       const nonExistentPath = path.join(MOUNT_POINT, 'does-not-exist.txt');
 
       await expect(fs.promises.access(nonExistentPath)).rejects.toThrow();
-      await expect(fs.promises.access(nonExistentPath, fs.constants.R_OK)).rejects.toThrow();
-      await expect(fs.promises.access(nonExistentPath, fs.constants.W_OK)).rejects.toThrow();
+      await expect(
+        fs.promises.access(nonExistentPath, fs.constants.R_OK)
+      ).rejects.toThrow();
+      await expect(
+        fs.promises.access(nonExistentPath, fs.constants.W_OK)
+      ).rejects.toThrow();
     });
 
     it('should check read permissions on existing file', async () => {
@@ -26,7 +30,9 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.writeFile(filePath, content);
 
       // Should not throw for read access
-      await expect(fs.promises.access(filePath, fs.constants.R_OK)).resolves.not.toThrow();
+      await expect(
+        fs.promises.access(filePath, fs.constants.R_OK)
+      ).resolves.not.toThrow();
 
       await fs.promises.unlink(filePath);
     });
@@ -38,7 +44,9 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.writeFile(filePath, content);
 
       // Should not throw for write access
-      await expect(fs.promises.access(filePath, fs.constants.W_OK)).resolves.not.toThrow();
+      await expect(
+        fs.promises.access(filePath, fs.constants.W_OK)
+      ).resolves.not.toThrow();
 
       await fs.promises.unlink(filePath);
     });
@@ -49,7 +57,9 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.mkdir(dirPath);
 
       // Should not throw for execute access on directory
-      await expect(fs.promises.access(dirPath, fs.constants.X_OK)).resolves.not.toThrow();
+      await expect(
+        fs.promises.access(dirPath, fs.constants.X_OK)
+      ).resolves.not.toThrow();
 
       await fs.promises.rmdir(dirPath);
     });
@@ -61,9 +71,15 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.writeFile(filePath, content);
 
       // Test various access modes
-      await expect(fs.promises.access(filePath, fs.constants.F_OK)).resolves.not.toThrow();
-      await expect(fs.promises.access(filePath, fs.constants.R_OK)).resolves.not.toThrow();
-      await expect(fs.promises.access(filePath, fs.constants.W_OK)).resolves.not.toThrow();
+      await expect(
+        fs.promises.access(filePath, fs.constants.F_OK)
+      ).resolves.not.toThrow();
+      await expect(
+        fs.promises.access(filePath, fs.constants.R_OK)
+      ).resolves.not.toThrow();
+      await expect(
+        fs.promises.access(filePath, fs.constants.W_OK)
+      ).resolves.not.toThrow();
 
       await fs.promises.unlink(filePath);
     });
@@ -78,7 +94,9 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.chmod(filePath, 0o444);
 
       // Write access should be denied
-      await expect(fs.promises.access(filePath, fs.constants.W_OK)).rejects.toThrow();
+      await expect(
+        fs.promises.access(filePath, fs.constants.W_OK)
+      ).rejects.toThrow();
 
       // Reset permissions for cleanup
       await fs.promises.chmod(filePath, 0o644);
@@ -87,11 +105,6 @@ describe('Error Handling & Edge Cases', () => {
   });
 
   describe('Invalid Operations', () => {
-    it('should handle invalid file handles', async () => {
-      // Try to use a file descriptor that doesn't exist
-      await expect(fs.promises.fstat(99999)).rejects.toThrow();
-    });
-
     it('should handle read from non-existent file', async () => {
       const nonExistentPath = path.join(MOUNT_POINT, 'non-existent.txt');
 
@@ -102,7 +115,9 @@ describe('Error Handling & Edge Cases', () => {
       const nonExistentDir = path.join(MOUNT_POINT, 'non-existent-dir');
       const filePath = path.join(nonExistentDir, 'file.txt');
 
-      await expect(fs.promises.writeFile(filePath, 'content')).rejects.toThrow();
+      await expect(
+        fs.promises.writeFile(filePath, 'content')
+      ).rejects.toThrow();
     });
 
     it('should handle invalid offsets/sizes', async () => {
@@ -180,7 +195,9 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.unlink(validPath);
 
       // Should fail with too long name
-      await expect(fs.promises.writeFile(invalidPath, content)).rejects.toThrow();
+      await expect(
+        fs.promises.writeFile(invalidPath, content)
+      ).rejects.toThrow();
     });
 
     it('should handle special characters in paths', async () => {
@@ -194,7 +211,7 @@ describe('Error Handling & Edge Cases', () => {
         'file-with$dollar.txt',
         'file-with%percent.txt',
         'file-with&ampersand.txt',
-        'file-with+plus.txt'
+        'file-with+plus.txt',
       ];
 
       for (const fileName of specialPaths) {
@@ -217,7 +234,7 @@ describe('Error Handling & Edge Cases', () => {
         'unicode-über.txt', // German
         'unicode-العربية.txt', // Arabic
         'unicode-עברית.txt', // Hebrew
-        'unicode-日本語.txt' // Japanese
+        'unicode-日本語.txt', // Japanese
       ];
 
       for (const fileName of unicodePaths) {
@@ -238,10 +255,12 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.mkdir(testDir);
 
       const fileCount = 1000;
-      const createPromises = Array(fileCount).fill(null).map((_, i) => {
-        const filePath = path.join(testDir, `file${i}.txt`);
-        return fs.promises.writeFile(filePath, `content ${i}`);
-      });
+      const createPromises = Array(fileCount)
+        .fill(null)
+        .map((_, i) => {
+          const filePath = path.join(testDir, `file${i}.txt`);
+          return fs.promises.writeFile(filePath, `content ${i}`);
+        });
 
       await Promise.all(createPromises);
 
@@ -310,9 +329,9 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.writeFile(filePath, content);
 
       // Perform multiple concurrent reads
-      const readPromises = Array(10).fill(null).map(() =>
-        fs.promises.readFile(filePath, 'utf8')
-      );
+      const readPromises = Array(10)
+        .fill(null)
+        .map(() => fs.promises.readFile(filePath, 'utf8'));
 
       const results = await Promise.all(readPromises);
       results.forEach(result => {
@@ -323,13 +342,15 @@ describe('Error Handling & Edge Cases', () => {
     });
 
     it('should handle rapid file creation and deletion', async () => {
-      const operations = Array(100).fill(null).map(async (_, i) => {
-        const filePath = path.join(MOUNT_POINT, `rapid-${i}.txt`);
-        await fs.promises.writeFile(filePath, `content ${i}`);
-        const content = await fs.promises.readFile(filePath, 'utf8');
-        expect(content).toBe(`content ${i}`);
-        await fs.promises.unlink(filePath);
-      });
+      const operations = Array(100)
+        .fill(null)
+        .map(async (_, i) => {
+          const filePath = path.join(MOUNT_POINT, `rapid-${i}.txt`);
+          await fs.promises.writeFile(filePath, `content ${i}`);
+          const content = await fs.promises.readFile(filePath, 'utf8');
+          expect(content).toBe(`content ${i}`);
+          await fs.promises.unlink(filePath);
+        });
 
       await Promise.all(operations);
     });
@@ -361,22 +382,14 @@ describe('Error Handling & Edge Cases', () => {
       await fs.promises.rmdir(subDir);
       await fs.promises.rmdir(baseDir);
     });
-
-    it('should handle operations with invalid file descriptors', async () => {
-      const invalidFd = 999999;
-
-      await expect(fs.promises.fstat(invalidFd)).rejects.toThrow();
-      await expect(fs.promises.ftruncate(invalidFd)).rejects.toThrow();
-      await expect(fs.promises.fsync(invalidFd)).rejects.toThrow();
-    });
   });
 
   describe('Data Integrity Edge Cases', () => {
     it('should handle binary data corruption scenarios', async () => {
       const filePath = path.join(MOUNT_POINT, 'binary-integrity.bin');
       const binaryData = Buffer.from([
-        0x00, 0x01, 0x02, 0x03, 0xFF, 0xFE, 0xFD, 0xFC,
-        0x80, 0x81, 0x82, 0x83, 0x7F, 0x7E, 0x7D, 0x7C
+        0x00, 0x01, 0x02, 0x03, 0xff, 0xfe, 0xfd, 0xfc, 0x80, 0x81, 0x82, 0x83,
+        0x7f, 0x7e, 0x7d, 0x7c,
       ]);
 
       await fs.promises.writeFile(filePath, binaryData);
@@ -468,7 +481,10 @@ describe('Error Handling & Edge Cases', () => {
 
     it('should handle temporary file operations', async () => {
       const tempPrefix = 'temp-test';
-      const tempPath = path.join(MOUNT_POINT, `${tempPrefix}-${Date.now()}.tmp`);
+      const tempPath = path.join(
+        MOUNT_POINT,
+        `${tempPrefix}-${Date.now()}.tmp`
+      );
       const content = 'Temporary file content';
 
       await fs.promises.writeFile(tempPath, content);

@@ -311,6 +311,7 @@ describe('Advanced File Operations', () => {
         await fs.promises.unlink(linkFile);
       } catch (error) {
         // If it fails, that's expected for cross-device links
+        // @ts-ignore
         expect(error.message).toContain('cross-device');
       }
 

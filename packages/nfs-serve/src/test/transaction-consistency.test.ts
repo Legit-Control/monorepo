@@ -97,7 +97,9 @@ describe('Transaction & Consistency Tests', () => {
       await fd.close();
 
       const finalContent = await fs.promises.readFile(filePath, 'utf8');
-      expect(finalContent).toBe('Initial content\nFirst addition\nSecond addition\nThird addition\n');
+      expect(finalContent).toBe(
+        'Initial content\nFirst addition\nSecond addition\nThird addition\n'
+      );
 
       await fs.promises.unlink(filePath);
     });
@@ -290,7 +292,7 @@ describe('Transaction & Consistency Tests', () => {
 
       const [result1, result2] = await Promise.all([
         fd1.read(buffer1, 0, content.length, 0),
-        fd2.read(buffer2, 0, content.length, 0)
+        fd2.read(buffer2, 0, content.length, 0),
       ]);
 
       expect(result1.bytesRead).toBe(content.length);
@@ -322,7 +324,7 @@ describe('Transaction & Consistency Tests', () => {
       for (let i = 0; i < 5; i++) {
         const offset = i * 100;
         const data = String.fromCharCode(65 + i).repeat(50); // A, B, C, D, E
-        operations.push(fd.write(data, 0, data.length, offset));
+        operations.push(fd.write(Buffer.from(data), 0, data.length, offset));
       }
       operations.push(fd.close());
 
@@ -361,7 +363,9 @@ describe('Transaction & Consistency Tests', () => {
 
       // Read multiple times to verify atomicity
       const reads = await Promise.all(
-        Array(10).fill(null).map(() => fs.promises.readFile(filePath, 'utf8'))
+        Array(10)
+          .fill(null)
+          .map(() => fs.promises.readFile(filePath, 'utf8'))
       );
 
       reads.forEach(read => {
