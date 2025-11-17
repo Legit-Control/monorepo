@@ -1169,7 +1169,7 @@ export const createAsyncNfsHandler = (args: {
 
       if (fsHandle === undefined) {
         const path = fileHandleManager.getPathFromHandle(handle)!;
-        fsHandle = await asyncFs.open(path, 'r+');
+        fsHandle = await asyncFs.open(path, 'a+');
       }
 
       if (!fsHandle) {

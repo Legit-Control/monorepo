@@ -257,8 +257,8 @@ export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
       // TODO only reference the branch commit if the commit has changed since last operation commit referencing the branch commit
       parent: branchUnchanged
         ? firstOperation
-          ? [branchCommit, branchCommit]
-          : [operationBranchCommit]
+          ? [branchCommit, branchCommit] // use the branch commit twice to indicate the first operation
+          : [operationBranchCommit] 
         : [operationBranchCommit, branchCommit],
       author: {
         name: 'GitLegitFs',
