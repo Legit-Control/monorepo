@@ -1,26 +1,35 @@
 import { azure } from '@ai-sdk/azure';
 import { frontendTools } from '@assistant-ui/react-ai-sdk';
 import { streamText } from 'ai';
-import { streamTextToDataStreamResponse } from '@/lib/streamTextToDataStream';
+import {
+  convertMessagesToModelMessages,
+  streamTextToDataStreamResponse,
+  type UIMessage,
+} from '@/lib/customConverters';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   const payload = await req.json();
-  const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+  const uiMessages: UIMessage[] = Array.isArray(payload?.messages)
+    ? payload.messages
+    : [];
   const system = payload?.system;
   const tools = payload?.tools;
 
-  console.log('messages', JSON.stringify(messages, null, 2));
-
   try {
+    const toolDefinitions = {
+      ...frontendTools(tools ?? {}),
+    };
+    const modelMessages =
+      // TODO: This is a temporary solution to convert the UI messages to model messages.
+      uiMessages.length > 0 ? convertMessagesToModelMessages(uiMessages) : [];
+
     const result = streamText({
       model: azure('gpt-4o'),
-      messages: messages,
+      messages: modelMessages,
       system,
-      tools: {
-        ...frontendTools(tools ?? {}),
-      },
+      tools: toolDefinitions,
       onError: console.error,
       onFinish: () => console.log('Stream finished cleanly'),
     });
