@@ -1,12 +1,12 @@
-import * as net from "net";
+import * as net from 'net';
 
-import fs from "fs";
-import { createRpcReply } from "../../createRpcReply.js";
-import { sendNfsError } from "../sendNfsError.js";
-import { readHandle } from "./util/readHandle.js";
-import { createSuccessHeader } from "./util/createSuccessHeader.js";
-import { nfsstat3 } from "./errors.js";
-import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
+import fs from 'fs';
+import { createRpcReply } from '../../createRpcReply.js';
+import { sendNfsError } from '../sendNfsError.js';
+import { readHandle } from './util/readHandle.js';
+import { createSuccessHeader } from './util/createSuccessHeader.js';
+import { nfsstat3 } from './errors.js';
+import { getAttributeBuffer } from './util/getAttributeBuffer.js';
 
 // Simple type for NFS SETATTR attributes
 interface SetAttrParams {
@@ -39,7 +39,7 @@ export type SetAttrResult =
 export type SetAttrHandler = (
   handle: Buffer,
   attributes: SetAttrParams,
-  guardCtime?: Date,
+  guardCtime?: Date
 ) => Promise<SetAttrResult>;
 
 /**
@@ -59,10 +59,10 @@ export async function setattr(
   xid: number,
   socket: net.Socket,
   data: Buffer,
-  setAttrHandler: SetAttrHandler,
+  setAttrHandler: SetAttrHandler
 ): Promise<void> {
   try {
-    console.log("NFS SETATTR procedure");
+    console.log('NFS SETATTR procedure');
 
     // Read the file handle from the data
     const handle = readHandle(data);
@@ -101,15 +101,25 @@ export async function setattr(
       offset += 4;
     }
 
-    const size =
+    const size64 =
       data.readUInt32BE(offset) === 1
-        ? data.readUInt32BE(offset + 4)
+        ? data.readBigUInt64BE(offset + 4)
         : undefined;
-    if (size !== undefined) {
-      offset += 8;
+    if (size64 !== undefined) {
+      offset += 12;
     } else {
       offset += 4;
     }
+
+    const size =
+      size64 !== undefined
+        ? (() => {
+            if (size64 > 0x7fffffff) {
+              throw new Error('File size exceeds maximum supported size (2GB)');
+            }
+            return Number(size64);
+          })()
+        : undefined;
 
     const atimeSeconds =
       data.readUInt32BE(offset) === 2
@@ -163,7 +173,7 @@ export async function setattr(
       guardCheck === 1
         ? new Date(
             data.readUInt32BE(offset) * 1000 +
-              data.readUInt32BE(offset + 4) / 1e6,
+              data.readUInt32BE(offset + 4) / 1e6
           )
         : undefined;
     offset += guardCheck === 1 ? 8 : 0;
@@ -173,7 +183,7 @@ export async function setattr(
     const result = await setAttrHandler(handle, attrs, guardCtime);
 
     if (result.status !== 0) {
-      console.error("Error setting attributes:", result);
+      console.error('Error setting attributes:', result);
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -207,9 +217,9 @@ export async function setattr(
 
     // Send the reply
     socket.write(reply);
-    console.log("Sent SETATTR reply");
+    console.log('Sent SETATTR reply');
   } catch (err) {
-    console.error("Error handling SETATTR request:", err);
+    console.error('Error handling SETATTR request:', err);
     sendNfsError(socket, xid, 10006); // NFS3ERR_SERVERFAULT
   }
 }
