@@ -12,11 +12,11 @@ if (!globalThis.defined) {
 
 // hooks are reset before each suite
 beforeAll(() => {
-  const MOUNT_POINT = inject('mountpoint');
+  const SERVE_POINT = inject('servepoint');
 
-  const files = fs.readdirSync(MOUNT_POINT);
+  const files = fs.readdirSync(SERVE_POINT);
   for (const file of files) {
-    const filePath = path.join(MOUNT_POINT, file);
+    const filePath = path.join(SERVE_POINT, file);
     const stat = fs.statSync(filePath);
     if (stat.isDirectory()) {
       fs.rmSync(filePath, { recursive: true, force: true });

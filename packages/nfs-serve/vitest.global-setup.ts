@@ -120,17 +120,16 @@ export default async function (project: TestProject) {
     } catch (e) {
       const mountOutput = await execAsync('mount');
 
+      nfsServer?.close();
       if (mountOutput.stdout.includes(MOUNT_POINT)) {
         throw new Error('Unmount failed');
       }
 
-      nfsServer?.close();
-
       // Ignore unmount errors
-      console.log('Unmount error (expected if not mounted)');
+      // console.log('Unmount error (expected if not mounted)');
     }
 
-    console.log('NFS test environment cleanup complete');
+    // console.log('NFS test environment cleanup complete');
   };
 }
 
