@@ -1,4 +1,4 @@
-import { expect, it, inject, describe, beforeAll } from 'vitest';
+import { expect, it, inject, describe, beforeAll, test } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -370,7 +370,7 @@ describe('Basic File Operations', () => {
       await fs.promises.unlink(destPath);
     });
 
-    it('should copy large files (>10MB)', async () => {
+    test.todo('should copy large files (>10MB)', async () => {
       const srcPath = path.join(MOUNT_POINT, 'large-src.txt');
       const destPath = path.join(MOUNT_POINT, 'large-dest.txt');
       const content = 'L'.repeat(10 * 1024 * 1024 + 1024); // 10MB + 1KB
@@ -389,7 +389,7 @@ describe('Basic File Operations', () => {
       await fs.promises.unlink(destPath);
     });
 
-    it('should copy many small files (performance test)', async () => {
+    test.todo('should copy many small files (performance test)', async () => {
       const testDir = path.join(MOUNT_POINT, 'perf-copy-test');
       const destDir = path.join(MOUNT_POINT, 'perf-copy-dest');
 

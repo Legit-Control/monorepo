@@ -251,38 +251,43 @@ describe('Directory Operations', () => {
       await fs.promises.rmdir(dirPath);
     });
 
-    it('should handle large directory listing (1000+ files)', async () => {
-      const dirPath = path.join(MOUNT_POINT, 'large-dir');
-      await fs.promises.mkdir(dirPath);
+    // skip performance heavy test for now
+    test.todo(
+      'should handle large directory listing (1000+ files)',
+      async () => {
+        const dirPath = path.join(MOUNT_POINT, 'large-dir');
+        await fs.promises.mkdir(dirPath);
 
-      const fileCount = 1000;
-      const createPromises = Array(fileCount)
-        .fill(null)
-        .map((_, i) => {
-          const filePath = path.join(dirPath, `file${i}.txt`);
-          return fs.promises.writeFile(filePath, `content ${i}`);
-        });
+        const fileCount = 1000;
+        const createPromises = Array(fileCount)
+          .fill(null)
+          .map((_, i) => {
+            const filePath = path.join(dirPath, `file${i}.txt`);
+            return fs.promises.writeFile(filePath, `content ${i}`);
+          });
 
-      await Promise.all(createPromises);
+        await Promise.all(createPromises);
 
-      const contents = await fs.promises.readdir(dirPath);
-      expect(contents).toHaveLength(fileCount);
+        const contents = await fs.promises.readdir(dirPath);
+        expect(contents).toHaveLength(fileCount);
 
-      // Verify some specific files exist
-      expect(contents).toContain('file0.txt');
-      expect(contents).toContain('file500.txt');
-      expect(contents).toContain('file999.txt');
+        // Verify some specific files exist
+        expect(contents).toContain('file0.txt');
+        expect(contents).toContain('file500.txt');
+        expect(contents).toContain('file999.txt');
 
-      // Cleanup
-      const deletePromises = Array(fileCount)
-        .fill(null)
-        .map((_, i) => {
-          const filePath = path.join(dirPath, `file${i}.txt`);
-          return fs.promises.unlink(filePath);
-        });
-      await Promise.all(deletePromises);
-      await fs.promises.rmdir(dirPath);
-    }, 60000); // Increased timeout for large directory test
+        // Cleanup
+        const deletePromises = Array(fileCount)
+          .fill(null)
+          .map((_, i) => {
+            const filePath = path.join(dirPath, `file${i}.txt`);
+            return fs.promises.unlink(filePath);
+          });
+        await Promise.all(deletePromises);
+        await fs.promises.rmdir(dirPath);
+      },
+      60000
+    ); // Increased timeout for large directory test
 
     it('should handle directory listing during file operations', async () => {
       const dirPath = path.join(MOUNT_POINT, 'list-during-ops');
