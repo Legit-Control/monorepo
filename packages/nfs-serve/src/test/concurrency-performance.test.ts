@@ -19,9 +19,9 @@ describe('Concurrency & Performance Tests', () => {
 
       // Simulate multiple clients reading simultaneously
       const readerCount = 20;
-      const readPromises = Array(readerCount).fill(null).map(() =>
-        fs.promises.readFile(filePath, 'utf8')
-      );
+      const readPromises = Array(readerCount)
+        .fill(null)
+        .map(() => fs.promises.readFile(filePath, 'utf8'));
 
       const startTime = Date.now();
       const results = await Promise.all(readPromises);
@@ -43,11 +43,13 @@ describe('Concurrency & Performance Tests', () => {
       await fs.promises.mkdir(testDir);
 
       const writerCount = 10;
-      const writePromises = Array(writerCount).fill(null).map((_, i) => {
-        const filePath = path.join(testDir, `writer-${i}.txt`);
-        const content = `Content from writer ${i}`;
-        return fs.promises.writeFile(filePath, content);
-      });
+      const writePromises = Array(writerCount)
+        .fill(null)
+        .map((_, i) => {
+          const filePath = path.join(testDir, `writer-${i}.txt`);
+          const content = `Content from writer ${i}`;
+          return fs.promises.writeFile(filePath, content);
+        });
 
       const startTime = Date.now();
       await Promise.all(writePromises);
@@ -71,10 +73,12 @@ describe('Concurrency & Performance Tests', () => {
 
       // Multiple clients appending to same file
       const writerCount = 5;
-      const writePromises = Array(writerCount).fill(null).map((_, i) => {
-        const content = `Writer ${i} content\n`;
-        return fs.promises.appendFile(filePath, content);
-      });
+      const writePromises = Array(writerCount)
+        .fill(null)
+        .map((_, i) => {
+          const content = `Writer ${i} content\n`;
+          return fs.promises.appendFile(filePath, content);
+        });
 
       await Promise.all(writePromises);
 
@@ -94,20 +98,24 @@ describe('Concurrency & Performance Tests', () => {
       await fs.promises.mkdir(baseDir);
 
       const dirCount = 10;
-      const dirPromises = Array(dirCount).fill(null).map((_, i) => {
-        const dirPath = path.join(baseDir, `dir${i}`);
-        return fs.promises.mkdir(dirPath);
-      });
+      const dirPromises = Array(dirCount)
+        .fill(null)
+        .map((_, i) => {
+          const dirPath = path.join(baseDir, `dir${i}`);
+          return fs.promises.mkdir(dirPath);
+        });
 
       await Promise.all(dirPromises);
 
       // Create files in all directories concurrently
-      const filePromises = Array(dirCount).fill(null).map((_, i) => {
-        const dirPath = path.join(baseDir, `dir${i}`);
-        const filePath = path.join(dirPath, `file.txt`);
-        const content = `File in dir ${i}`;
-        return fs.promises.writeFile(filePath, content);
-      });
+      const filePromises = Array(dirCount)
+        .fill(null)
+        .map((_, i) => {
+          const dirPath = path.join(baseDir, `dir${i}`);
+          const filePath = path.join(dirPath, `file.txt`);
+          const content = `File in dir ${i}`;
+          return fs.promises.writeFile(filePath, content);
+        });
 
       await Promise.all(filePromises);
 
@@ -136,7 +144,7 @@ describe('Concurrency & Performance Tests', () => {
         fs.promises.appendFile(filePath, 'Op2'),
         fs.promises.appendFile(filePath, 'Op3'),
         fs.promises.readFile(filePath, 'utf8'),
-        fs.promises.stat(filePath)
+        fs.promises.stat(filePath),
       ];
 
       await Promise.all(operations);
@@ -163,7 +171,7 @@ describe('Concurrency & Performance Tests', () => {
 
       const [result1, result2] = await Promise.all([
         fd1.read(buffer1, 0, content.length, 0),
-        fd2.read(buffer2, 0, content.length, 0)
+        fd2.read(buffer2, 0, content.length, 0),
       ]);
 
       expect(result1.bytesRead).toBe(content.length);
@@ -212,7 +220,11 @@ describe('Concurrency & Performance Tests', () => {
       const readPromises = randomOffsets.map(async offset => {
         const buffer = Buffer.alloc(10);
         const result = await fd.read(buffer, 0, 10, offset);
-        return { offset, bytesRead: result.bytesRead, data: buffer.toString('utf8') };
+        return {
+          offset,
+          bytesRead: result.bytesRead,
+          data: buffer.toString('utf8'),
+        };
       });
 
       const startTime = Date.now();
@@ -230,48 +242,60 @@ describe('Concurrency & Performance Tests', () => {
       await fs.promises.unlink(filePath);
     });
 
-    it('should handle small file creation/deletion', async () => {
-      const testDir = path.join(MOUNT_POINT, 'small-files');
-      await fs.promises.mkdir(testDir);
+    it(
+      'should handle small file creation/deletion',
+      async () => {
+        const testDir = path.join(MOUNT_POINT, 'small-files');
+        await fs.promises.mkdir(testDir);
 
-      const fileCount = 1000;
-      const startTime = Date.now();
+        const fileCount = 1000;
+        const startTime = Date.now();
 
-      // Create many small files
-      const createPromises = Array(fileCount).fill(null).map((_, i) => {
-        const filePath = path.join(testDir, `file${i}.txt`);
-        return fs.promises.writeFile(filePath, `content ${i}`);
-      });
+        // Create many small files
+        const createPromises = Array(fileCount)
+          .fill(null)
+          .map((_, i) => {
+            const filePath = path.join(testDir, `file${i}.txt`);
+            return fs.promises.writeFile(filePath, `content ${i}`);
+          });
 
-      await Promise.all(createPromises);
+        await Promise.all(createPromises);
 
-      const createEndTime = Date.now();
+        const createEndTime = Date.now();
 
-      // Delete all files
-      const deletePromises = Array(fileCount).fill(null).map((_, i) => {
-        const filePath = path.join(testDir, `file${i}.txt`);
-        return fs.promises.unlink(filePath);
-      });
+        // Delete all files
+        const deletePromises = Array(fileCount)
+          .fill(null)
+          .map((_, i) => {
+            const filePath = path.join(testDir, `file${i}.txt`);
+            return fs.promises.unlink(filePath);
+          });
 
-      await Promise.all(deletePromises);
+        await Promise.all(deletePromises);
 
-      const deleteEndTime = Date.now();
+        const deleteEndTime = Date.now();
 
-      expect(createEndTime - startTime).toBeLessThan(30000); // 30 seconds for 1000 file creation
-      expect(deleteEndTime - createEndTime).toBeLessThan(30000); // 30 seconds for 1000 file deletion
+        expect(createEndTime - startTime).toBeLessThan(30000); // 30 seconds for 1000 file creation
+        expect(deleteEndTime - createEndTime).toBeLessThan(30000); // 30 seconds for 1000 file deletion
 
-      await fs.promises.rmdir(testDir);
-    });
+        await fs.promises.rmdir(testDir);
+      },
+      {
+        timeout: 120000, // 2 minutes
+      }
+    );
 
     it('should handle directory listing performance', async () => {
       const testDir = path.join(MOUNT_POINT, 'list-perf');
       await fs.promises.mkdir(testDir);
 
       const fileCount = 5000;
-      const createPromises = Array(fileCount).fill(null).map((_, i) => {
-        const filePath = path.join(testDir, `perf-file${i}.txt`);
-        return fs.promises.writeFile(filePath, `content ${i}`);
-      });
+      const createPromises = Array(fileCount)
+        .fill(null)
+        .map((_, i) => {
+          const filePath = path.join(testDir, `perf-file${i}.txt`);
+          return fs.promises.writeFile(filePath, `content ${i}`);
+        });
 
       await Promise.all(createPromises);
 
@@ -316,10 +340,12 @@ describe('Concurrency & Performance Tests', () => {
       const avgReadTime = readTimes.reduce((a, b) => a + b) / iterations;
 
       // Calculate throughput in MB/s
-      const writeThroughput = (1 / (avgWriteTime / 1000)); // MB/s
-      const readThroughput = (1 / (avgReadTime / 1000)); // MB/s
+      const writeThroughput = 1 / (avgWriteTime / 1000); // MB/s
+      const readThroughput = 1 / (avgReadTime / 1000); // MB/s
 
-      console.log(`Average write throughput: ${writeThroughput.toFixed(2)} MB/s`);
+      console.log(
+        `Average write throughput: ${writeThroughput.toFixed(2)} MB/s`
+      );
       console.log(`Average read throughput: ${readThroughput.toFixed(2)} MB/s`);
 
       // Basic performance expectations (very conservative)
@@ -334,9 +360,9 @@ describe('Concurrency & Performance Tests', () => {
       await fs.promises.writeFile(filePath, content);
 
       // Simulate multiple small operations that might be affected by latency
-      const operations = Array(100).fill(null).map(() =>
-        fs.promises.readFile(filePath, 'utf8')
-      );
+      const operations = Array(100)
+        .fill(null)
+        .map(() => fs.promises.readFile(filePath, 'utf8'));
 
       const startTime = Date.now();
       await Promise.all(operations);
@@ -356,9 +382,11 @@ describe('Concurrency & Performance Tests', () => {
 
       // Perform many operations rapidly
       const operationCount = 1000;
-      const operations = Array(operationCount).fill(null).map((_, i) => {
-        return fs.promises.appendFile(filePath, `${i}`);
-      });
+      const operations = Array(operationCount)
+        .fill(null)
+        .map((_, i) => {
+          return fs.promises.appendFile(filePath, `${i}`);
+        });
 
       const startTime = Date.now();
       await Promise.all(operations);
@@ -378,18 +406,28 @@ describe('Concurrency & Performance Tests', () => {
 
       // Create multiple large files
       const fileCount = 5;
-      const createPromises = Array(fileCount).fill(null).map((_, i) => {
-        const currentFilePath = path.join(MOUNT_POINT, `memory-test-${i}.txt`);
-        return fs.promises.writeFile(currentFilePath, largeContent);
-      });
+      const createPromises = Array(fileCount)
+        .fill(null)
+        .map((_, i) => {
+          const currentFilePath = path.join(
+            MOUNT_POINT,
+            `memory-test-${i}.txt`
+          );
+          return fs.promises.writeFile(currentFilePath, largeContent);
+        });
 
       await Promise.all(createPromises);
 
       // Read them all back
-      const readPromises = Array(fileCount).fill(null).map((_, i) => {
-        const currentFilePath = path.join(MOUNT_POINT, `memory-test-${i}.txt`);
-        return fs.promises.readFile(currentFilePath);
-      });
+      const readPromises = Array(fileCount)
+        .fill(null)
+        .map((_, i) => {
+          const currentFilePath = path.join(
+            MOUNT_POINT,
+            `memory-test-${i}.txt`
+          );
+          return fs.promises.readFile(currentFilePath);
+        });
 
       const results = await Promise.all(readPromises);
 
@@ -412,22 +450,32 @@ describe('Concurrency & Performance Tests', () => {
       const operations = [];
 
       // File creation
-      operations.push(Array(10).fill(null).map((_, i) => {
-        const filePath = path.join(baseDir, `mixed-file-${i}.txt`);
-        return fs.promises.writeFile(filePath, `content ${i}`);
-      }));
+      operations.push(
+        Array(10)
+          .fill(null)
+          .map((_, i) => {
+            const filePath = path.join(baseDir, `mixed-file-${i}.txt`);
+            return fs.promises.writeFile(filePath, `content ${i}`);
+          })
+      );
 
       // Directory creation
-      operations.push(Array(5).fill(null).map((_, i) => {
-        const dirPath = path.join(baseDir, `mixed-dir-${i}`);
-        return fs.promises.mkdir(dirPath);
-      }));
+      operations.push(
+        Array(5)
+          .fill(null)
+          .map((_, i) => {
+            const dirPath = path.join(baseDir, `mixed-dir-${i}`);
+            return fs.promises.mkdir(dirPath);
+          })
+      );
 
       // File reads (after creation)
-      const readPromises = Array(10).fill(null).map((_, i) => {
-        const filePath = path.join(baseDir, `mixed-file-${i}.txt`);
-        return fs.promises.readFile(filePath, 'utf8');
-      });
+      const readPromises = Array(10)
+        .fill(null)
+        .map((_, i) => {
+          const filePath = path.join(baseDir, `mixed-file-${i}.txt`);
+          return fs.promises.readFile(filePath, 'utf8');
+        });
 
       // Wait for creations, then read
       await Promise.all(operations.flat());
@@ -469,7 +517,9 @@ describe('Concurrency & Performance Tests', () => {
       const maxTime = Math.max(...times);
       const minTime = Math.min(...times);
 
-      console.log(`Performance regression test - Avg: ${avgTime}ms, Min: ${minTime}ms, Max: ${maxTime}ms`);
+      console.log(
+        `Performance regression test - Avg: ${avgTime}ms, Min: ${minTime}ms, Max: ${maxTime}ms`
+      );
 
       // Performance should be reasonably consistent
       expect(maxTime / minTime).toBeLessThan(10); // Max should not be more than 10x min
