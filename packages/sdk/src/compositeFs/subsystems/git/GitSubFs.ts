@@ -547,11 +547,11 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     const pathStr = path.toString();
 
     // Check if there is an open file handle for this path
-    const openFhEntry = Object.values(this.openFh).find(
-      fh => fh.path === pathStr
+    const openUnflushedFh = Object.values(this.openFh).find(
+      fh => fh.path === pathStr && fh.unflushed.length > 0
     );
-    if (openFhEntry && openFhEntry.unflushed.length > 0) {
-      return (await openFhEntry.fh.stat(opts)) as any; // TODO fix type
+    if (openUnflushedFh) {
+      return (await openUnflushedFh.fh.stat(opts)) as any; // TODO fix type
     }
 
     const parsed = this.getRouteHandler(pathStr);
