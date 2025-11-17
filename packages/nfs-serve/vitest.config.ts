@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   test: {
+    setupFiles: 'vitest.setup.ts',
     globalSetup: ['vitest.global-setup.ts'],
     logHeapUsage: true, // optional for seeing memory logs
     reporters: 'verbose',
