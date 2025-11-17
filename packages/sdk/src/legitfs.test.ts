@@ -97,6 +97,35 @@ describe('openLegitFs', () => {
     expect(contentAfter).toBe('Content after');
   });
 
+  it('should truncate file to expected length', async () => {
+    const newFilePath = `${repoPath}/.legit/branches/main/new.txt`;
+    await legitfs.promises.writeFile(newFilePath, 'Content before truncate');
+    const contentBefor = await legitfs.promises.readFile(newFilePath, 'utf-8');
+    expect(contentBefor).toBe('Content before truncate');
+
+    const fh = await legitfs.promises.open(newFilePath, 'r+');
+    await fh.truncate(3);
+
+    const stat = await fh.stat();
+    expect(stat.size, 'size should be reflected in the fh').toBe(3);
+
+    const statFromFs = await legitfs.promises.stat(newFilePath);
+    expect(
+      statFromFs.size,
+      'size should be reflected when asking the fs path based'
+    ).toBe(3);
+
+    const fh2 = await legitfs.promises.open(newFilePath, 'r+');
+
+    const stat2 = await fh2.stat();
+    expect(stat2.size, 'size should be reflected in a newly created fh').toBe(
+      3
+    );
+
+    const contentAfter = await legitfs.promises.readFile(newFilePath, 'utf-8');
+    expect(contentAfter).toBe('Con');
+  });
+
   it('should create, rename, and move folders and files in branch', async () => {
     let commits = async () =>
       await isogit.log({ fs: memfs, dir: repoPath, depth: 100 });
