@@ -241,7 +241,7 @@ export const gitBranchOperationHeadVirtualFile: VirtualFileDefinition = {
     await git.writeRef({
       fs: nodeFs,
       dir: gitRoot,
-      ref: operationBranchName,
+      ref: 'refs/heads/' + operationBranchName,
       value: newOperationBranchHead,
       force: true,
     });
@@ -249,7 +249,7 @@ export const gitBranchOperationHeadVirtualFile: VirtualFileDefinition = {
     await git.writeRef({
       fs: nodeFs,
       dir: gitRoot,
-      ref: pathParams.branchName,
+      ref: 'refs/heads/' + pathParams.branchName,
       value: newBranchHead,
       force: true,
     });
