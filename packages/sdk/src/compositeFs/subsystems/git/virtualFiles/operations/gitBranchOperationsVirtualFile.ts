@@ -18,6 +18,7 @@ export type Operation = {
   oid: string;
   parentOids: string[];
   message: string;
+  originBranchOid?: string;
 };
 
 function folderStats(
@@ -196,6 +197,7 @@ export const gitBranchOperationsVirtualFile: VirtualFileDefinition = {
           oid: commit.oid,
           parentOids: commit.commit.parent,
           message: commit.commit.message,
+          originBranchOid: 'unset',
         });
 
         // Get parent commit (first parent)
@@ -211,6 +213,30 @@ export const gitBranchOperationsVirtualFile: VirtualFileDefinition = {
           isFirstOperation = true;
         }
       }
+    }
+
+    let currentOringinBranchState: string | undefined = undefined;
+
+    for (let i = operations.length - 1; i >= 0; i--) {
+      const op = operations[i]!;
+      if (currentOringinBranchState === undefined) {
+        // we expect the first opration to have two parents
+        if (
+          op.parentOids.length !== 2 &&
+          op.parentOids[0] !== op.parentOids[1]
+        ) {
+          throw new Error(
+            `Operation commit ${op.oid} does not have two parents as expected`
+          );
+        }
+        currentOringinBranchState = op.parentOids[1];
+      }
+
+      if (op.parentOids.length === 2) {
+        currentOringinBranchState = op.parentOids[1];
+      }
+
+      op.originBranchOid = currentOringinBranchState;
     }
 
     const content = Buffer.from(JSON.stringify(operations, null, 2), 'utf-8');
