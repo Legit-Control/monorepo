@@ -1169,7 +1169,7 @@ export const createAsyncNfsHandler = (args: {
 
       if (fsHandle === undefined) {
         const path = fileHandleManager.getPathFromHandle(handle)!;
-        fsHandle = await asyncFs.open(path, 'a+');
+        nfsHandle.fsHandle.fh = await asyncFs.open(path, 'a+');
       }
 
       if (!fsHandle) {
@@ -1252,7 +1252,7 @@ export const createAsyncNfsHandler = (args: {
       }
     },
 
-    write: async (handle, offset, data, _stableHow) => {
+    write: async (handle, offset, data, count, _stableHow) => {
       const nfsHandle = fileHandleManager.getHandle(handle);
 
       if (!nfsHandle) {
@@ -1290,9 +1290,9 @@ export const createAsyncNfsHandler = (args: {
         // Write the data
         const { bytesWritten } = await fsHandle.write(
           data,
-          0,
+          Number(offset),
           data.length,
-          Number(offset)
+          Number(count)
         );
 
         // Get updated file stats after write

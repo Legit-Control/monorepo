@@ -336,6 +336,15 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       pathParams: parsed.params,
     });
 
+    let fileExistsInCache = false;
+
+    try {
+      const access = await this.memFs.promises.access(filePath);
+      fileExistsInCache = true;
+    } catch (err) {
+      // no-op we use accesss which throws to check if the file exists
+    }
+
     if (flags.includes('x')) {
       // NOTE we only support exclusive writes in branches so this logic only applies to branches
       // check the open handlers if it exists there
@@ -366,7 +375,11 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     if (fileFromGit && flags.includes('x')) {
       throw new Error('file existed - openend with x flag');
     }
-    if (!fileFromGit && !(flags.includes('w') || flags.includes('a'))) {
+    if (
+      !fileFromGit &&
+      !fileExistsInCache &&
+      !(flags.includes('w') || flags.includes('a'))
+    ) {
       // in case the file doesnt exist but planned to
       throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
     }
@@ -377,18 +390,15 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
     // Write the virtual file content to memfs if the file existed
     if (
-      (fileFromGit === undefined && !flags.includes('x')) ||
-      (fileFromGit && fileFromGit.type === 'file')
+      ((fileFromGit === undefined && !flags.includes('x')) ||
+        (fileFromGit && fileFromGit.type === 'file')) &&
+      !fileExistsInCache
     ) {
-      try {
-        const access = await this.memFs.promises.access(filePath);
-      } catch (err) {
-        // file did not exist - create it
-        await this.memFs.promises.writeFile(
-          filePath,
-          '' // we start with an empty string and use the memfs file only as placeholder
-        );
-      }
+      // file did not exist - create it
+      await this.memFs.promises.writeFile(
+        filePath,
+        '' // we start with an empty string and use the memfs file only as placeholder
+      );
     }
 
     const fh = await this.memFs.promises.open(filePath, flags, mode);
@@ -950,6 +960,15 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
       // remove the write cache
       openFh.unflushed = [];
+
+      // TODO clean this up with proper node handling
+      // Clear unflushed for all file handles with the same path
+      for (const [fd, fh] of Object.entries(this.openFh)) {
+        if (fh.path === openFh.path) {
+          fh.unflushed = [];
+        }
+      }
+
       await this.memFs.promises.writeFile(openFh.path, '' as string);
     }
   }

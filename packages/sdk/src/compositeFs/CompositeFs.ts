@@ -334,7 +334,7 @@ export class CompositeFs {
     const nextDescriptor = this.getNextFileDescriptor();
     fileHandle.realize(nextDescriptor);
     this.openFileHandles.set(nextDescriptor, fileHandle);
-
+    
     if (!this.pathToFileDescriptors.get(filePath)) {
       this.pathToFileDescriptors.set(filePath, []);
     }

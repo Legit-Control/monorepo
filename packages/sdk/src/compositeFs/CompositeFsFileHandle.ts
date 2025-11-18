@@ -55,7 +55,7 @@ export interface ICompositFsFileHandle {
 }
 
 /**
- * While a filehandle in node env usually is an independent (from its fs) entity to keep fs operatons colocated per type (vritual, managed... files) we
+ * While a filehandle in node env usually is an independent entity (from its fs) to keep fs operatons colocated per type (vritual, managed... files) we
  * wrap the filehandle in a SubFsFileHandle and forward all operations to there origin filesystem
  */
 export default class CompositFsFileHandle implements ICompositFsFileHandle {
