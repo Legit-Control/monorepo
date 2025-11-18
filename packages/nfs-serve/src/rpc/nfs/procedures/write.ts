@@ -34,6 +34,7 @@ export type WriteHandler = (
   handle: Buffer,
   offset: bigint,
   data: Buffer,
+  count: number,
   stableHow: number
 ) => Promise<WriteResult>;
 
@@ -103,6 +104,7 @@ export async function write(
       handle,
       writeOffset,
       writeData,
+      writeCount,
       stableHow
     );
 
