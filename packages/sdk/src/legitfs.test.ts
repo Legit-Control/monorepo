@@ -468,6 +468,99 @@ describe('openLegitFs', () => {
     expect(redoHash.trim()).toBe(undoHash);
   });
 
+  it('should allow reading and setting the head file to change branch state', async () => {
+    const textFilePath = `${repoPath}/.legit/branches/main/text.txt`;
+    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+
+    // Create initial file and get first commit
+    await legitfs.promises.writeFile(textFilePath, 'initial content');
+    const firstHead = await legitfs.promises.readFile(headFilePath, 'utf-8');
+    expect(firstHead).toMatch(/^[0-9a-f]{40}$/);
+
+    // Create second file and get second commit
+    await legitfs.promises.writeFile(
+      `${repoPath}/.legit/branches/main/second.txt`,
+      'second content'
+    );
+    const secondHead = await legitfs.promises.readFile(headFilePath, 'utf-8');
+    expect(secondHead).toMatch(/^[0-9a-f]{40}$/);
+    expect(secondHead).not.toBe(firstHead);
+
+    // Verify both files exist at second commit
+    expect(await legitfs.promises.readFile(textFilePath, 'utf-8')).toBe(
+      'initial content'
+    );
+    expect(
+      await legitfs.promises.readFile(
+        `${repoPath}/.legit/branches/main/second.txt`,
+        'utf-8'
+      )
+    ).toBe('second content');
+
+    // Set head back to first commit
+    await legitfs.promises.writeFile(headFilePath, firstHead);
+    const currentHead = await legitfs.promises.readFile(headFilePath, 'utf-8');
+    expect(currentHead).toBe(firstHead);
+
+    // Verify only first file exists now
+    expect(await legitfs.promises.readFile(textFilePath, 'utf-8')).toBe(
+      'initial content'
+    );
+
+    // TODO #filehandle add when filehandles are implemented properly
+    // await expect(
+    //   legitfs.promises.readFile(
+    //     `${repoPath}/.legit/branches/main/second.txt`,
+    //     'utf-8'
+    //   )
+    // ).rejects.toThrow();
+
+    // Set head back to second commit
+    await legitfs.promises.writeFile(headFilePath, secondHead);
+
+    // Verify both files exist again
+    expect(await legitfs.promises.readFile(textFilePath, 'utf-8')).toBe(
+      'initial content'
+    );
+    expect(
+      await legitfs.promises.readFile(
+        `${repoPath}/.legit/branches/main/second.txt`,
+        'utf-8'
+      )
+    ).toBe('second content');
+  });
+
+  it('should handle invalid commit hash when setting head file', async () => {
+    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const invalidHash = '0000000000000000000000000000000000000000';
+
+    // Get current valid head
+    const validHead = await legitfs.promises.readFile(headFilePath, 'utf-8');
+    expect(validHead).toMatch(/^[0-9a-f]{40}$/);
+
+    // Try to set invalid commit hash
+    await expect(
+      legitfs.promises.writeFile(headFilePath, invalidHash)
+    ).rejects.toThrow();
+
+    // Verify head is unchanged
+    const currentHead = await legitfs.promises.readFile(headFilePath, 'utf-8');
+    expect(currentHead).toBe(validHead);
+
+    // Try with malformed hash (wrong length)
+    const malformedHash = '123abc';
+    await expect(
+      legitfs.promises.writeFile(headFilePath, malformedHash)
+    ).rejects.toThrow();
+
+    // Verify head is still unchanged
+    const stillCurrentHead = await legitfs.promises.readFile(
+      headFilePath,
+      'utf-8'
+    );
+    expect(stillCurrentHead).toBe(validHead);
+  });
+
   it.todo('should read files from previous commit');
   it.todo('should list files from previous commit');
   it.todo('should handle branch creation and switching');
