@@ -1,10 +1,6 @@
 {
   "watch": ["*.js", "*.html", "*.json"],
   "ext": "js,html,json",
-  "ignore": [
-    "node_modules",
-    "*.log",
-    "test-temp"
-  ],
+  "ignore": ["node_modules", "*.log", "test-temp/**"],
   "exec": "node dev-server.js"
 }

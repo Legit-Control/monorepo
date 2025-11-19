@@ -62,15 +62,21 @@ if (!createTokenPassword) {
 
 // Parse RSA keys from environment variables
 const accessKeyPrivate = process.env.ACCESS_KEY_PRIVATE?.replace(/\\n/g, '\n');
+const accessKeyPublic = process.env.ACCESS_KEY_PUB?.replace(/\\n/g, '\n');
 const proxyKeyPublic = process.env.PROXY_KEY_PUBLIC?.replace(/\\n/g, '\n');
+const proxyKeyPrivate = process.env.PROXY_KEY_PRIVATE?.replace(/\\n/g, '\n');
 
-if (!accessKeyPrivate || !proxyKeyPublic) {
-  throw new Error('ACCESS_KEY_PRIVATE and PROXY_KEY_PUBLIC environment variables must be set');
+if (!accessKeyPrivate || !accessKeyPublic || !proxyKeyPublic || !proxyKeyPrivate) {
+  throw new Error(
+    'ACCESS_KEY_PRIVATE, ACCESS_KEY_PUB, PROXY_KEY_PUBLIC, and PROXY_KEY_PRIVATE environment variables must be set',
+  );
 }
 
-// Parse the private key for JWT signing
+// Parse the keys for JWT operations
 const privateKeyForSigning = forge.pki.privateKeyFromPem(accessKeyPrivate);
+const publicKeyForVerification = forge.pki.publicKeyFromPem(accessKeyPublic);
 const publicKeyForEncryption = forge.pki.publicKeyFromPem(proxyKeyPublic);
+const privateKeyForDecryption = forge.pki.privateKeyFromPem(proxyKeyPrivate);
 
 const maxAge = 60 * 60 * 24; // 24 hours
 const allowCredentials = false;
@@ -246,6 +252,73 @@ export default function handleRequest(req, res, next) {
     return;
   }
 
+  // Test token endpoint
+  if (u.pathname === '/test-token' && req.method === 'POST') {
+    if (isMiddleware) return next();
+
+    // Extract Bearer token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.statusCode = 401;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ error: 'Missing or invalid Authorization header' }));
+      return;
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    try {
+      // Verify JWT signature using the access public key
+      const decoded = jwt.verify(token, accessKeyPublic, { algorithms: ['RS256'] });
+
+      // Log the decoded payload
+      console.log('JWT payload verified successfully:', {
+        repoUrl: decoded.repoUrl,
+        branchWildcards: decoded.branchWildcards,
+        hasEncryptedToken: !!decoded.encryptedToken,
+      });
+
+      // Decrypt the GitHub token using the proxy private key
+      const encryptedTokenBytes = forge.util.decode64(decoded.encryptedToken);
+      const githubToken = privateKeyForDecryption.decrypt(encryptedTokenBytes, 'RSA-OAEP');
+
+      // Log the decrypted GitHub token
+      console.log('Decrypted GitHub token:', githubToken);
+      console.log('Repository URL:', decoded.repoUrl);
+      console.log('Branch wildcards:', decoded.branchWildcards);
+
+      // Return success response
+      res.statusCode = 200;
+      res.setHeader('content-type', 'application/json');
+      res.end(
+        JSON.stringify({
+          success: true,
+          message: 'Token is valid',
+          repoUrl: decoded.repoUrl,
+          branchWildcards: decoded.branchWildcards,
+        }),
+      );
+    } catch (error) {
+      console.error('Token validation failed:', error.message);
+
+      if (error.name === 'JsonWebTokenError') {
+        res.statusCode = 401;
+        res.end(JSON.stringify({ error: 'Invalid token signature' }));
+      } else if (error.name === 'TokenExpiredError') {
+        res.statusCode = 401;
+        res.end(JSON.stringify({ error: 'Token has expired' }));
+      } else if (error.message.includes('Invalid')) {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: 'Failed to decrypt token: ' + error.message }));
+      } else {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ error: 'Token validation failed: ' + error.message }));
+      }
+    }
+
+    return;
+  }
+
   if (!isAllowed(req, u)) {
     if (isMiddleware) return next();
     res.statusCode = 403;
@@ -261,6 +334,11 @@ export default function handleRequest(req, res, next) {
       headers[h] = req.headers[h];
     }
   }
+
+  // TODO check the signature of the JWT token provided in the Authorization header using the access public key
+  // TODO decrypt the GitHub token using the proxy private key
+  // TODO compare the repo URL to the requested URL
+  // TODO set the authorization header to use the decrypted GitHub token, the token provided is the username password is empty authorization header shoud be "Basic ..."
 
   // GitHub uses user-agent sniffing for git/* and changes its behavior which is frustrating
   if (!headers['user-agent']?.startsWith('git/')) {
