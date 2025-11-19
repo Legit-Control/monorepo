@@ -3,6 +3,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Writable } from 'stream';
 import { createServer } from 'http';
+import jwt from 'jsonwebtoken';
+import forge from 'node-forge';
 
 // Load environment variables
 config();
@@ -57,6 +59,18 @@ const createTokenPassword = process.env.CREATE_TOKEN_PASSWORD;
 if (!createTokenPassword) {
   throw new Error('CREATE_TOKEN_PASSWORD environment variable is not set');
 }
+
+// Parse RSA keys from environment variables
+const accessKeyPrivate = process.env.ACCESS_KEY_PRIVATE?.replace(/\\n/g, '\n');
+const proxyKeyPublic = process.env.PROXY_KEY_PUBLIC?.replace(/\\n/g, '\n');
+
+if (!accessKeyPrivate || !proxyKeyPublic) {
+  throw new Error('ACCESS_KEY_PRIVATE and PROXY_KEY_PUBLIC environment variables must be set');
+}
+
+// Parse the private key for JWT signing
+const privateKeyForSigning = forge.pki.privateKeyFromPem(accessKeyPrivate);
+const publicKeyForEncryption = forge.pki.publicKeyFromPem(proxyKeyPublic);
 
 const maxAge = 60 * 60 * 24; // 24 hours
 const allowCredentials = false;
@@ -174,23 +188,58 @@ export default function handleRequest(req, res, next) {
     req.on('end', () => {
       try {
         const requestData = JSON.parse(body);
+        const { githubToken, repoUrl, branchWildcards } = requestData;
 
-        // Return the form fields as JSON
+        // Validate required fields
+        if (!githubToken || !repoUrl || !branchWildcards) {
+          res.statusCode = 400;
+          res.setHeader('content-type', 'application/json');
+          res.end(
+            JSON.stringify({
+              error: 'Missing required fields: githubToken, repoUrl, branchWildcards',
+            }),
+          );
+          return;
+        }
+
+        // Encrypt the GitHub token using RSA public key
+        const encryptedToken = forge.util.encode64(publicKeyForEncryption.encrypt(githubToken, 'RSA-OAEP'));
+
+        // Process branch wildcards into array
+        const branchArray = Array.isArray(branchWildcards)
+          ? branchWildcards
+          : branchWildcards.split('\n').filter((branch) => branch.trim() !== '');
+
+        // Create JWT payload
+        const payload = {
+          encryptedToken,
+          repoUrl,
+          branchWildcards: branchArray,
+          // iat: Math.floor(Date.now() / 1000), // Issued at
+          // exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // Expires in 24 hours
+        };
+
+        // Sign JWT with RSA private key
+        const token = jwt.sign(payload, accessKeyPrivate, {
+          algorithm: 'RS256',
+          // expiresIn: '24h',
+        });
+
+        // Return the JWT
         res.statusCode = 200;
         res.setHeader('content-type', 'application/json');
         res.end(
           JSON.stringify({
             success: true,
-            data: {
-              repoUrl: requestData.repoUrl,
-              branchWildcards: requestData.branchWildcards,
-            },
+            token,
+            // expiresAt: new Date(payload.exp * 1000).toISOString(),
           }),
         );
       } catch (error) {
-        res.statusCode = 400;
+        console.error('Error creating token:', error);
+        res.statusCode = 500;
         res.setHeader('content-type', 'application/json');
-        res.end(JSON.stringify({ error: 'Invalid JSON in request body' }));
+        res.end(JSON.stringify({ error: 'Failed to create token: ' + error.message }));
       }
     });
 

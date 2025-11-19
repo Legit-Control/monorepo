@@ -99,6 +99,18 @@
         </div>
 
         <div class="form-group">
+          <label for="githubToken">GitHub Token:</label>
+          <input
+            type="password"
+            id="githubToken"
+            name="githubToken"
+            placeholder="ghp_..."
+            value="ghp_exampletoken1234567890abcdef"
+            required
+          />
+        </div>
+
+        <div class="form-group">
           <label for="repoUrl">Repository URL:</label>
           <input
             type="url"
@@ -129,8 +141,13 @@ main</textarea
     </div>
 
     <div class="container response-container" id="responseContainer" style="display: none">
-      <h2>Response:</h2>
-      <textarea id="responseArea" class="response-textarea" readonly></textarea>
+      <h2>JWT Token:</h2>
+      <textarea
+        id="responseArea"
+        class="response-textarea"
+        readonly
+        placeholder="Your JWT token will appear here..."
+      ></textarea>
     </div>
 
     <script>
@@ -143,6 +160,7 @@ main</textarea
 
         // Get form data
         const password = document.getElementById('password').value;
+        const githubToken = document.getElementById('githubToken').value;
         const repoUrl = document.getElementById('repoUrl').value;
         const branchWildcards = document.getElementById('branchWildcards').value;
 
@@ -161,6 +179,7 @@ main</textarea
               Authorization: password,
             },
             body: JSON.stringify({
+              githubToken: githubToken,
               repoUrl: repoUrl,
               branchWildcards: branchWildcards.split('\n').filter((line) => line.trim() !== ''),
             }),
@@ -168,16 +187,31 @@ main</textarea
 
           const responseText = await response.text();
 
-          // Display response
-          responseArea.value = `Status: ${response.status} ${response.statusText}
-Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}
-
-Response:
-${responseText}`;
-
           if (response.ok) {
-            responseArea.className = 'response-textarea success';
+            try {
+              const responseData = JSON.parse(responseText);
+              if (responseData.success && responseData.token) {
+                // Success: Show only the token
+                responseArea.value = responseData.token;
+                responseArea.className = 'response-textarea success';
+              } else {
+                // Unexpected success response format
+                responseArea.value = 'Success: Invalid response format';
+                responseArea.className = 'response-textarea error';
+              }
+            } catch (parseError) {
+              // Failed to parse success response
+              responseArea.value = 'Success: Failed to parse response';
+              responseArea.className = 'response-textarea error';
+            }
           } else {
+            // Error: Show the error message
+            try {
+              const errorData = JSON.parse(responseText);
+              responseArea.value = `Error: ${errorData.error || responseText}`;
+            } catch {
+              responseArea.value = `Error (${response.status}): ${responseText}`;
+            }
             responseArea.className = 'response-textarea error';
           }
         } catch (error) {
