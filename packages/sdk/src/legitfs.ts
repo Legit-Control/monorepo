@@ -5,6 +5,15 @@ import { CompositeFs } from './compositeFs/CompositeFs.js';
 import { EphemeralSubFs } from './compositeFs/subsystems/EphemeralFileSubFs.js';
 import { GitSubFs } from './compositeFs/subsystems/git/GitSubFs.js';
 import { HiddenFileSubFs } from './compositeFs/subsystems/HiddenFileSubFs.js';
+import { createFsFromVolume, Volume } from 'memfs';
+
+export async function initMemFSLegitFs() {
+  const memfsVolume = new Volume();
+  const memfs = createFsFromVolume(memfsVolume);
+
+  // @ts-ignore -- initLegitFs will expect memfs type in the future
+  return initLegitFs(memfs as any, '/');
+}
 
 export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
   let gitFolderExisted = false;
