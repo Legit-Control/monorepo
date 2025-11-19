@@ -335,10 +335,84 @@ export default function handleRequest(req, res, next) {
     }
   }
 
-  // TODO check the signature of the JWT token provided in the Authorization header using the access public key
-  // TODO decrypt the GitHub token using the proxy private key
-  // TODO compare the repo URL to the requested URL
-  // TODO set the authorization header to use the decrypted GitHub token, the token provided is the username password is empty authorization header shoud be "Basic ..."
+  console.log('Processing request for:', u.pathname);
+  console.log(headers);
+
+  // JWT token validation and GitHub token decryption
+  const authHeader = req.headers.authorization;
+  let githubToken = null;
+  let authorizedRepoUrl = null;
+
+  let token = '';
+  let useBasicAuthDirectly = false;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  } else if (authHeader && authHeader.startsWith('Basic ')) {
+    // Extract token from the username part of the basic auth
+    const basicAuth = authHeader.substring(6); // Remove 'Basic ' prefix
+    try {
+      const decoded = Buffer.from(basicAuth, 'base64').toString('utf8');
+      console.log('Decoded Basic Auth:', decoded);
+      const [username, password] = decoded.split(':');
+
+      token = username; // Remove 'Bearer ' prefix
+    } catch (error) {
+      console.error('Failed to decode Basic Auth:', error.message);
+    }
+  } else {
+    // Return not allowed - no valid authentication provided
+    console.log('No valid authentication header found');
+    res.statusCode = 401;
+    res.end(
+      JSON.stringify({
+        error: 'Authentication required',
+        message: 'Provide either Bearer JWT token or Basic Auth with GitHub token as username',
+      }),
+    );
+    return;
+  }
+
+  // Only process JWT if we have a Bearer token (not Basic Auth)
+  if (token) {
+    try {
+      // Check JWT signature using access public key
+      const decoded = jwt.verify(token, accessKeyPublic, { algorithms: ['RS256'] });
+
+      console.log('JWT validation successful:', {
+        repoUrl: decoded.repoUrl,
+        branchWildcards: decoded.branchWildcards,
+      });
+
+      // Decrypt GitHub token using proxy private key
+      const encryptedTokenBytes = forge.util.decode64(decoded.encryptedToken);
+      githubToken = privateKeyForDecryption.decrypt(encryptedTokenBytes, 'RSA-OAEP');
+      authorizedRepoUrl = decoded.repoUrl;
+
+      console.log('GitHub token decrypted successfully for repo:', authorizedRepoUrl);
+    } catch (error) {
+      console.error('JWT validation failed:', error.message);
+      // Return 401 for invalid JWT
+      res.statusCode = 401;
+      res.end(
+        JSON.stringify({
+          error: 'Invalid JWT token',
+          message: error.message,
+        }),
+      );
+      return;
+    }
+  } else {
+    // No valid authentication method worked
+    res.statusCode = 401;
+    res.end(
+      JSON.stringify({
+        error: 'Authentication failed',
+        message: 'Invalid or missing authentication',
+      }),
+    );
+    return;
+  }
 
   // GitHub uses user-agent sniffing for git/* and changes its behavior which is frustrating
   if (!headers['user-agent']?.startsWith('git/')) {
@@ -347,6 +421,53 @@ export default function handleRequest(req, res, next) {
 
   let [, pathdomain, remainingpath] = u.pathname.match(/\/([^\/]*)\/(.*)/);
   const protocol = insecure_origins.includes(pathdomain) ? 'http' : 'https';
+  const currentRepoUrl = `${protocol}://${pathdomain}/${remainingpath.split('.git')[0]}`;
+
+  // Compare requested repo URL to authorized repo URL (only for JWT mode)
+  if (githubToken && authorizedRepoUrl && !useBasicAuthDirectly) {
+    // Normalize URLs for comparison (remove .git suffix and ensure consistent format)
+    const normalizedRequestedUrl = currentRepoUrl.endsWith('.git') ? currentRepoUrl.slice(0, -4) : currentRepoUrl;
+    const normalizedAuthorizedUrl = authorizedRepoUrl.endsWith('.git')
+      ? authorizedRepoUrl.slice(0, -4)
+      : authorizedRepoUrl;
+
+    if (normalizedRequestedUrl !== normalizedAuthorizedUrl) {
+      console.error('Repo URL mismatch:', {
+        requested: normalizedRequestedUrl,
+        authorized: normalizedAuthorizedUrl,
+      });
+
+      // Return 403 for unauthorized repo access
+      res.statusCode = 403;
+      res.end(
+        JSON.stringify({
+          error: 'Unauthorized repository access',
+          requested: normalizedRequestedUrl,
+          authorized: normalizedAuthorizedUrl,
+        }),
+      );
+      return;
+    }
+
+    // Set Basic Authorization header with decrypted GitHub token
+    // Format: username:password (where username is the token and password is empty)
+    headers['authorization'] = `Basic ${Buffer.from(githubToken + ':').toString('base64')}`;
+    console.log('Set Basic Authorization header for GitHub API from JWT');
+  } else if (githubToken && useBasicAuthDirectly) {
+    // For Basic Auth mode, keep the original Authorization header and log access
+    console.log('Using GitHub token from Basic Auth for:', currentRepoUrl);
+    // The headers object already contains the original Basic Auth
+  } else {
+    // No valid GitHub token available
+    console.error('No valid GitHub token available for request');
+    res.statusCode = 401;
+    res.end(
+      JSON.stringify({
+        error: 'No valid GitHub token available',
+      }),
+    );
+    return;
+  }
 
   fetch(`${protocol}://${pathdomain}/${remainingpath}${u.search}`, {
     method: req.method,
