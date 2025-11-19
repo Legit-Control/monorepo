@@ -1,3 +1,6 @@
 packages:
   - 'packages/*'
   - 'examples/*'
+
+public-hoist-pattern:
+  - '@assistant-ui/*'

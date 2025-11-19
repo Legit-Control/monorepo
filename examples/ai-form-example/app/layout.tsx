@@ -1,9 +1,11 @@
+'use client';
+
 import './globals.css';
 
 import { cn } from '@/lib/utils';
 import { Montserrat } from 'next/font/google';
 import { MyRuntimeProvider } from './MyRuntimeProvider';
-import { LegitFsProvider } from '@/lib/legit-runtime';
+import { LegitFsProvider } from '@legit-sdk/assistant-ui';
 
 const montserrat = Montserrat({ subsets: ['latin'] });
 

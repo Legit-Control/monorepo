@@ -1,8 +1,14 @@
 'use client';
 
-import { LegitLocal, useLegitFs } from '@/lib/legit-runtime';
-import { LegitFsHeadPoller } from '@/lib/legit-runtime/LegitFsHeadPoller';
-import { AssistantRuntimeProvider } from '@assistant-ui/react';
+import {
+  LegitLocal,
+  useLegitFs,
+  LegitFsHeadPoller,
+} from '@legit-sdk/assistant-ui';
+import {
+  AssistantProvider,
+  AssistantRuntimeProvider,
+} from '@assistant-ui/react';
 import { useDataStreamRuntime } from '@assistant-ui/react-data-stream';
 import { useEffect, useMemo, type ReactNode } from 'react';
 

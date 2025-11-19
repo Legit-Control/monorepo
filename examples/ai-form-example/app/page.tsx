@@ -6,7 +6,7 @@ import { Form } from '@/components/ui/form';
 import { useAssistantForm } from '@assistant-ui/react-hook-form';
 import { useAssistantInstructions } from '@assistant-ui/react';
 import { useEffect } from 'react';
-import { useLegitFs } from '@/lib/legit-runtime';
+import { useLegitFs } from '@legit-sdk/assistant-ui';
 import { PencilIcon } from 'lucide-react';
 
 const SetFormFieldTool = props => {

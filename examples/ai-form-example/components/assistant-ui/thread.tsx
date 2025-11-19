@@ -9,7 +9,7 @@ import {
   useAssistantRuntime,
   useAssistantState,
 } from '@assistant-ui/react';
-import { useEffect, useState, type FC } from 'react';
+import { type FC } from 'react';
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -25,8 +25,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { MarkdownText } from '@/components/assistant-ui/markdown-text';
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button';
-import { syncThreadFromLegitFs, useLegitFs } from '@/lib/legit-runtime';
-import { HistoryItem } from '@legit-sdk/core';
 import { ChangesCard } from './changes-card';
 
 export const Thread: FC = () => {

@@ -5,7 +5,7 @@ import {
   convertMessagesToModelMessages,
   streamTextToDataStreamResponse,
   type UIMessage,
-} from '@/lib/legit-runtime/customConverters';
+} from '@legit-sdk/assistant-ui/server';
 
 export const runtime = 'nodejs';
 

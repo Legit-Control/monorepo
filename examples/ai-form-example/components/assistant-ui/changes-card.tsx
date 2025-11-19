@@ -1,4 +1,4 @@
-import { useLegitFs } from '@/lib/legit-runtime';
+import { useLegitFs } from '@legit-sdk/assistant-ui';
 import { useAssistantState } from '@assistant-ui/react';
 import { FC, useEffect, useState } from 'react';
 
