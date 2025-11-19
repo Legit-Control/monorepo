@@ -63,6 +63,22 @@
         background-color: #ccc;
         cursor: not-allowed;
       }
+      .test-button {
+        background-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .test-button:hover {
+        background-color: #218838;
+      }
+      .test-button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
       .response-container {
         margin-top: 30px;
       }
@@ -148,6 +164,9 @@ main</textarea
         readonly
         placeholder="Your JWT token will appear here..."
       ></textarea>
+      <button type="button" id="testTokenBtn" class="test-button" style="margin-top: 15px; display: none;">
+        Test Token
+      </button>
     </div>
 
     <script>
@@ -194,15 +213,21 @@ main</textarea
                 // Success: Show only the token
                 responseArea.value = responseData.token;
                 responseArea.className = 'response-textarea success';
+                // Show the test button
+                document.getElementById('testTokenBtn').style.display = 'inline-block';
               } else {
                 // Unexpected success response format
                 responseArea.value = 'Success: Invalid response format';
                 responseArea.className = 'response-textarea error';
+                // Hide the test button
+                document.getElementById('testTokenBtn').style.display = 'none';
               }
             } catch (parseError) {
               // Failed to parse success response
               responseArea.value = 'Success: Failed to parse response';
               responseArea.className = 'response-textarea error';
+              // Hide the test button
+              document.getElementById('testTokenBtn').style.display = 'none';
             }
           } else {
             // Error: Show the error message
@@ -213,6 +238,8 @@ main</textarea
               responseArea.value = `Error (${response.status}): ${responseText}`;
             }
             responseArea.className = 'response-textarea error';
+            // Hide the test button
+            document.getElementById('testTokenBtn').style.display = 'none';
           }
         } catch (error) {
           responseArea.value = `Error: ${error.message}`;
@@ -221,6 +248,48 @@ main</textarea
           // Re-enable submit button
           submitBtn.disabled = false;
           submitBtn.textContent = 'Create Token';
+        }
+      });
+
+      // Test Token button event listener
+      document.getElementById('testTokenBtn').addEventListener('click', async function () {
+        const testBtn = this;
+        const responseArea = document.getElementById('responseArea');
+
+        // Get the current token
+        const token = responseArea.value.trim();
+
+        if (!token) {
+          alert('No token available to test');
+          return;
+        }
+
+        // Disable button and show loading state
+        testBtn.disabled = true;
+        testBtn.textContent = 'Testing...';
+
+        try {
+          const response = await fetch('/test-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          const responseText = await response.text();
+
+          if (response.ok) {
+            alert('Token is valid! Response: ' + responseText);
+          } else {
+            alert('Token test failed: ' + responseText);
+          }
+        } catch (error) {
+          alert('Error testing token: ' + error.message);
+        } finally {
+          // Re-enable button
+          testBtn.disabled = false;
+          testBtn.textContent = 'Test Token';
         }
       });
     </script>
