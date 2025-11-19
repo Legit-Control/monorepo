@@ -55,6 +55,8 @@ const landingPage = readFileSync(join(import.meta.dirname, 'index.html'), 'utf8'
   origin,
 );
 
+const createTokenFormPage = readFileSync(join(import.meta.dirname, 'create-token-form.html'), 'utf8');
+
 /**
  *
  * @param {import('http').IncomingMessage} req
@@ -127,6 +129,15 @@ export default function handleRequest(req, res, next) {
     res.setHeader('content-type', 'text/html');
     res.statusCode = 400;
     res.end(landingPage);
+    return;
+  }
+
+  // Create token form page
+  if (u.pathname === '/create-token-form') {
+    if (isMiddleware) return next();
+    res.setHeader('content-type', 'text/html');
+    res.statusCode = 200;
+    res.end(createTokenFormPage);
     return;
   }
 
