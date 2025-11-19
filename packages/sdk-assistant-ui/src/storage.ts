@@ -8,7 +8,9 @@ let legitFsPromise: Promise<LegitFsInstance> | null = null;
 export async function getLegitFs(): Promise<LegitFsInstance> {
   if (!legitFsPromise) {
     legitFsPromise = initLegitFs(
-      memfs as unknown as ReturnType<typeof initLegitFs>,
+      // TODO: fix this type error
+      // @ts-ignore
+      memfs,
       '/'
     );
     if (window) {
@@ -67,6 +69,23 @@ export async function readHead(threadId: string): Promise<string> {
     return head;
   } catch (error) {
     console.error('Error reading head from path:', threadId, error);
+    throw error;
+  }
+}
+
+export async function writeOperationHead(
+  threadId: string,
+  oid: string
+): Promise<void> {
+  try {
+    const fs = await getLegitFs();
+    await fs.promises.writeFile(
+      `${BRANCH_ROOT}/${threadId}/.legit/operationHead`,
+      oid,
+      'utf8'
+    );
+  } catch (error) {
+    console.error('Error writing head to path:', threadId, error);
     throw error;
   }
 }

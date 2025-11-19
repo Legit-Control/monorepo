@@ -1,11 +1,14 @@
 import { useLegitFs } from '@legit-sdk/assistant-ui';
 import { useAssistantState } from '@assistant-ui/react';
 import { FC, useEffect, useState } from 'react';
+import { Button } from '../ui/button';
+import { useSharedAssistantForm } from '@/lib/assistantFormContext';
 
 const ChangesCard: FC = () => {
   const messageId = useAssistantState(({ message }) => message.id);
-  const { legitFs, getMessageDiff, getPastState } = useLegitFs();
+  const { legitFs, getMessageDiff, getPastState, rollback } = useLegitFs();
   const [diff, setDiff] = useState<DiffMap | undefined>(undefined);
+  const form = useSharedAssistantForm();
 
   const ignoreKeys = ['hidden'];
 
@@ -63,15 +66,40 @@ const ChangesCard: FC = () => {
     }
   }, [messageId, legitFs]);
 
+  const handleRollback = async (messageId: string) => {
+    const newHead = await rollback(messageId);
+
+    // update form value to the current state
+    const newState = await getPastState(newHead, '/form-values.json');
+    if (newState) {
+      const newStateObj = JSON.parse(newState);
+      console.log('newStateObj', newStateObj);
+
+      // update form value to the current state
+      form.reset(newStateObj);
+    }
+  };
+
   if (!diff) return null;
 
   return (
-    <div className="text-sm border border-gray-200 rounded-lg mr-20 mb-3">
-      <h2 className="flex h-12 items-center px-3 gap-2 border-b border-gray-200 font-medium">
+    <div
+      className="text-sm border border-gray-200 rounded-lg mr-20 mb-3"
+      data-message-id={messageId}
+    >
+      <h2 className="flex h-12 items-center pl-3 pr-2 gap-2 border-b border-gray-200 font-medium">
         <span className="bg-gray-200 px-2 rounded">
           {`${Object.entries(diff).length}`}
         </span>
-        Changes
+        <p className="flex-1">Changes</p>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleRollback(messageId)}
+        >
+          Rollback
+        </Button>
       </h2>
       <div className="py-2">
         {Object.entries(diff).map(([key, value]) => {

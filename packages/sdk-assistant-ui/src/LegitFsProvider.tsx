@@ -9,7 +9,13 @@ import {
 } from 'react';
 
 import { type LegitFsInstance } from './types';
-import { getLegitFs, readOperationHistory, readPastState } from './storage';
+import {
+  getLegitFs,
+  readHead,
+  readOperationHistory,
+  readPastState,
+  writeOperationHead,
+} from './storage';
 
 export const DEFAULT_THREAD_ID = 'main';
 export const BRANCH_ROOT = '/.legit/branches';
@@ -35,6 +41,8 @@ type GetMessageDiffFn = (messageId: string) => Promise<
   | undefined
 >;
 
+type RollbackFn = (messageId: string) => Promise<string | undefined>;
+
 type GetPastStateFn = (
   oid: string,
   pathToFile: string
@@ -47,6 +55,7 @@ type LegitFsContextValue = {
   saveData: SaveDataFn;
   getMessageDiff: GetMessageDiffFn;
   getPastState: GetPastStateFn;
+  rollback: RollbackFn;
   threadId: string;
   resolvePath: (path: string) => string;
 };
@@ -142,6 +151,34 @@ export function LegitFsProvider({ children }: { children: ReactNode }) {
     [legitFs]
   );
 
+  const rollback = useCallback<RollbackFn>(
+    async messageId => {
+      if (legitFs) {
+        console.log('rollback', messageId);
+        await writeOperationHead(DEFAULT_THREAD_ID, messageId);
+
+        // TODO: add explaining message to the operation history
+        // const newMessage: CloudMessageWithoutId = {
+        //   created_at: new Date(),
+        //   updated_at: new Date(),
+        //   format: 'aui/v0',
+        //   content: {
+        //     role: 'system',
+        //     content: [
+        //       {
+        //         type: 'text',
+        //         text: `We have rolled back to a previous state`,
+        //       },
+        //     ],
+        //   },
+        // };
+        // await writeOperation(DEFAULT_THREAD_ID, JSON.stringify(newMessage));
+      }
+      return await readHead(DEFAULT_THREAD_ID);
+    },
+    [legitFs]
+  );
+
   const value = useMemo<LegitFsContextValue>(
     () => ({
       legitFs,
@@ -150,6 +187,7 @@ export function LegitFsProvider({ children }: { children: ReactNode }) {
       saveData,
       getMessageDiff,
       getPastState,
+      rollback,
       threadId: DEFAULT_THREAD_ID,
       resolvePath: resolveThreadPath,
     }),

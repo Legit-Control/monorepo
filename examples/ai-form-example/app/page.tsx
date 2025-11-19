@@ -7,15 +7,14 @@ import { useAssistantForm } from '@assistant-ui/react-hook-form';
 import { useAssistantInstructions } from '@assistant-ui/react';
 import { useEffect } from 'react';
 import { useLegitFs } from '@legit-sdk/assistant-ui';
-import { PencilIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
+import { AssistantFormProvider } from '@/lib/assistantFormContext';
 
-const SetFormFieldTool = props => {
-  const { name } = props.args;
+const SetFormFieldTool = () => {
   return (
-    <p className="text-[14px] font-medium text-gray-400">
-      <PencilIcon className="w-4 h-4 inline-block mr-3" />
-      Try to update field{' - '}
-      <span className="font-mono text-blue-500">{name}</span>
+    <p className="text-[14px] font-medium text-gray-400 flex items-center gap-2">
+      <CheckIcon className="w-4 h-4 inline-block" />
+      Update field
     </p>
   );
 };
@@ -60,19 +59,21 @@ export default function Home() {
   }, [formValues, saveData]);
 
   return (
-    <div className="flex min-h-screen max-w-6xl mx-auto flex-col p-8 gap-4">
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <AssistantSidebar>
-          <div className="h-full overflow-y-scroll">
-            <main className="container p-8">
-              <h1 className="mb-2 text-2xl font-semibold">AI Form</h1>
-              <Form {...form}>
-                <SignupForm />
-              </Form>
-            </main>
-          </div>
-        </AssistantSidebar>
+    <AssistantFormProvider form={form}>
+      <div className="flex min-h-screen max-w-6xl mx-auto flex-col p-8 gap-4">
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <AssistantSidebar>
+            <div className="h-full overflow-y-scroll">
+              <main className="container p-8">
+                <h1 className="mb-2 text-2xl font-semibold">AI Form</h1>
+                <Form {...form}>
+                  <SignupForm />
+                </Form>
+              </main>
+            </div>
+          </AssistantSidebar>
+        </div>
       </div>
-    </div>
+    </AssistantFormProvider>
   );
 }
