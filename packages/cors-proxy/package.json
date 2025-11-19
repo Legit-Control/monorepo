@@ -6,7 +6,7 @@
   "bin": "bin.js",
   "type": "module",
   "scripts": {
-    "start": "cors-proxy start",
+    "start": "node dev-server.js",
     "dev": "nodemon dev-server.js",
     "dev:cors-proxy": "cors-proxy run",
     "test-local": "rm -rf test-temp && mkdir test-temp && npx isomorphic-git clone --corsProxy=\"http://localhost:9999\" --url=\"https://github.com/isomorphic-git/isomorphic-git.git\" --dir=\"./test-temp\""
