@@ -1,7 +1,11 @@
+import { config } from 'dotenv';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Writable } from 'stream';
 import { createServer } from 'http';
+
+// Load environment variables
+config();
 
 const origin = process.env.ALLOW_ORIGIN || '*';
 const insecure_origins = (process.env.INSECURE_HTTP_ORIGINS || '').split(',');
@@ -47,6 +51,12 @@ const exposeHeaders = [
   'x-redirected-url',
 ];
 const allowMethods = ['POST', 'GET', 'OPTIONS'];
+
+const createTokenPassword = process.env.CREATE_TOKEN_PASSWORD;
+
+if (!createTokenPassword) {
+  throw new Error('CREATE_TOKEN_PASSWORD environment variable is not set');
+}
 
 const maxAge = 60 * 60 * 24; // 24 hours
 const allowCredentials = false;
@@ -97,7 +107,6 @@ function isAllowed(req, u) {
  * @returns
  */
 export default function handleRequest(req, res, next) {
-  
   const u = new URL(req.url, `https://0.0.0.0:${req.socket.localPort}/`);
   const isMiddleware = typeof next === 'function';
 
@@ -148,9 +157,8 @@ export default function handleRequest(req, res, next) {
 
     // Check password
     const providedPassword = req.headers.authorization;
-    const hardcodedPassword = 'password';
 
-    if (providedPassword !== hardcodedPassword) {
+    if (providedPassword !== createTokenPassword) {
       res.statusCode = 401;
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({ error: 'Invalid password' }));
@@ -159,7 +167,7 @@ export default function handleRequest(req, res, next) {
 
     // Collect request body
     let body = '';
-    req.on('data', chunk => {
+    req.on('data', (chunk) => {
       body += chunk.toString();
     });
 
@@ -170,13 +178,15 @@ export default function handleRequest(req, res, next) {
         // Return the form fields as JSON
         res.statusCode = 200;
         res.setHeader('content-type', 'application/json');
-        res.end(JSON.stringify({
-          success: true,
-          data: {
-            repoUrl: requestData.repoUrl,
-            branchWildcards: requestData.branchWildcards
-          }
-        }));
+        res.end(
+          JSON.stringify({
+            success: true,
+            data: {
+              repoUrl: requestData.repoUrl,
+              branchWildcards: requestData.branchWildcards,
+            },
+          }),
+        );
       } catch (error) {
         res.statusCode = 400;
         res.setHeader('content-type', 'application/json');

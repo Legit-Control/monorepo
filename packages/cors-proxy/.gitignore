@@ -1,2 +1,7 @@
 node_modules
 isomorphic-git-cors-proxy-0.0.0-development.tgz
+
+# Environment variables
+.env
+.env.local
+.env.*.local
