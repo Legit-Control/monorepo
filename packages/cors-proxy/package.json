@@ -1,0 +1,35 @@
+{
+  "name": "@isomorphic-git/cors-proxy",
+  "version": "0.0.0-development",
+  "description": "Proxy clone and push requests for the browser",
+  "main": "index.js",
+  "bin": "bin.js",
+  "type": "module",
+  "scripts": {
+    "start": "cors-proxy start",
+    "dev": "cors-proxy run",
+    "test-local": "rm -rf test-temp && mkdir test-temp && npx isomorphic-git clone --corsProxy=\"http://localhost:9999\" --url=\"https://github.com/isomorphic-git/isomorphic-git.git\" --dir=\"./test-temp\""
+  },
+  "keywords": [],
+  "author": "William Hilton <wmhilton@gmail.com>",
+  "contributors": [
+    "James Prevett <jp@jamespre.dev>"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isomorphic-git/cors-proxy.git"
+  },
+  "now": {
+    "public": true
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "isomorphic-git": "^1.35.0",
+    "prettier": "^3.6.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "runkitExampleFilename": "example-runkit.js"
+}
