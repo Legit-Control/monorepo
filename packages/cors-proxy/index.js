@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Writable } from 'stream';
+import { createServer } from 'http';
 
 const origin = process.env.ALLOW_ORIGIN || '*';
 const insecure_origins = (process.env.INSECURE_HTTP_ORIGINS || '').split(',');
@@ -138,6 +139,51 @@ export default function handleRequest(req, res, next) {
     res.setHeader('content-type', 'text/html');
     res.statusCode = 200;
     res.end(createTokenFormPage);
+    return;
+  }
+
+  // Create token endpoint
+  if (u.pathname === '/create-token' && req.method === 'POST') {
+    if (isMiddleware) return next();
+
+    // Check password
+    const providedPassword = req.headers.authorization;
+    const hardcodedPassword = 'password';
+
+    if (providedPassword !== hardcodedPassword) {
+      res.statusCode = 401;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ error: 'Invalid password' }));
+      return;
+    }
+
+    // Collect request body
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', () => {
+      try {
+        const requestData = JSON.parse(body);
+
+        // Return the form fields as JSON
+        res.statusCode = 200;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({
+          success: true,
+          data: {
+            repoUrl: requestData.repoUrl,
+            branchWildcards: requestData.branchWildcards
+          }
+        }));
+      } catch (error) {
+        res.statusCode = 400;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ error: 'Invalid JSON in request body' }));
+      }
+    });
+
     return;
   }
 
