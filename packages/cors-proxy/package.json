@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "start": "cors-proxy start",
-    "dev": "cors-proxy run",
+    "dev": "nodemon dev-server.js",
+    "dev:cors-proxy": "cors-proxy run",
     "test-local": "rm -rf test-temp && mkdir test-temp && npx isomorphic-git clone --corsProxy=\"http://localhost:9999\" --url=\"https://github.com/isomorphic-git/isomorphic-git.git\" --dir=\"./test-temp\""
   },
   "keywords": [],
@@ -26,6 +27,7 @@
   "dependencies": {},
   "devDependencies": {
     "isomorphic-git": "^1.35.0",
+    "nodemon": "^3.0.2",
     "prettier": "^3.6.2"
   },
   "publishConfig": {
