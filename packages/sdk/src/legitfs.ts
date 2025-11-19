@@ -6,7 +6,11 @@ import { EphemeralSubFs } from './compositeFs/subsystems/EphemeralFileSubFs.js';
 import { GitSubFs } from './compositeFs/subsystems/git/GitSubFs.js';
 import { HiddenFileSubFs } from './compositeFs/subsystems/HiddenFileSubFs.js';
 
-export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
+export async function initLegitFs(
+  storageFs: typeof nodeFs,
+  gitRoot: string,
+  defaultBranch = 'main'
+) {
   let gitFolderExisted = false;
   try {
     await storageFs.promises.readdir(gitRoot + '/.git');
@@ -22,7 +26,7 @@ export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
     );
   }
 
-  await git.init({ fs: storageFs, dir: '/', defaultBranch: 'main' });
+  await git.init({ fs: storageFs, dir: '/', defaultBranch: defaultBranch });
   await storageFs.promises.writeFile(gitRoot + '/.keep', '');
   await git.add({ fs: storageFs, dir: '/', filepath: '.keep' });
   await git.commit({
@@ -32,13 +36,17 @@ export async function initLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
     author: { name: 'Test', email: 'test@example.com' },
   });
 
-  return openLegitFs(storageFs, gitRoot);
+  return openLegitFs(storageFs, gitRoot, defaultBranch);
 }
 
 /**
  * Creates and configures a LegitFs instance with CompositeFs, GitSubFs, HiddenFileSubFs, and EphemeralSubFs.
  */
-export function openLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
+export function openLegitFs(
+  storageFs: typeof nodeFs,
+  gitRoot: string,
+  defaultBranch = 'main'
+) {
   // rootFs is the top-level CompositeFs
   // it propagates operations to the real filesystem (storageFs)
   // it allows the child copmositeFs to define file behavior while tunneling through to the real fs
@@ -72,6 +80,7 @@ export function openLegitFs(storageFs: typeof nodeFs, gitRoot: string) {
     parentFs: rootFs,
     storageFs: undefined,
     gitRoot: gitRoot,
+    defaultBranch: defaultBranch,
   });
 
   const gitSubFs = new GitSubFs({

@@ -1,63 +1,48 @@
 import git, { FsClient } from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 
-function normalizeRemoteUrl(remoteUrl: string): string {
-  // Matches: git@github.com:owner/repo.git
-  const sshPattern = /^git@([^:]+):(.+)$/;
-  const match = remoteUrl.match(sshPattern);
+const remote = 'legit';
 
-  if (match) {
-    const host = match[1]; // e.g. github.com
-    const path = match[2]; // e.g. martin-lysk/sync.git
-    return `https://${host}/${path}`;
-  }
+// const createHttpHandler = {
+//   async request(url: any, options: any ) {
+//     const auth = Buffer
+//       .from(`${username}:${password}`)
+//       .toString('base64')
 
-  // Already HTTPS or something else → leave unchanged
-  return remoteUrl;
-}
+//     const headers = {
+//       ...(options.headers || {}),
+//       Authorization: `Basic ${auth}`,
+//     };
 
-export const createGitSyncService = ({
+//     // Call the underlying http client
+//     return http.request(url, { ...options, headers });
+//   }
+// };
+
+export const createLegitSyncService = ({
   fs,
   gitRepoPath,
-  originPrefix,
-  corsProxy,
-  user,
-  password,
+  serverUrl = 'https://hub.legitcontrol.com',
+  token,
 }: {
   fs: FsClient;
   gitRepoPath: string;
-  originPrefix: string;
-  corsProxy?: string | undefined;
-  user: string;
-  password: string;
+  serverUrl?: string;
+  token: string;
 }) => {
   let running = false;
 
-  let lastPushedCommit: string | undefined = undefined;
-
-  let remoteUrl: string | undefined = undefined;
-
   async function pull() {
-    // console.log(
-    //   'monitor Pull - fetching changes from remote... ' + remoteUrl,
-    //   'password ' + password
-    // );
-    let result = await git.fetch({
+    await git.fetch({
       fs,
       http,
       dir: gitRepoPath,
-      url: remoteUrl!,
-      corsProxy,
-      // we fetch all branches
-      // ref,
-      //   singleBranch: true,
-      onAuth: () => ({
-        username: user,
-        password: password,
-      }),
+      remote,
+      url: serverUrl!,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-
-    const remote = 'origin';
 
     const localRefs = await git.listBranches({ fs, dir: gitRepoPath });
 
@@ -96,7 +81,6 @@ export const createGitSyncService = ({
         // Four cases exist:
         if (localCommit === remoteCommit) {
           // 1. Both are identical -> no-op
-
           // console.log(`branch ${localRef} in sync`);
         } else {
           const mergeBase = await git.findMergeBase({
@@ -164,7 +148,8 @@ export const createGitSyncService = ({
             unpushedRefs.push(localRef);
           }
         }
-      } else {
+      } else if (localCommit && !remoteCommit) {
+        unpushedRefs.push(localRef);
       }
     }
 
@@ -217,24 +202,31 @@ export const createGitSyncService = ({
         fs: fs,
         http,
         dir: gitRepoPath,
-        corsProxy,
-        url: remoteUrl!,
+        remote,
+        url: serverUrl!,
         ref: branch,
-        onAuth: () => ({
-          username: user,
-          password: password,
-        }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
     }
   }
 
   async function monitorChanges() {
-    let value = await git.getConfig({
+    const existing = await git.getConfig({
       fs,
       dir: gitRepoPath,
-      path: 'remote.origin.url',
+      path: `remote.${remote}.fetch`,
     });
-    remoteUrl = normalizeRemoteUrl(value);
+
+    if (!existing) {
+      await git.setConfig({
+        fs,
+        dir: gitRepoPath,
+        path: `remote.${remote}.fetch`,
+        value: `+refs/heads/*:refs/remotes/${remote}/*`,
+      });
+    }
 
     try {
       await pull();
@@ -278,17 +270,16 @@ export const createGitSyncService = ({
   }
 
   return {
-    clone: async (url: string) => {
+    clone: async (token: string) => {
       return git.clone({
         fs,
         http,
-        corsProxy,
         dir: gitRepoPath,
-        url,
-        onAuth: () => ({
-          username: user,
-          password: password,
-        }),
+        remote,
+        url: serverUrl,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
     },
     start: () => {

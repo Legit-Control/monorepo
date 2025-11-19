@@ -38,8 +38,8 @@ export function useLegitFile(
     const load = async () => {
       setLoading(true);
       try {
-        const filePath = `/.legit/branches/main${path}`;
-        const historyPath = `/.legit/branches/main/.legit/history`;
+        const filePath = `/.legit/branches/${legitFs.defaultBranch}${path}`;
+        const historyPath = `/.legit/branches/${legitFs.defaultBranch}/.legit/history`;
 
         // Simple read with graceful error handling
         const [textResult, historyResult] = await Promise.allSettled([
@@ -110,7 +110,7 @@ export function useLegitFile(
 
         // Write file - this triggers commit synchronously
         await legitFs.promises.writeFile(
-          `/.legit/branches/main${path}`,
+          `/.legit/branches/${legitFs.defaultBranch}${path}`,
           newText,
           'utf8'
         );

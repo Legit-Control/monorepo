@@ -99,6 +99,7 @@ export class CompositeFs {
   subFilesystems: CompositeSubFs[] = [];
   parentFs: CompositeFs | undefined;
   name: string;
+  defaultBranch: string;
 
   pathToFileDescriptors: Map<
     /** path */
@@ -118,15 +119,18 @@ export class CompositeFs {
     parentFs,
     storageFs,
     gitRoot,
+    defaultBranch = 'main',
   }: {
     name: string;
     parentFs: CompositeFs | undefined;
     storageFs: typeof nodeFs | undefined;
     gitRoot: string;
+    defaultBranch?: string;
   }) {
     this.name = name;
     this.parentFs = parentFs;
     this.gitRoot = gitRoot;
+    this.defaultBranch = defaultBranch;
 
     this.promises = {
       access: this.access.bind(this),

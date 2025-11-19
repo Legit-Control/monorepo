@@ -5,7 +5,7 @@ export * from './compositeFs/subsystems/PassThroughSubFs.js';
 export * from './compositeFs/subsystems/git/GitSubFs.js';
 export * from './compositeFs/subsystems/git/virtualFiles/operations/gitBranchOperationsVirtualFile.js';
 export * from './legitfs.js';
-export * from './sync/createGitSyncService.js';
+export * from './sync/createLegitSyncService.js';
 export * from './adapter/browser-fs-access.js';
 export * from './compositeFs/subsystems/git/virtualFiles/types/HistoryItom.js';
 export * from './compositeFs/subsystems/git/virtualFiles/types/User.js';
