@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useLegitContext } from './LegitProvider';
 import { HistoryItem, initLegitFs } from '@legit-sdk/core';
 
@@ -153,8 +153,7 @@ export function useLegitFile(
     }
   }, [loading, content, legitFs, options?.initialContent, save]);
 
-  const getPastState = async (oid: string) => {
-    debugger;
+  const getPastState = useCallback(async (oid: string) => {
     if (!legitFs) return '';
     try {
       // Remove leading slash from path for git commit file access
@@ -167,12 +166,12 @@ export function useLegitFile(
     } catch {
       return '';
     }
-  };
+  }, [legitFs, path]);
 
   return {
     content,
     setContent: save,
-    history,
+    history: useMemo(() => history, [history]),
     getPastState,
     loading,
     error: error ?? fsError,

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { mockedInitLegitFs } from '../__mocks__/mockLegitFs';
+import { mockCreateLegitSyncService } from '../__mocks__/mockCreateLegitSyncService';
 
 // mock the sdk
 vi.mock('@legit-sdk/core', () => ({
   initLegitFs: mockedInitLegitFs,
+  createLegitSyncService: mockCreateLegitSyncService,
 }));
 
 import { LegitProvider, useLegitContext } from '../LegitProvider';

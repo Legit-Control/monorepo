@@ -6,15 +6,14 @@ import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 
-const FILE_PATH = '/document.txt';
 const INITIAL_TEXT = 'This is a document that you can edit! 🖋️';
 
 function Editor() {
   // ✅ The hook handles reading, writing, and history tracking
   const { content, setContent, history, getPastState, loading, error } =
-    useLegitFile(FILE_PATH, { initialContent: INITIAL_TEXT });
+    useLegitFile('/document.txt', { initialContent: INITIAL_TEXT });
   const { head } = useLegitContext();
   const [text, setText] = useState('');
   const [checkedOutCommit, setCheckedOutCommit] = useState<string | null>(null);
@@ -27,11 +26,14 @@ function Editor() {
   }, [content]);
 
   // Checkout a commit by loading its content from history
-  const handleCheckout = async (oid: string) => {
-    const past = await getPastState(oid);
-    setText(past);
-    setCheckedOutCommit(oid);
-  };
+  const handleCheckout = useCallback(
+    async (oid: string) => {
+      const past = await getPastState(oid);
+      setText(past);
+      setCheckedOutCommit(oid);
+    },
+    [getPastState]
+  );
 
   // Save changes → triggers legit commit under the hood
   const handleSave = async () => {
@@ -68,7 +70,7 @@ function Editor() {
         <div className="flex justify-between bg-zinc-100 px-3 py-2 border-b border-zinc-300">
           <div className="flex gap-2 items-center">
             <Image alt="File" src="/file.svg" width={20} height={20} />
-            {FILE_PATH.replace('/', '')}
+            {'document.txt'}
           </div>
           <button
             onClick={handleSave}
@@ -112,7 +114,7 @@ type HistoryItemProps = {
   getPastState: (commitHash: string) => Promise<string>;
 };
 
-function HistoryListItem({
+const HistoryListItem = memo(function HistoryListItem({
   item,
   isActive,
   onCheckout,
@@ -192,11 +194,11 @@ function HistoryListItem({
       </div>
     </div>
   );
-}
+});
 
 export default function Home() {
   return (
-    <LegitProvider branch="main">
+    <LegitProvider branch="test">
       <Editor />
     </LegitProvider>
   );
