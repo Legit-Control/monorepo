@@ -319,7 +319,9 @@ export class CompositeFs {
         fileNames.add(fileName);
       }
     } catch (err) {
-      console.log((err as unknown as any).code);
+      if ((err as unknown as any).code !== 'ENOENT') {
+        throw new Error('error reading ephemeral fs: ' + err);
+      }
     }
 
     for (const fileName of fileNames) {
