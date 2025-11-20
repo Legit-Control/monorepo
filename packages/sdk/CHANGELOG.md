@@ -1,5 +1,16 @@
 # @legit-sdk/core
 
+## 0.1.10
+
+### Patch Changes
+
+- Enable rollback
+  - new end points in per branch `.legit` folder
+    - operationHead -> read + write (rollback)
+    - head -> write (rollback)
+  - Operation type (return from operationHistory)
+    - added originBranchOid (always points to last change on working branch)
+
 ## 0.1.9
 
 ### Patch Changes
