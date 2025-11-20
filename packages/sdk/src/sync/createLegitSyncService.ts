@@ -270,12 +270,13 @@ export const createLegitSyncService = ({
   }
 
   return {
-    clone: async (token: string) => {
+    clone: async (token: string, branch: string) => {
       return git.clone({
         fs,
         http,
         dir: gitRepoPath,
         remote,
+        ref: branch,
         url: serverUrl,
         headers: {
           Authorization: `Bearer ${token}`,
