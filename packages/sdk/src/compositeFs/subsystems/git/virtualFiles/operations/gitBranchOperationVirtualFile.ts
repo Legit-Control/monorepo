@@ -126,7 +126,7 @@ export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
       headCommit = await git.resolveRef({
         fs: nodeFs,
         dir: gitRoot,
-        ref: operationBranchName,
+        ref: `refs/heads/${operationBranchName}`,
       });
       hasOperations = true;
     } else {
