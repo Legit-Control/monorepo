@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.1.11
+
+### Patch Changes
+
+- chore: small fix of branch path that caused failure in operationsBranch workflow
+
 ## 0.1.10
 
 ### Patch Changes
