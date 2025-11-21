@@ -12,18 +12,20 @@ const INITIAL_TEXT = 'This is a document that you can edit! 🖋️';
 
 function Editor() {
   // ✅ The hook handles reading, writing, and history tracking
-  const { content, setContent, history, getPastState, loading, error } =
-    useLegitFile('/document.txt', { initialContent: INITIAL_TEXT });
+  const legitFile = useLegitFile('/document.txt', {
+    initialContent: INITIAL_TEXT,
+  });
+  const getPastState = legitFile.getPastState;
   const { head } = useLegitContext();
   const [text, setText] = useState('');
   const [checkedOutCommit, setCheckedOutCommit] = useState<string | null>(null);
 
   useEffect(() => {
-    if (content !== null) {
+    if (legitFile.content !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setText(content);
+      setText(legitFile.content);
     }
-  }, [content]);
+  }, [legitFile.content]);
 
   // Checkout a commit by loading its content from history
   const handleCheckout = useCallback(
@@ -37,7 +39,7 @@ function Editor() {
 
   // Save changes → triggers legit commit under the hood
   const handleSave = async () => {
-    await setContent(text);
+    await legitFile.setContent(text);
     setCheckedOutCommit(null); // Clear checkout after save
   };
 
@@ -45,13 +47,15 @@ function Editor() {
   // 1. Text hasn't changed from content (no changes to save)
   // 2. A commit is checked out that's not the current HEAD
   const isSaveDisabled =
-    text === content ||
+    text === legitFile.content ||
     (checkedOutCommit !== null && checkedOutCommit !== head);
 
-  if (loading)
+  if (legitFile.loading)
     return <div className="p-8 text-gray-500">Loading repository…</div>;
-  if (error)
-    return <div className="p-8 text-red-500">Error {error.message}</div>;
+  if (legitFile.error)
+    return (
+      <div className="p-8 text-red-500">Error {legitFile.error.message}</div>
+    );
 
   return (
     <div className="flex min-h-screen max-w-xl mx-auto flex-col p-8 gap-4">
@@ -93,13 +97,13 @@ function Editor() {
       {/* History */}
       <h2 className="mt-2 text-md font-semibold">History</h2>
       <div className="flex flex-col gap-2 max-w-lg w-full">
-        {history.map(h => (
+        {legitFile.history.map(h => (
           <HistoryListItem
             key={h.oid}
             item={h}
             isActive={h.oid === checkedOutCommit}
             onCheckout={handleCheckout}
-            getPastState={getPastState}
+            getPastState={legitFile.getPastState}
           />
         ))}
       </div>
@@ -198,7 +202,7 @@ const HistoryListItem = memo(function HistoryListItem({
 
 export default function Home() {
   return (
-    <LegitProvider branch="test">
+    <LegitProvider branch="demo-2">
       <Editor />
     </LegitProvider>
   );

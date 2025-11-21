@@ -29,13 +29,12 @@ export function useLegitFile(
   const hasInitializedRef = useRef(false);
   const isInitializingRef = useRef(false);
 
+
   // Load file + history when legitFs is ready or HEAD changes
   useEffect(() => {
     if (!legitFs) return;
 
     let isCancelled = false;
-
-    console.log('LOOOOAAADING');
 
     const load = async () => {
       setLoading(true);
@@ -153,20 +152,23 @@ export function useLegitFile(
     }
   }, [loading, content, legitFs, options?.initialContent, save]);
 
-  const getPastState = useCallback(async (oid: string) => {
-    if (!legitFs) return '';
-    try {
-      // Remove leading slash from path for git commit file access
-      const gitPath = path.startsWith('/') ? path.slice(1) : path;
-      const past = await legitFs.promises.readFile(
-        `/.legit/commits/${oid.slice(0, 2)}/${oid.slice(2)}/${gitPath}`,
-        'utf8'
-      );
-      return past as unknown as string;
-    } catch {
-      return '';
-    }
-  }, [legitFs, path]);
+  const getPastState = useCallback(
+    async (oid: string) => {
+      if (!legitFs) return '';
+      try {
+        // Remove leading slash from path for git commit file access
+        const gitPath = path.startsWith('/') ? path.slice(1) : path;
+        const past = await legitFs.promises.readFile(
+          `/.legit/commits/${oid.slice(0, 2)}/${oid.slice(2)}/${gitPath}`,
+          'utf8'
+        );
+        return past as unknown as string;
+      } catch {
+        return '';
+      }
+    },
+    [legitFs, path]
+  );
 
   return {
     content,

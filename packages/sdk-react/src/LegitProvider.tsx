@@ -140,6 +140,8 @@ export const LegitProvider = ({
         }
       }
 
+      // @ts-ignore
+      window.legitFs = legitFsRef.current;
       syncService.start();
       const _legitFs = legitFsRef.current;
       let isRunning = false;
