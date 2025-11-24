@@ -271,7 +271,7 @@ export class CompositeFs {
     const responsibleFs = await this.getResponsibleFs(dirPath);
 
     // in case of the passsThrough fs - we don't enrich the result
-    if (responsibleFs !== this.passThroughFileSystem) {
+    if (responsibleFs === this.passThroughFileSystem) {
       return responsibleFs.readdir(dirPath, options);
     }
 
@@ -292,19 +292,25 @@ export class CompositeFs {
       }
     }
 
-    const passthroughEntries = await this.passThroughFileSystem.readdir(
-      dirPath,
-      options
-    );
+    try {
+      const passthroughEntries = await this.passThroughFileSystem.readdir(
+        dirPath,
+        options
+      );
 
-    for (const fileName of passthroughEntries) {
-      // only add non ephemeral Files here
-      if (
-        !(await this.ephemeralFilesFileSystem?.responsible(
-          (dirPath == '/' ? '' : dirPath) + '/' + fileName
-        ))
-      ) {
-        fileNames.add(fileName);
+      for (const fileName of passthroughEntries) {
+        // only add non ephemeral Files here
+        if (
+          !(await this.ephemeralFilesFileSystem?.responsible(
+            (dirPath == '/' ? '' : dirPath) + '/' + fileName
+          ))
+        ) {
+          fileNames.add(fileName);
+        }
+      }
+    } catch (err) {
+      if ((err as unknown as any).code !== 'ENOENT') {
+        throw new Error('error reading ephemeral fs: ' + err);
       }
     }
 

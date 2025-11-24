@@ -74,6 +74,85 @@ async function buildTreeWithoutFile(
   });
 }
 
+/**
+ * # How to present an empyt folder in git
+ *
+ * Git doesnt allow empty folders - so we need to create a placeholder file to keep the folder alive.
+ *
+ * ## Make dir
+ *
+ * folderA/
+ * └── myfile.txt
+ *
+ * mkdir('folderA/folderB')
+ *
+ * folderA/
+ * └── myfile.txt
+ * └── folderB/ <- empty folder, would be deleted by git
+ *
+ * We use a `.keep` file for that - when creating a folder we create a `.keep` file inside it.
+ *
+ * When deleting a folder we delete the `.keep` file inside it.
+ *
+ * Some problematic cases with that:
+ *
+ * ## Deletion of folder
+ *
+ * folderA/
+ * └── folderB/
+ *     └── .keep
+ *
+ * delete('rfolderA/folderB')
+ *
+ * folderA/ <- empty folder, leadd to deletion of folderA as well
+ *
+ * ## Removal of last file in folder
+ *
+ *
+ * folderA/
+ * └── folderB/
+ *     └── myfile.txt
+ *
+ * Two szenarios exists: deletion and move
+ *
+ * delete('folderA/folderB/myfile.txt')
+ *
+ * folderA/ <- empty folder, leadd to deletion of folderA as well
+ * └── folderB/  <- empty folder, leadd to deletion of folderB as well
+ *
+ * move('folderA/folderB/myfile.txt', 'folderA/myfile.txt')
+ *
+ * folderA/ <- empty folder, leadd to deletion of folderA as well
+ * └── folderB/  <- empty folder, leadd to deletion of folderB as well
+ * └── myfile.txt
+ *
+ * The simplest solution for this would be to create .keep file in every folder and deletion of a folder would mean empty the directory.
+ *
+ * folderA/
+ * └── .keep
+ * └── folderB/
+ *     └── .keep
+ *
+ * This would solve the deletion issue - but this won't work with existing repos not fulfilling this precondition.
+ *
+ *
+ *
+ *
+ *
+ * Another szenario is a file that gets moved from one folder to another
+ *
+ * Lets say we have the following folder structucture:
+ *
+ * folderA/
+ * └── folderB/
+ *     └── myfile.txt
+ *
+ * if we do mv('folderA/folderB/myfile.txt', 'folderA/myfile.txt') - the folderB would be deleted as well as the .keep file inside it.
+ *
+ *
+ *
+ *  -
+ */
 export const gitBranchFileVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchFileVirtualFile',
 
@@ -289,18 +368,13 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
               withFileTypes: false,
               encoding: 'utf-8',
             });
-            cacheEntries.push(
-              ...(cached.filter(v => v !== '.keep') as string[])
-            );
+            cacheEntries.push(...(cached as string[]));
           }
         } catch (e) {
           // ignore cache errors
         }
         const allEntries = Array.from(
-          new Set([
-            ...fileOrFolder.entries.filter(v => v !== '.keep'),
-            ...cacheEntries,
-          ])
+          new Set([...cacheEntries, ...fileOrFolder.entries])
         );
         return {
           type: 'directory',
@@ -343,12 +417,17 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
     });
 
     // Build new tree without the file
-    const newTreeOid = await buildTreeWithoutFile(
-      nodeFs,
-      gitRoot,
-      currentTree.oid,
-      pathParams.filePath.split('/')
-    );
+    const newTreeOid = await buildUpdatedTree({
+      dir: gitRoot,
+      fs: nodeFs,
+      treeOid: currentTree.oid,
+      deletePathParts: pathParams.filePath.split('/'),
+      addPathParts: undefined,
+      addObj: undefined,
+      deleteKeepIfNotEmpty: false,
+      addKeepIfEmpty: true,
+      keepFilename: '.keep',
+    });
 
     // Create commit if tree changed
     if (newTreeOid !== currentTree.oid) {
@@ -446,13 +525,18 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       oid: branchCommit,
     });
 
+    const filepathParts = pathParams.filePath.split('/');
+
     const newTreeOid = await buildUpdatedTree({
       dir: gitRoot,
       fs: nodeFs,
       treeOid: currentTree.oid,
-      addPathParts: pathParams.filePath.split('/'),
       deletePathParts: undefined,
+      addPathParts: pathParams.filePath.split('/'),
       addObj: { type: 'blob', oid: newOid },
+      deleteKeepIfNotEmpty: true,
+      addKeepIfEmpty: false,
+      keepFilename: '.keep',
     });
 
     if (newTreeOid !== currentTree.oid) {
@@ -577,6 +661,8 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       addPathParts: newPathParams.filePath.split('/'),
       addObj: existingAtOldPath,
       treeOid: currentBranchCommit,
+      addKeepIfEmpty: true,
+      deleteKeepIfNotEmpty: true,
     });
 
     const currentTree = await git.readTree({
@@ -633,6 +719,8 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       args.pathParams.filePath = args.pathParams.filePath.replace(/\/+$/, '');
     }
 
+    // TODO replace with build updated tree function
+
     const createFileArgs = {
       ...args,
       filePath: (args.filePath += '.keep'),
@@ -643,4 +731,8 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
 
     await gitBranchFileVirtualFile.writeFile!(createFileArgs);
   },
+
+  // rmdir: async (path: PathLike, ...args: any[]): Promise<void> => {
+  //   throw new Error(`rmdir not implemented for: ${this.toStr(path)}`);
+  // }
 };

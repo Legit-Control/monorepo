@@ -54,7 +54,8 @@ export async function initLegitFs(
 export function openLegitFs(
   storageFs: typeof nodeFs,
   gitRoot: string,
-  defaultBranch = 'main'
+  defaultBranch = 'main',
+  showKeeFiles = false
 ) {
   // rootFs is the top-level CompositeFs
   // it propagates operations to the real filesystem (storageFs)
@@ -98,10 +99,11 @@ export function openLegitFs(
     gitStorageFs: rootFs,
   });
 
+  const hiddenFiles = showKeeFiles ? ['.git'] : ['.git', '.keep'];
   const gitFsHiddenFs = new HiddenFileSubFs({
     parentFs: userSpaceFs,
     gitRoot,
-    hiddenFiles: ['.git'],
+    hiddenFiles,
   });
 
   const gitFsEphemeralFs = new EphemeralSubFs({
