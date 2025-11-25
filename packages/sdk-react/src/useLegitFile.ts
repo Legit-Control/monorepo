@@ -3,12 +3,12 @@ import { useLegitContext } from './LegitProvider';
 import { HistoryItem, initLegitFs } from '@legit-sdk/core';
 
 export interface UseLegitFileOptions {
-  initialContent?: string;
+  initialData?: string;
 }
 
 export type UseLegitFileReturn = {
-  content: string | null;
-  setContent: (newText: string) => Promise<void>;
+  data: string | null;
+  setData: (newText: string) => Promise<void>;
   history: HistoryItem[];
   getPastState: (commitHash: string) => Promise<string>;
   loading: boolean;
@@ -21,14 +21,13 @@ export function useLegitFile(
   options?: UseLegitFileOptions
 ): UseLegitFileReturn {
   const { legitFs, error: fsError, head } = useLegitContext();
-  const [content, setContent] = useState<string | null>(null);
+  const [data, setData] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
   const pendingSaveRef = useRef<string | null>(null);
   const hasInitializedRef = useRef(false);
   const isInitializingRef = useRef(false);
-
 
   // Load file + history when legitFs is ready or HEAD changes
   useEffect(() => {
@@ -68,7 +67,7 @@ export function useLegitFile(
           pendingSaveRef.current = null;
         }
 
-        setContent(text);
+        setData(text);
         setHistory(parsedHistory);
         setError(undefined);
       } catch (err: any) {
@@ -77,7 +76,7 @@ export function useLegitFile(
           setError(err as Error);
         } else {
           // File doesn't exist yet - that's ok
-          setContent(null);
+          setData(null);
           setHistory([]);
         }
       } finally {
@@ -111,7 +110,7 @@ export function useLegitFile(
         );
 
         // Optimistically update - HEAD polling will confirm
-        setContent(newText);
+        setData(newText);
       } catch (err) {
         pendingSaveRef.current = null;
         setError(err as Error);
@@ -131,13 +130,13 @@ export function useLegitFile(
     // 2. Content is null (file doesn't exist)
     // 3. legitFs is ready
     // 4. initialContent option is provided
-    if (!loading && content === null && legitFs && options?.initialContent) {
+    if (!loading && data === null && legitFs && options?.initialData) {
       isInitializingRef.current = true;
       hasInitializedRef.current = true;
 
       const initialize = async () => {
         try {
-          await save(options.initialContent!);
+          await save(options.initialData!);
         } catch (err) {
           // If initialization fails, reset flag so it can be retried
           // (but only if component is still mounted)
@@ -150,7 +149,7 @@ export function useLegitFile(
 
       initialize();
     }
-  }, [loading, content, legitFs, options?.initialContent, save]);
+  }, [loading, data, legitFs, options?.initialData, save]);
 
   const getPastState = useCallback(
     async (oid: string) => {
@@ -171,8 +170,8 @@ export function useLegitFile(
   );
 
   return {
-    content,
-    setContent: save,
+    data,
+    setData: save,
     history: useMemo(() => history, [history]),
     getPastState,
     loading,

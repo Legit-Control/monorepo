@@ -1,10 +1,12 @@
 import { vi } from 'vitest';
 
-export const mockLegitFs = {
+export const mockedLegitFs = {
   promises: {
     readFile: vi.fn(),
     writeFile: vi.fn(),
   },
+  defaultBranch: 'main',
 };
 
-export const mockedInitLegitFs = vi.fn().mockResolvedValue(mockLegitFs);
+export const mockInitLegitFs = vi.fn().mockResolvedValue(mockedLegitFs);
+export const mockOpenLegitFs = vi.fn().mockResolvedValue(mockedLegitFs);

@@ -1,9 +1,11 @@
 import { vi } from 'vitest';
 
-export const mockCreateLegitSyncService = {
+export const mockLegitSyncService = {
+  clone: vi.fn().mockResolvedValue(undefined),
   start: vi.fn(),
+  stop: vi.fn(),
 };
 
-export const mockedCreateLegitSyncService = vi
+export const mockCreateLegitSyncService = vi
   .fn()
-  .mockReturnValue(mockCreateLegitSyncService);
+  .mockReturnValue(mockLegitSyncService);
