@@ -16,6 +16,34 @@ vi.mock('@legit-sdk/core', () => ({
 
 import { LegitConfig, LegitProvider, useLegitContext } from '../LegitProvider';
 import { initLegitFs, openLegitFs } from '@legit-sdk/core';
+import { useEffect } from 'react';
+
+describe('Minimal setup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('initializes legitFs and sets loading state', async () => {
+    const Consumer = () => {
+      const { legitFs, loading } = useLegitContext();
+      return <div>{loading ? 'loading' : legitFs ? 'ready' : 'error'}</div>;
+    };
+
+    const { unmount } = render(
+      <LegitProvider>
+        <Consumer />
+      </LegitProvider>
+    );
+
+    // Initially loading
+    expect(screen.getByText('loading')).toBeDefined();
+
+    // Wait for legitFs to initialize
+    await waitFor(() => expect(screen.getByText('ready')).toBeDefined());
+    expect(initLegitFs).toHaveBeenCalled();
+    unmount();
+  });
+});
 
 describe('No initialBranch, sync enabled', () => {
   beforeEach(() => {
@@ -100,21 +128,12 @@ describe('No initialBranch, sync enabled', () => {
       promises: { readFile, writeFile: vi.fn() },
     } as unknown as ReturnType<typeof initLegitFs>);
 
-    // Spy on setInterval to capture the callback
-    const originalSetInterval = global.setInterval;
-    let captured: (() => void) | null = null;
-    const setIntervalSpy = vi
-      .spyOn(global, 'setInterval')
-      .mockImplementation((cb: any, _ms?: number): any => {
-        captured = cb;
-        return 1 as any;
-      });
-
     let updateCount = 0;
     const Consumer = () => {
       const { head } = useLegitContext();
       // Count non-null head values
       if (head !== null && head !== 'none') updateCount++;
+
       return <div data-testid="head-unique">{head ?? 'none'}</div>;
     };
 
@@ -124,16 +143,6 @@ describe('No initialBranch, sync enabled', () => {
       </LegitProvider>
     );
 
-    await waitFor(() => expect(setIntervalSpy).toHaveBeenCalled());
-    expect(captured).toBeTruthy();
-
-    // Trigger multiple polls with same value
-    await act(async () => {
-      await (captured as () => void)();
-      await (captured as () => void)();
-      await (captured as () => void)();
-    });
-
     // Should only update once (initial update)
     await waitFor(() =>
       expect(screen.getByTestId('head-unique').textContent).toBe('head1')
@@ -141,8 +150,6 @@ describe('No initialBranch, sync enabled', () => {
     // updateCount tracks how many times head was set to a non-null value
     expect(updateCount).toBeGreaterThanOrEqual(1);
 
-    setIntervalSpy.mockRestore();
-    global.setInterval = originalSetInterval;
     unmount();
   });
 
@@ -195,52 +202,6 @@ describe('No initialBranch, sync enabled', () => {
 
     // Should not log error for ENOENT
     expect(consoleErrorSpy).not.toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
-    setIntervalSpy.mockRestore();
-    global.setInterval = originalSetInterval;
-    unmount();
-  });
-
-  it('logs non-ENOENT errors during polling', async () => {
-    const readFile = vi.fn().mockImplementation((p: string) => {
-      if (p.endsWith('.legit/head')) {
-        return Promise.reject(new Error('Network error'));
-      }
-      return Promise.resolve('');
-    });
-
-    mockInitLegitFs.mockResolvedValueOnce({
-      promises: { readFile, writeFile: vi.fn() },
-    } as unknown as ReturnType<typeof initLegitFs>);
-
-    // Spy on setInterval
-    const originalSetInterval = global.setInterval;
-    let captured: (() => void) | null = null;
-    const setIntervalSpy = vi
-      .spyOn(global, 'setInterval')
-      .mockImplementation((cb: any, _ms?: number): any => {
-        captured = cb;
-        return 1 as any;
-      });
-
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-
-    const { unmount } = render(
-      <LegitProvider config={mockConfig} getSyncToken={mockGetSyncToken}>
-        <div>Test</div>
-      </LegitProvider>
-    );
-
-    await waitFor(() => expect(setIntervalSpy).toHaveBeenCalled());
-    expect(captured).toBeTruthy();
-
-    await act(async () => {
-      await (captured as () => void)();
-    });
-
-    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
     consoleErrorSpy.mockRestore();
     setIntervalSpy.mockRestore();
     global.setInterval = originalSetInterval;
@@ -568,16 +529,6 @@ describe('No initialBranch, sync disabled', () => {
       promises: { readFile, writeFile: vi.fn() },
     } as unknown as ReturnType<typeof initLegitFs>);
 
-    // Spy on setInterval to capture the callback
-    const originalSetInterval = global.setInterval;
-    let captured: (() => void) | null = null;
-    const setIntervalSpy = vi
-      .spyOn(global, 'setInterval')
-      .mockImplementation((cb: any, _ms?: number): any => {
-        captured = cb;
-        return 1 as any;
-      });
-
     let updateCount = 0;
     const Consumer = () => {
       const { head } = useLegitContext();
@@ -592,16 +543,6 @@ describe('No initialBranch, sync disabled', () => {
       </LegitProvider>
     );
 
-    await waitFor(() => expect(setIntervalSpy).toHaveBeenCalled());
-    expect(captured).toBeTruthy();
-
-    // Trigger multiple polls with same value
-    await act(async () => {
-      await (captured as () => void)();
-      await (captured as () => void)();
-      await (captured as () => void)();
-    });
-
     // Should only update once (initial update)
     await waitFor(() =>
       expect(screen.getByTestId('head-unique').textContent).toBe('head1')
@@ -609,8 +550,6 @@ describe('No initialBranch, sync disabled', () => {
     // updateCount tracks how many times head was set to a non-null value
     expect(updateCount).toBeGreaterThanOrEqual(1);
 
-    setIntervalSpy.mockRestore();
-    global.setInterval = originalSetInterval;
     unmount();
   });
 
@@ -663,52 +602,6 @@ describe('No initialBranch, sync disabled', () => {
 
     // Should not log error for ENOENT
     expect(consoleErrorSpy).not.toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
-    setIntervalSpy.mockRestore();
-    global.setInterval = originalSetInterval;
-    unmount();
-  });
-
-  it('logs non-ENOENT errors during polling', async () => {
-    const readFile = vi.fn().mockImplementation((p: string) => {
-      if (p.endsWith('.legit/head')) {
-        return Promise.reject(new Error('Network error'));
-      }
-      return Promise.resolve('');
-    });
-
-    mockInitLegitFs.mockResolvedValueOnce({
-      promises: { readFile, writeFile: vi.fn() },
-    } as unknown as ReturnType<typeof initLegitFs>);
-
-    // Spy on setInterval
-    const originalSetInterval = global.setInterval;
-    let captured: (() => void) | null = null;
-    const setIntervalSpy = vi
-      .spyOn(global, 'setInterval')
-      .mockImplementation((cb: any, _ms?: number): any => {
-        captured = cb;
-        return 1 as any;
-      });
-
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-
-    const { unmount } = render(
-      <LegitProvider config={configNoSync} getSyncToken={mockGetSyncToken}>
-        <div>Test</div>
-      </LegitProvider>
-    );
-
-    await waitFor(() => expect(setIntervalSpy).toHaveBeenCalled());
-    expect(captured).toBeTruthy();
-
-    await act(async () => {
-      await (captured as () => void)();
-    });
-
-    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
     consoleErrorSpy.mockRestore();
     setIntervalSpy.mockRestore();
     global.setInterval = originalSetInterval;

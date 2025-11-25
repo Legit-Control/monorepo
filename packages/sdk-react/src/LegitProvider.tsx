@@ -43,8 +43,8 @@ export const useLegitContext = () => useContext(LegitContext);
 
 export interface LegitProviderProps {
   children: ReactNode;
-  config: LegitConfig;
-  getSyncToken: GetSyncToken;
+  config?: LegitConfig;
+  getSyncToken?: GetSyncToken;
 }
 
 export type LegitConfig = {
@@ -55,6 +55,8 @@ export type LegitConfig = {
   };
 };
 
+const defaultConfig: LegitConfig = {};
+
 export type GetSyncToken = {
   (legitFs?: Awaited<ReturnType<typeof initLegitFs>>): Promise<string>;
 };
@@ -63,7 +65,7 @@ const DEFAULT_POLL_INTERVAL = 100; // Increased from 200ms to reduce polling fre
 
 export const LegitProvider = ({
   children,
-  config,
+  config = defaultConfig,
   getSyncToken,
 }: LegitProviderProps) => {
   const [legitFs, setLegitFs] = useState<Awaited<
@@ -124,20 +126,24 @@ export const LegitProvider = ({
     let lastSeenHead = '';
 
     const initFs = async (branchName?: string) => {
-      const token = await getSyncToken(); // 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJncyI6ImJOVC96NG1sWWZKR1BMTm5iZ0RmQ0huZmRiVWE2cWt5OHFGZFl2TCsvRTlydmh0ajRpWDhJWUlDMzBYZnpybFNuQTZuT1N6WDVqaWN1eW8wbCtaeEJpUDJpS1o3N0MrMVgyY0tXcjcwYVovam5pRFZMSHYvTTRtK0VmQS92MEpac09FbHVNQ0dsdVZ5OXZIZk11bHBXbFNFVGxia1ZiL0R5SnlEaWRQU1Rhb0dUeFhrek4yZHlLcW16MWJ1MmkxU2IyZUlxb3RaTk1OL2NiRnpTWi9IbURURDZDTXNVZkp0UnplNk0xRWM5S1VRQzZZUGNiYWJrTnkrU01weW9mZTVpb2IxMGdqNkpQK2pncXJYU1N3eWZSTzdtcU0wL0dRbjdRUktqdXhnTEtTWk51YlVnVDc3VGRYMkRBNUZkN1hHUUo0M1BrVWxuUFUvaEQ3K2szM0Vydz09IiwicnAiOiJMZWdpdC1Db250cm9sL3N0YXJ0ZXItc3luYyIsImJ3IjpbIm1haW4iXSwiaWF0IjoxNzYzNTg2ODYyfQ.dOOpCxzQlXyzpuKgcaLSRrqC1PJ9tySbkhe1pVD6dcGIdEN-iX5ZDPiO3p5xf9XHe5SXRdk5rVqJFXVfzf4sC3xy4e85tMFkPtFHjeKGGhZFtzyzGX0dniHuBxIPHy-hlxjsOgiFU-Jzpoa77Grn-1WMpl_GQCBwL_MNrUI2ZiuI6ruozHCfe_kzpLFzbqA5EqJkGJGnyPYty1CjAcqoZnK7aJ8VgRVzpqsmiwPkTklqluodYIY5xSxpYNzZkPwH1Zf3yFysigU3Ir0q-WiHu01g21UCW54YJRPB6LFkvf8a3nYOAk1_axSWqewyjy-8vqMRWJrDH-ttH_USnc2utg';
+      const token = getSyncToken ? await getSyncToken() : undefined;
 
-      const syncService = config.sync
-        ? createLegitSyncService({
-            fs: fs as any,
-            gitRepoPath: config.sync.gitRepoPath,
-            serverUrl: config.sync.serverUrl,
-            token,
-          })
-        : undefined;
+      if (config.sync && !token)
+        throw new Error('getSyncToken is required when sync is enabled');
+      debugger;
+      const syncService =
+        config.sync && token
+          ? createLegitSyncService({
+              fs: fs as any,
+              gitRepoPath: config.sync!.gitRepoPath, // will not run if not sync ready
+              serverUrl: config.sync!.serverUrl, // will not run if not sync ready
+              token: token!, // will throw if token is undefined
+            })
+          : undefined;
 
       if (branchName) {
         try {
-          if (syncService) {
+          if (syncService && token) {
             await syncService.clone(token, branchName);
           }
           const _legitFs = await openLegitFs(
@@ -183,10 +189,12 @@ export const LegitProvider = ({
         }
       }
 
-      // @ts-ignore
+      // set window.legitFs for debugging
       if (typeof window !== 'undefined') {
         (window as any).legitFs = legitFsRef.current;
       }
+
+      // start syncing
       if (syncService) {
         syncService.start();
         setSyncing(true);
@@ -194,10 +202,11 @@ export const LegitProvider = ({
         setSyncing(false);
       }
 
-      const _legitFs = legitFsRef.current;
       let isRunning = false;
-      if (_legitFs) {
+      if ((legitFs || legitFsRef.current) && branch) {
         pollHead = setInterval(async () => {
+          const _legitFs = legitFs || legitFsRef.current;
+          if (!_legitFs) return;
           if (isRunning) {
             console.log('Skipping poll - previous still running');
             return;
@@ -226,13 +235,13 @@ export const LegitProvider = ({
       }
     };
 
-    initFs(config.initialBranch);
+    initFs(branch ?? config.initialBranch);
 
     return () => {
       isMounted = false;
       if (pollHead) clearInterval(pollHead);
     };
-  }, [config.initialBranch]);
+  }, [config.initialBranch, branch]);
 
   return (
     <LegitContext.Provider

@@ -1,19 +1,24 @@
 'use client';
 
-import { LegitProvider, useLegitFile, useLegitContext } from '@legit-sdk/react';
-import { HistoryItem } from '@legit-sdk/core';
+import {
+  LegitProvider,
+  useLegitFile,
+  useLegitContext,
+  LegitConfig,
+} from '@legit-sdk/react';
+import { HistoryItem, initLegitFs } from '@legit-sdk/core';
 import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, memo, useEffectEvent } from 'react';
 
 const INITIAL_TEXT = 'This is a document that you can edit! 🖋️';
 
 function Editor() {
   // ✅ The hook handles reading, writing, and history tracking
   const legitFile = useLegitFile('/document.txt', {
-    initialContent: INITIAL_TEXT,
+    initialData: INITIAL_TEXT,
   });
   const getPastState = legitFile.getPastState;
   const { head } = useLegitContext();
@@ -21,11 +26,11 @@ function Editor() {
   const [checkedOutCommit, setCheckedOutCommit] = useState<string | null>(null);
 
   useEffect(() => {
-    if (legitFile.content !== null) {
+    if (legitFile.data !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setText(legitFile.content);
+      setText(legitFile.data);
     }
-  }, [legitFile.content]);
+  }, [legitFile.data]);
 
   // Checkout a commit by loading its content from history
   const handleCheckout = useCallback(
@@ -39,7 +44,7 @@ function Editor() {
 
   // Save changes → triggers legit commit under the hood
   const handleSave = async () => {
-    await legitFile.setContent(text);
+    await legitFile.setData(text);
     setCheckedOutCommit(null); // Clear checkout after save
   };
 
@@ -47,15 +52,12 @@ function Editor() {
   // 1. Text hasn't changed from content (no changes to save)
   // 2. A commit is checked out that's not the current HEAD
   const isSaveDisabled =
-    text === legitFile.content ||
+    text === legitFile.data ||
     (checkedOutCommit !== null && checkedOutCommit !== head);
 
   if (legitFile.loading)
     return <div className="p-8 text-gray-500">Loading repository…</div>;
-  if (legitFile.error)
-    return (
-      <div className="p-8 text-red-500">Error {legitFile.error.message}</div>
-    );
+  if (legitFile.error) console.info(legitFile.error);
 
   return (
     <div className="flex min-h-screen max-w-xl mx-auto flex-col p-8 gap-4">
@@ -201,8 +203,20 @@ const HistoryListItem = memo(function HistoryListItem({
 });
 
 export default function Home() {
+  const config: LegitConfig = {
+    initialBranch: '255827',
+    sync: {
+      serverUrl: 'http://localhost:9999/',
+      gitRepoPath: '/',
+    },
+  };
+
+  const getSyncToken = async () => {
+    return 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJncyI6IkpmbEJqakwyRGJRRGhKa2dKMWlzWGZRUkR3QWVPbFdURjRJVUo3L2tDYWxyc1ZyckJ1c0w4R013RzI1M3N0WU1MbGFocWFIcUo1eVJQT0FQVTllZHYwQWhkb1VMUHE0aFozQ1JHeEN2Y09ZMThMbTlMeFpHenByOHpna3ZDdzIvcE1hcGRsZG0yZHl5dXF6SHlVRm43UFFKQ084RmFoZVVrTVBoUXF0UnJLR09wY1NteFFiZUEwTHJIY0dVWFRBR2xXNi8zRG9KbDV1VmhkT0ZON2xiMlNkTFRpNHpUT2dtNUxNeTBrdzg4WXNxVGZNUlZ1RjVyYWdlR2NjMVhPaFErWVJna2NKajJIWkc3MVI2OXlMY3E3MFY1Nzl6QlBBQ01pMXVxLzhSdXBmSkdXM3hDUXhxVHFRcllVRjVRREtBY282K3RUNTNXc3Z5Vk9tU20yWEZRZz09IiwicnAiOiJOaWxzSmFjb2JzZW4vdGVzdC1sZWdpdC1zeW5jIiwiYnciOlsibWFpbiJdLCJpYXQiOjE3NjQwOTA1OTN9.Qkhvn36ZArkE25ERkKbEVxF-qwpPCnyOYfDpnMhnmG85LsQumXUTzhv_mdlpsi-jMU6BLJv4Nh_vMUmoZnwf468u3hEbOsE-Jaqfl7U7kvNfwJwp1gL5R9mZGY7fxJ1mtVBLnoHOKP3mpfPd8mAP7N8T8Oam3GaKwz0bL6kkdbOSZ8JRAEnpGpY_cunUWgbYGZZyocBJ2_fu3CEcVqKPK8wcro3406bpImBUEzER0rBIJa9vFQnBjthcDYyPsO-NbuRFWc7TqkC9d--Nn6yKivu9so1CYhBRTC0z3gCuG6Zsfy65yjl2zaFd1-8KHa6WbRKH8xMPV9Y8mQDUKRijAg';
+  };
+
   return (
-    <LegitProvider branch="demo-2">
+    <LegitProvider config={config} getSyncToken={getSyncToken}>
       <Editor />
     </LegitProvider>
   );
