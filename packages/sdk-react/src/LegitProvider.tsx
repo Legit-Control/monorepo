@@ -23,6 +23,7 @@ export interface LegitContextValue {
   setBranch: (branch: string) => Promise<void>;
   startSync: () => Promise<void>;
   stopSync: () => Promise<void>;
+  rollback: (commitHash: string) => Promise<void>;
   error?: Error;
 }
 
@@ -35,6 +36,7 @@ const LegitContext = createContext<LegitContextValue>({
   setBranch: async () => {},
   startSync: async () => {},
   stopSync: async () => {},
+  rollback: async () => {},
 });
 
 export const useLegitContext = () => useContext(LegitContext);
@@ -80,7 +82,7 @@ export const LegitProvider = ({
   );
 
   const handleSetBranch = async (newBranch: string) => {
-    if (!legitFsRef.current) {
+    if (!legitFs) {
       console.error('No legitFs instance available');
       return;
     }
@@ -100,6 +102,22 @@ export const LegitProvider = ({
     }
   };
 
+  const handleRollback = async (commitHash: string) => {
+    if (!legitFs) {
+      console.error('No legitFs instance available');
+      return;
+    }
+    try {
+      await legitFs.promises.writeFile(
+        `/.legit/branches/${branch}/.legit/head`,
+        commitHash,
+        'utf8'
+      );
+    } catch (err) {
+      setError(err as Error);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     let pollHead: NodeJS.Timeout | undefined;
@@ -111,9 +129,8 @@ export const LegitProvider = ({
       const syncService = config.sync
         ? createLegitSyncService({
             fs: fs as any,
-            gitRepoPath: config.sync.gitRepoPath, // '/',
-            serverUrl: config.sync.serverUrl, // 'http://localhost:9992',
-            // repoUrl: 'https://monorepo-o36x.onrender.com/Legit-Control/starter-sync.git',
+            gitRepoPath: config.sync.gitRepoPath,
+            serverUrl: config.sync.serverUrl,
             token,
           })
         : undefined;
@@ -226,6 +243,7 @@ export const LegitProvider = ({
         head,
         branch,
         setBranch: handleSetBranch,
+        rollback: handleRollback,
         error,
         startSync: async () => {},
         stopSync: async () => {},
