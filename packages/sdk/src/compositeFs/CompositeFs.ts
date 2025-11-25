@@ -355,18 +355,23 @@ export class CompositeFs {
   }
 
   async close(fh: CompositFsFileHandle): Promise<void> {
-    await fh.delegate.close(fh);
-    for (const [filePath, handles] of this.pathToFileDescriptors.entries()) {
-      const index = handles.indexOf(fh.fd);
-      if (index !== -1) {
-        handles.splice(index, 1);
-        if (handles.length === 0) {
-          this.pathToFileDescriptors.delete(filePath);
+    try {
+      await fh.delegate.close(fh);
+    } catch (error) {
+      throw error;
+    } finally {
+      for (const [filePath, handles] of this.pathToFileDescriptors.entries()) {
+        const index = handles.indexOf(fh.fd);
+        if (index !== -1) {
+          handles.splice(index, 1);
+          if (handles.length === 0) {
+            this.pathToFileDescriptors.delete(filePath);
+          }
+          break;
         }
-        break;
       }
+      this.openFileHandles.delete(fh.fd);
     }
-    this.openFileHandles.delete(fh.fd);
   }
 
   async stat(

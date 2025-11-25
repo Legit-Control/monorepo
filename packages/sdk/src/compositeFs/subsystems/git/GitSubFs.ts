@@ -339,37 +339,29 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       pathParams: parsed.params,
     });
 
-    if (flags.includes('x')) {
-      // NOTE we only support exclusive writes in branches so this logic only applies to branches
-      // check the open handlers if it exists there
-      for (const fh of Object.values(this.openFh)) {
-        if (fh.path === filePath) {
-          throw Object.assign(
-            new Error(`EEXIST: file already exists, open '${filePath}'`),
-            { code: 'EEXIST', errno: -17, syscall: 'open', path: filePath }
-          );
-        }
+    let fileExistsInCache = false;
+    for (const fh of Object.values(this.openFh)) {
+      if (fh.path === filePath) {
+        fileExistsInCache = true;
       }
-
-      // check if the file exists in the branch already
-      if (fileFromGit !== undefined) {
-        throw Object.assign(
-          new Error(`EEXIST: file already exists, open '${filePath}'`),
-          { code: 'EEXIST', errno: -17, syscall: 'open', path: filePath }
-        );
-      }
-
-      // add the new file if it doesnt - commit it as empty file - because of x mode we don't wait for the close
     }
 
     // fileFromFs
     // this.memFs.promises.
 
     // assert flags / file existence state
-    if (fileFromGit && flags.includes('x')) {
-      throw new Error('file existed - openend with x flag');
+    if ((fileFromGit || fileExistsInCache) && flags.includes('x')) {
+      throw Object.assign(
+        new Error(`EEXIST: file already exists, open '${filePath}'`),
+        { code: 'EEXIST', errno: -17, syscall: 'open', path: filePath }
+      );
     }
-    if (!fileFromGit && !(flags.includes('w') || flags.includes('a'))) {
+
+    if (
+      !fileFromGit &&
+      !fileExistsInCache &&
+      !(flags.includes('w') || flags.includes('a'))
+    ) {
       // in case the file doesnt exist but planned to
       throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
     }
@@ -380,8 +372,9 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
     // Write the virtual file content to memfs if the file existed
     if (
-      (fileFromGit === undefined && !flags.includes('x')) ||
-      (fileFromGit && fileFromGit.type === 'file')
+      !fileExistsInCache &&
+      ((fileFromGit === undefined && !flags.includes('x')) ||
+        (fileFromGit && fileFromGit.type === 'file'))
     ) {
       try {
         const access = await this.memFs.promises.access(filePath);
@@ -920,9 +913,12 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       throw new Error('Invalid file handle');
     }
 
-    await this.dataSync(fh);
-
-    delete this.openFh[subFsFd];
+    try {
+      await this.dataSync(fh);
+      await openFh.fh.close();
+    } finally {
+      delete this.openFh[subFsFd];
+    }
   }
 
   override async dataSync(fh: CompositFsFileHandle): Promise<void> {
