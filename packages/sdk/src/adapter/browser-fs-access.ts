@@ -96,7 +96,7 @@ async function fileSystemFileHandleToFileWithHandle(
 }
 
 export async function getLegitFsAccess(
-  legitFs: ReturnType<typeof openLegitFs>
+  legitFs: Awaited<ReturnType<typeof openLegitFs>>
 ): Promise<
   FileAccess & { openFile: (filePath: string) => Promise<FileWithHandle> }
 > {

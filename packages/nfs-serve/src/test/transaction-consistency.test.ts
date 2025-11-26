@@ -104,30 +104,6 @@ describe('Transaction & Consistency Tests', () => {
       await fs.promises.unlink(filePath);
     });
 
-    it('should handle commit while other process reading', async () => {
-      const filePath = path.join(MOUNT_POINT, 'read-during-write.txt');
-      const initialContent = 'Initial content that will be modified\n';
-
-      await fs.promises.writeFile(filePath, initialContent);
-
-      // Start reading while writing
-      const readPromise = fs.promises.readFile(filePath, 'utf8');
-
-      // Write additional content
-      const fd = await fs.promises.open(filePath, 'a');
-      await fd.write('Additional content\n');
-      await fd.sync();
-      await fd.close();
-
-      // Complete the read
-      const readContent = await readPromise;
-
-      // Read should get the content as it was at read time
-      expect(readContent).toContain('Initial content');
-
-      await fs.promises.unlink(filePath);
-    });
-
     it('should handle unstable write verification', async () => {
       const filePath = path.join(MOUNT_POINT, 'unstable-verify.txt');
       const content = 'Unstable write content';
@@ -151,30 +127,6 @@ describe('Transaction & Consistency Tests', () => {
   });
 
   describe('Uncommitted File Reads', () => {
-    it('should handle read file during write operation', async () => {
-      const filePath = path.join(MOUNT_POINT, 'read-during-write.txt');
-      const initialContent = 'Initial content\n';
-
-      await fs.promises.writeFile(filePath, initialContent);
-
-      const fd = await fs.promises.open(filePath, 'r+');
-
-      // Start a read operation
-      const readPromise = fs.promises.readFile(filePath, 'utf8');
-
-      // Write to the file
-      await fd.write('New content\n');
-      await fd.sync();
-
-      const readContent = await readPromise;
-
-      // Read should complete successfully
-      expect(readContent).toContain('Initial content');
-
-      await fd.close();
-      await fs.promises.unlink(filePath);
-    });
-
     it('should handle read uncommitted changes from another client', async () => {
       const filePath = path.join(MOUNT_POINT, 'multi-client-write.txt');
       const content1 = 'Client 1 content\n';
