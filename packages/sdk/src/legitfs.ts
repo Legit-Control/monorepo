@@ -127,6 +127,7 @@ export function openLegitFs(
       '**/lu[0-9a-zA-Z]*.tmp',
       // legit uses a tmp file as well
       '**/.metaentries.json.tmp',
+      '**/**.sb-**',
     ],
   });
 
