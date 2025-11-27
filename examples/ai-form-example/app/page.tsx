@@ -6,7 +6,7 @@ import { Form } from '@/components/ui/form';
 import { useAssistantForm } from '@assistant-ui/react-hook-form';
 import { useAssistantInstructions } from '@assistant-ui/react';
 import { useEffect } from 'react';
-import { useLegitFs } from '@legit-sdk/assistant-ui';
+import { CloudMessageWithoutId, useLegitFs } from '@legit-sdk/assistant-ui';
 import { CheckIcon } from 'lucide-react';
 import { AssistantFormProvider } from '@/lib/assistantFormContext';
 
@@ -49,14 +49,14 @@ export default function Home() {
   });
 
   const formValues = form.watch();
-  const { saveData } = useLegitFs();
+  const legit = useLegitFs();
 
   useEffect(() => {
     const saveFormValues = async () => {
-      await saveData('/form-values.json', JSON.stringify(formValues));
+      await legit.saveData('/form-values.json', JSON.stringify(formValues));
     };
     saveFormValues();
-  }, [formValues, saveData]);
+  }, [formValues, legit.saveData]);
 
   return (
     <AssistantFormProvider form={form}>
