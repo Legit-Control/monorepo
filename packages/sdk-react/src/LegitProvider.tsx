@@ -53,13 +53,13 @@ type User = {
   // Used for commits
   name: string; // can be changed (we could even change it in unpushed commits)
   email: string; // anonymous@legitcontrol.com for anonymous users, on of the users emails for logged in users
-}
+};
 
 // in the current setup an anonymous session is established by the branch shared with a user
-// 
+//
 type Session = {
   type: 'local' | 'anonymous' | 'user';
-} 
+};
 
 export type LegitConfig = {
   initialBranch?: string;
@@ -154,11 +154,11 @@ export const LegitProvider = ({
           : undefined;
 
       try {
-        const _legitFs = await openLegitFs(
-          fs as unknown as typeof import('node:fs'),
-          '/',
-          branchName
-        );
+        const _legitFs = await openLegitFs({
+          storageFs: fs as unknown as typeof import('node:fs'),
+          gitRoot: '/',
+          defaultBranch: branchName,
+        });
 
         if (branchName) {
           await _legitFs.setCurrentBranch(branchName);

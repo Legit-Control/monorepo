@@ -25,7 +25,7 @@ export type Tokens = {
 
 export const createSessionManager = (
   tokenStore: TokenStore,
-  publicKey: string
+  publicKey?: string
 ): LegitAuth => {
   // get this from legitFs.getUserMeta();
   const userMeta = {

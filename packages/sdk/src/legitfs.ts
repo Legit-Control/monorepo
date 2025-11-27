@@ -21,20 +21,28 @@ export async function initMemFSLegitFs() {
 /**
  * Creates and configures a LegitFs instance with CompositeFs, GitSubFs, HiddenFileSubFs, and EphemeralSubFs.
  */
-export async function openLegitFs(
-  storageFs: typeof nodeFs,
-  gitRoot: string,
-  defaultBranch = 'main',
+export async function openLegitFs({
+  storageFs,
+  gitRoot,
+  anonymousBranch = 'anonymous',
   showKeepFiles = false,
-  initialAuthor: LegitUser = {
+  initialAuthor = {
     type: 'local',
     id: 'local',
     name: 'Local User',
     email: 'local@legitcontrol.com',
   },
-  serverUrl: 'https://sync.legitcontrol.com',
-  publicKey: string
-) {
+  serverUrl = 'https://sync.legitcontrol.com',
+  publicKey,
+}: {
+  storageFs: typeof nodeFs;
+  gitRoot: string;
+  anonymousBranch?: string;
+  showKeepFiles?: boolean;
+  initialAuthor?: LegitUser;
+  serverUrl?: string;
+  publicKey?: string;
+}) {
   let repoExists = await storageFs.promises
     .readdir(gitRoot + '/.git')
     .then(() => true)
@@ -42,7 +50,7 @@ export async function openLegitFs(
 
   if (!repoExists) {
     // initiliaze git repo with anonyomous branch
-    await git.init({ fs: storageFs, dir: '/', defaultBranch: 'anonymous' });
+    await git.init({ fs: storageFs, dir: '/', defaultBranch: anonymousBranch });
     await storageFs.promises.writeFile(gitRoot + '/.keep', '');
     await git.add({ fs: storageFs, dir: '/', filepath: '.keep' });
     await git.commit({
@@ -130,7 +138,7 @@ export async function openLegitFs(
     parentFs: rootFs,
     storageFs: undefined,
     gitRoot: gitRoot,
-    defaultBranch: defaultBranch,
+    defaultBranch: anonymousBranch,
   });
 
   const gitSubFs = new GitSubFs({
@@ -183,27 +191,29 @@ export async function openLegitFs(
     fs: storageFs as any,
     gitRepoPath: gitRoot,
     serverUrl: serverUrl,
-    auth: sessionManager
+    auth: sessionManager,
   });
 
   const legitfs = Object.assign(userSpaceFs, {
     auth: sessionManager,
-    
+
     push: async (branches: string[]): Promise<void> => {
-      // 
+      //
     },
     share: async (branchId: string): Promise<string> => {
       if ((await sessionManager.getUser()).type === 'local') {
-        throw new Error('login first - for example anonymously using legitfs.auth.signInAnonymously()');
+        throw new Error(
+          'login first - for example anonymously using legitfs.auth.signInAnonymously()'
+        );
       }
       const currentBranch = await legitfs.getCurrentBranch();
-      if (currentBranch === 'anonymous') {
+      if (currentBranch === anonymousBranch) {
         // create uuid (later call to server to get a session id)
         // rename current branch to uuid
         await git.renameBranch({
           fs: storageFs,
           dir: gitRoot,
-          oldref: 'anonymous',
+          oldref: anonymousBranch,
           ref: branchId,
         });
       }
