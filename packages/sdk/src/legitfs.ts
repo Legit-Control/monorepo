@@ -208,6 +208,7 @@ export async function openLegitFs({
 
   const legitfs = Object.assign(userSpaceFs, {
     auth: sessionManager,
+    sync: syncService,
 
     push: async (branches: string[]): Promise<void> => {
       //

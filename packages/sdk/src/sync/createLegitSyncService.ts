@@ -335,6 +335,7 @@ export const createLegitSyncService = ({
     stop: () => {
       stopSync();
     },
+    isRunning: () => running,
     loadBranch,
     sequentialPush,
   };
