@@ -59,6 +59,13 @@ export async function openLegitFs({
       message: 'Initial commit',
       author: { name: 'Test', email: 'test@example.com' },
     });
+
+    await git.setConfig({
+      fs: storageFs,
+      dir: gitRoot,
+      path: 'init.defaultBranch',
+      value: anonymousBranch,
+    });
   }
 
   // Check if git config has author information, if not set it from initialAuthor
@@ -192,6 +199,7 @@ export async function openLegitFs({
     gitRepoPath: gitRoot,
     serverUrl: serverUrl,
     auth: sessionManager,
+    anonymousBranch,
   });
 
   if (publicKey) {
@@ -204,38 +212,51 @@ export async function openLegitFs({
     push: async (branches: string[]): Promise<void> => {
       //
     },
-    share: async (branchId: string): Promise<string> => {
+    shareCurrentBranch: async (): Promise<string> => {
       if ((await sessionManager.getUser()).type === 'local') {
         throw new Error(
           'login first - for example anonymously using legitfs.auth.signInAnonymously()'
         );
       }
-      const currentBranch = await legitfs.getCurrentBranch();
-      if (currentBranch === anonymousBranch) {
+      let branchToShare = await legitfs.getCurrentBranch();
+      if (branchToShare === anonymousBranch) {
+        branchToShare = (await sessionManager.getUser()).id;
         // create uuid (later call to server to get a session id)
         // rename current branch to uuid
         await git.renameBranch({
           fs: storageFs,
           dir: gitRoot,
           oldref: anonymousBranch,
-          ref: branchId,
+          ref: branchToShare,
         });
       }
 
-      await syncService.push([branchId]);
+      await syncService.sequentialPush([branchToShare]);
 
-      legitfs.setCurrentBranch(branchId);
+      legitfs.setCurrentBranch(branchToShare);
 
       // push current branch to remote (no longer anonymous)
-      return currentBranch;
+      return branchToShare;
     },
     setCurrentBranch: async (branch: string): Promise<void> => {
       // check if branch exists
       const branches = await git.listBranches({ fs: storageFs, dir: gitRoot });
       const branchExists = branches.includes(branch);
       if (!branchExists) {
+        debugger;
         await syncService?.loadBranch(branch);
       }
+
+      const branchesAfterLoad = await git.listBranches({
+        fs: storageFs,
+        dir: gitRoot,
+      });
+      const branchExistsAfter = branches.includes(branch);
+      console.log('branchExistsAfter', branchExistsAfter);
+      if (!branchExistsAfter) {
+        throw new Error(`Branch ${branch} does not exist`);
+      }
+
       // if successfull - set branch
       await git.setConfig({
         fs: storageFs,
@@ -251,6 +272,9 @@ export async function openLegitFs({
         dir: gitRoot,
         path: 'init.defaultBranch',
       });
+      if (!branch) {
+        throw new Error('No current branch set');
+      }
       return branch!;
     },
   });

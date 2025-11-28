@@ -25,11 +25,13 @@ export const createLegitSyncService = ({
   gitRepoPath,
   serverUrl = 'https://hub.legitcontrol.com',
   auth,
+  anonymousBranch,
 }: {
   fs: FsClient;
   gitRepoPath: string;
   serverUrl?: string;
   auth: LegitAuth;
+  anonymousBranch: string;
 }) => {
   let running = false;
 
@@ -86,6 +88,10 @@ export const createLegitSyncService = ({
     const localRefs = await git.listBranches({ fs, dir: gitRepoPath });
 
     for (const localRef of localRefs) {
+      if (localRef === anonymousBranch) {
+        continue;
+      }
+
       // find branches that don't exist remote (should be added - not implicit for now!)
       // find branches that exist remote but there head differs
 
@@ -249,6 +255,13 @@ export const createLegitSyncService = ({
     }
   }
 
+  let lastPushPromise: Promise<void> = Promise.resolve();
+
+  async function sequentialPush(branchesToPush: string[]) {
+    lastPushPromise = lastPushPromise.then(() => push(branchesToPush));
+    await lastPushPromise;
+  }
+
   async function pullPushTick() {
     const existing = await git.getConfig({
       fs,
@@ -269,10 +282,10 @@ export const createLegitSyncService = ({
       await pull();
       // TODO this filters any brounc with anonymous - need a better way to handle this
       let branchesToPush = unpushedRefs.filter(
-        v => v.indexOf('anonymous') === -1
+        v => v.indexOf(anonymousBranch) === -1
       );
 
-      await push(branchesToPush);
+      await sequentialPush(branchesToPush);
       // Get the current commit SHA
       // const currentCommitSha = await git.resolveRef({
       //   fs: fs,
@@ -323,6 +336,6 @@ export const createLegitSyncService = ({
       stopSync();
     },
     loadBranch,
-    push,
+    sequentialPush,
   };
 };
