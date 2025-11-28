@@ -13,6 +13,7 @@ import { format } from 'timeago.js';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, memo } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 const INITIAL_TEXT = 'This is a document that you can edit! 🖋️';
 
@@ -21,11 +22,21 @@ function Editor() {
   const legitFile = useLegitFile('/document.txt', {
     initialData: INITIAL_TEXT,
   });
+  const searchParams = useSearchParams();
   const { legitFs } = useLegitContext();
   const getPastState = legitFile.getPastState;
   const { head } = useLegitContext();
   const [text, setText] = useState('');
   const [checkedOutCommit, setCheckedOutCommit] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (legitFs && searchParams.get('branch')) {
+      // sign in anonymously
+      legitFs.auth.signInAnonymously();
+      // set current branch
+      legitFs.setCurrentBranch(searchParams.get('branch')!);
+    }
+  }, [legitFs, searchParams]);
 
   useEffect(() => {
     if (legitFile.data !== null) {
@@ -41,14 +52,6 @@ function Editor() {
 
       const shareLink = `${window.location.origin}?branch=${branch}`;
       console.log('share link', shareLink);
-    }
-  };
-
-  const handleJoin = async () => {
-    if (legitFs) {
-      await legitFs.auth.signInAnonymously();
-      const branch = await legitFs.setCurrentBranch('7630917801008525');
-      console.log('joined branch', branch);
     }
   };
 
@@ -91,12 +94,6 @@ function Editor() {
             className="bg-black text-white px-3 py-1 rounded-lg font-semibold hover:opacity-80 cursor-pointer disabled:opacity-50"
           >
             Share
-          </button>
-          <button
-            onClick={handleJoin}
-            className="bg-black text-white px-3 py-1 rounded-lg font-semibold hover:opacity-80 cursor-pointer disabled:opacity-50"
-          >
-            Join
           </button>
         </div>
       </div>
