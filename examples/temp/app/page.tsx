@@ -72,7 +72,14 @@ export default function Home() {
     if(!legitFs) return;
 
     await legitFs.auth.signInAnonymously();
-    await legitFs.share('anonymous');
+    const branch = await legitFs.shareCurrentBranch();
+
+    console.log('shared branch', branch);
+    console.log('shared branch', branch);
+    console.log('shared branch', branch);
+    console.log('shared branch', branch);
+    console.log('shared branch', branch);
+    console.log('shared branch', branch);
 
     // check user again
     const user = await legitFs.auth.getUser();
@@ -91,16 +98,25 @@ export default function Home() {
     console.log('handleEdit');
     if(!legitFs) return;
 
-    await legitFs.promises.writeFile('/.legit/branches/anonymous/hello.txt', 'New content', 'utf8');
-    console.log('written in hello.txt ', await legitFs.promises.readFile('/.legit/branches/anonymous/hello.txt', 'utf8'));
+    await legitFs.promises.writeFile(`/.legit/branches/${await legitFs.getCurrentBranch()}/hello.txt`, `New content ${Date.now()}`, 'utf8');
+    console.log('written in hello.txt ', await legitFs.promises.readFile(`/.legit/branches/${await legitFs.getCurrentBranch()}/hello.txt`, 'utf8'));
   };
 
-  const getBranch = async () => {
-    console.log('getBranch');
+  const openBranch = async () => {
+    console.log('openBranch');
     if(!legitFs) return;
 
-    const branch = await legitFs.getCurrentBranch();
-    console.log('branch', branch);
+    const branchName = window.prompt('Enter branch name:');
+    if (!branchName) return;
+
+    try {
+          
+          const branch = await legitFs.setCurrentBranch(branchName);
+        } catch (err) {
+          console.error(err);
+          return;
+        }
+    console.log('branch', branchName);
   };
 
   return (
@@ -149,17 +165,12 @@ export default function Home() {
           >
             Write to Legit
           </button>
+
           <button
-            onClick={setCurrentBranch}
+            onClick={openBranch}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors bg-transparent border border-gray-300 text-foreground md:w-[158px]"
           >
-            Go to anon
-          </button>
-          <button
-            onClick={getBranch}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors bg-transparent border border-gray-300 text-foreground md:w-[158px]"
-          >
-            get branch
+            open branch
           </button>
         </div>
       </main>

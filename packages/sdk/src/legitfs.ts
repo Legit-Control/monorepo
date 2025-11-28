@@ -243,7 +243,6 @@ export async function openLegitFs({
       const branches = await git.listBranches({ fs: storageFs, dir: gitRoot });
       const branchExists = branches.includes(branch);
       if (!branchExists) {
-        debugger;
         await syncService?.loadBranch(branch);
       }
 
@@ -251,7 +250,7 @@ export async function openLegitFs({
         fs: storageFs,
         dir: gitRoot,
       });
-      const branchExistsAfter = branches.includes(branch);
+      const branchExistsAfter = branchesAfterLoad.includes(branch);
       console.log('branchExistsAfter', branchExistsAfter);
       if (!branchExistsAfter) {
         throw new Error(`Branch ${branch} does not exist`);

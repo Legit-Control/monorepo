@@ -46,7 +46,7 @@ export const createLegitSyncService = ({
       http,
       dir: gitRepoPath,
       singleBranch: true,
-      ref: `${remote}/${branch}`,
+      ref: `${branch}`,
       remote,
       url: serverUrl!,
       headers: {

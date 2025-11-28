@@ -142,7 +142,7 @@ export const LegitProvider = ({
 
       if (config.sync && !token)
         throw new Error('getSyncToken is required when sync is enabled');
-      debugger;
+
       const syncService =
         config.sync && token
           ? createLegitSyncService({
