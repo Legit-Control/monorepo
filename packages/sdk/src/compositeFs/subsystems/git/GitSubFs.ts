@@ -1254,7 +1254,8 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       }
       if (existsInMem) {
         // file existed in memory and was removed
-        await this.memFs.promises.unlink(pathStr);
+
+        await this.memFs.promises.rmdir(pathStr, { recursive: true });
       }
     } else {
       throw new Error(`Cannot rmdir 

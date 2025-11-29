@@ -54,7 +54,6 @@ describe('openLegitFs', () => {
       gitRoot: repoPath,
       anonymousBranch: 'main',
       showKeepFiles: false,
-      publicKey: 'public-key-placeholder',
     });
 
     secondLegitfs = await openLegitFs({
@@ -112,94 +111,90 @@ describe('openLegitFs', () => {
     expect(contentAfter).toBe('Content after');
   });
 
-  it.todo(
-    'should add and remove keep file when adding/removing files and folders',
-    async () => {
-      const folderAPath = `${repoPath}/.legit/branches/main/folderA`;
-      const folderBPath = `${folderAPath}/folderB`;
+  it('should add and remove keep file when adding/removing files and folders', async () => {
+    const folderAPath = `${repoPath}/.legit/branches/main/folderA`;
+    const folderBPath = `${folderAPath}/folderB`;
 
-      /**
-       * folderA/
-       * └── .keep <-- creating an empty dir creates a .keep file
-       */
-      await legitfs.promises.mkdir(folderAPath);
-      let folderContentFolderA =
-        await secondLegitfs.promises.readdir(folderAPath);
-      expect(
-        folderContentFolderA,
-        'Keep file should exist in folderA'
-      ).toContain('.keep');
+    /**
+     * folderA/
+     * └── .keep <-- creating an empty dir creates a .keep file
+     */
+    await legitfs.promises.mkdir(folderAPath);
+    let folderContentFolderA =
+      await secondLegitfs.promises.readdir(folderAPath);
+    expect(folderContentFolderA, 'Keep file should exist in folderA').toContain(
+      '.keep'
+    );
 
-      /**
-       * folderA/
-       * └── folderB/
-       *     └── .keep  <-- creating an empty dir creates a .keep file
-       * └xx .keep <--- should have been deleted because folder B's entry ensures existence of folder A
-       */
-      await legitfs.promises.mkdir(folderBPath);
+    /**
+     * folderA/
+     * └── folderB/
+     *     └── .keep  <-- creating an empty dir creates a .keep file
+     * └xx .keep <--- should have been deleted because folder B's entry ensures existence of folder A
+     */
+    await legitfs.promises.mkdir(folderBPath);
 
-      folderContentFolderA = await secondLegitfs.promises.readdir(folderAPath);
-      expect(
-        folderContentFolderA,
-        'Keep file should have been deleted for folderA'
-      ).not.toContain('.keep');
+    folderContentFolderA = await secondLegitfs.promises.readdir(folderAPath);
+    expect(
+      folderContentFolderA,
+      'Keep file should have been deleted for folderA'
+    ).not.toContain('.keep');
 
-      let folderContentFolderB =
-        await secondLegitfs.promises.readdir(folderBPath);
-      expect(
-        folderContentFolderB,
-        'Keep file should have been created for folderB'
-      ).toContain('.keep');
+    let folderContentFolderB =
+      await secondLegitfs.promises.readdir(folderBPath);
+    expect(
+      folderContentFolderB,
+      'Keep file should have been created for folderB'
+    ).toContain('.keep');
 
-      /**
-       * folderA/
-       * └── folderB/
-       *     └xx .keep <- deleted after adding myfile.txt
-       *     └── .myfile.txt
-       */
-      await legitfs.promises.writeFile(`${folderBPath}/myfile.txt`, 'content');
+    /**
+     * folderA/
+     * └── folderB/
+     *     └xx .keep <- deleted after adding myfile.txt
+     *     └── .myfile.txt
+     */
+    await legitfs.promises.writeFile(`${folderBPath}/myfile.txt`, 'content');
 
-      folderContentFolderB = await secondLegitfs.promises.readdir(folderBPath);
-      expect(
-        folderContentFolderB,
-        'Keep file should be gone after adding a file to folderB'
-      ).not.toContain('.keep');
+    folderContentFolderB = await secondLegitfs.promises.readdir(folderBPath);
+    expect(
+      folderContentFolderB,
+      'Keep file should be gone after adding a file to folderB'
+    ).not.toContain('.keep');
 
-      /**
-       * folderA/
-       * └── folderB/
-       *     └── .keep       <- added after deleting myfile.txt
-       *     └xx .myfile.txt <- deleted
-       */
-      await legitfs.promises.unlink(`${folderBPath}/myfile.txt`);
+    /**
+     * folderA/
+     * └── folderB/
+     *     └── .keep       <- added after deleting myfile.txt
+     *     └xx .myfile.txt <- deleted
+     */
+    await legitfs.promises.unlink(`${folderBPath}/myfile.txt`);
 
-      folderContentFolderB = await secondLegitfs.promises.readdir(folderBPath);
-      expect(
-        folderContentFolderB,
-        'Keep file should be added after removing last file from folderB'
-      ).toContain('.keep');
+    folderContentFolderB = await secondLegitfs.promises.readdir(folderBPath);
+    expect(
+      folderContentFolderB,
+      'Keep file should be added after removing last file from folderB'
+    ).toContain('.keep');
 
-      /**
-       * folderA/
-       * └xx folderB/
-       *     └xx .keep       <- deleted by removing folderB
-       * └── .keep           <- added after deleting folderB
-       */
-      await legitfs.promises.rmdir(`${folderBPath}`);
+    /**
+     * folderA/
+     * └xx folderB/
+     *     └xx .keep       <- deleted by removing folderB
+     * └── .keep           <- added after deleting folderB
+     */
+    await legitfs.promises.rmdir(`${folderBPath}`);
 
-      const folderBExists = await legitfs.promises
-        .stat(folderBPath)
-        .then(() => true)
-        .catch(e => false);
-      expect(folderBExists).toBe(false);
+    const folderBExists = await legitfs.promises
+      .stat(folderBPath)
+      .then(() => true)
+      .catch(e => false);
+    expect(folderBExists).toBe(false);
 
-      const folderAExists = await legitfs.promises
-        .stat(folderAPath)
-        .then(() => true)
-        .catch(e => false);
-      expect(folderAExists).toBe(true);
-    }
-  );
+    const folderAExists = await legitfs.promises
+      .stat(folderAPath)
+      .then(() => true)
+      .catch(e => false);
+    expect(folderAExists).toBe(true);
+  });
 
   it('should create, rename, remove and move folders and files in branch', async () => {
     let commits = async () =>
