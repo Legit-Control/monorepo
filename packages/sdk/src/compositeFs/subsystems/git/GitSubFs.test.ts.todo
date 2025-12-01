@@ -3,7 +3,6 @@ import { Volume, createFsFromVolume } from 'memfs';
 import { CompositeFs } from '../../CompositeFs.js';
 import { HiddenFileSubFs } from '../HiddenFileSubFs.js';
 
-import { PassThroughSubFs } from '../PassThroughSubFs.js';
 import { GitSubFs } from './GitSubFs.js';
 import { EphemeralSubFs } from '../EphemeralFileSubFs.js';
 import { dirname } from 'path';
@@ -11,26 +10,6 @@ import { dirname } from 'path';
 const repoPath = '/my/repo/path';
 const TEST_FILE = 'normal.txt';
 const HIDDEN_FILE = 'hidden.txt';
-const BRANCH_FILE = '.branch.gitbox';
-
-// Helper to create and clean up test files/dirs in memfs
-const setupTestFile = (
-  memfs: any,
-  file = TEST_FILE,
-  content = 'hello world'
-) => {
-  // Instead of writing the file directly, re-create the volume with the file
-  const vol = new Volume();
-  vol.fromJSON({ [file]: content });
-  // Copy the contents of the new volume into the existing memfs
-  Object.entries(vol.toJSON()).forEach(([path, value]) => {
-    memfs.writeFileSync(path, value as string);
-  });
-};
-
-const cleanupTestFile = (memfs: any, file = TEST_FILE) => {
-  if (memfs.existsSync(file)) memfs.unlinkSync(file);
-};
 
 describe('createCompositFs', () => {
   let memfs: any;
@@ -66,6 +45,20 @@ describe('createCompositFs', () => {
         name: 'Test User',
         email: 'test@example.com',
       },
+    });
+
+    await git.setConfig({
+      fs: memfs,
+      dir: repoPath,
+      path: 'user.name',
+      value: 'Testy Testman',
+    });
+
+    await git.setConfig({
+      fs: memfs,
+      dir: repoPath,
+      path: 'user.email',
+      value: 'test@example.com',
     });
 
     const gitBoxFolder = repoPath;
