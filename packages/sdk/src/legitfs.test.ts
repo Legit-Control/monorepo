@@ -131,8 +131,8 @@ describe('openLegitFs', () => {
       `${repoPath}/.legit/branches/main/a.txt`
     );
 
-    expect(statsA.mtime).toBe(0);
-    expect(statsFolderA.mtime).not.toBe(0);
+    expect(statsA.mtime.getTime()).toBe(0);
+    expect(statsFolderA.mtime.getTime()).not.toBe(0);
   });
 
   it('should add and remove keep file when adding/removing files and folders', async () => {
