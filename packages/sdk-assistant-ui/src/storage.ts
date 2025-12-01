@@ -1,4 +1,4 @@
-import { initLegitFs, Operation } from '@legit-sdk/core';
+import { openLegitFs, Operation } from '@legit-sdk/core';
 import memfs from 'memfs';
 import { LegitFsInstance } from './types';
 import { BRANCH_ROOT, COMMIT_ROOT } from './LegitFsProvider';
@@ -7,12 +7,11 @@ let legitFsPromise: Promise<LegitFsInstance> | null = null;
 
 export async function getLegitFs(): Promise<LegitFsInstance> {
   if (!legitFsPromise) {
-    legitFsPromise = initLegitFs(
-      // TODO: fix this type error
+    legitFsPromise = openLegitFs({
       // @ts-ignore
-      memfs,
-      '/'
-    );
+      storageFs: memfs,
+      gitRoot: '/',
+    });
     if (window) {
       (window as any).legitFs = await legitFsPromise;
     }
@@ -24,6 +23,7 @@ export async function listBranches(): Promise<string[]> {
   const fs = await getLegitFs();
   try {
     const branches = await fs.promises.readdir(BRANCH_ROOT);
+    // @ts-ignore
     return branches.filter(name => !name.startsWith('.'));
   } catch (error) {
     if ((error as { code?: string }).code === 'ENOENT') {

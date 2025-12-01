@@ -9,7 +9,6 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "test": "vitest",
     "dev": "node  --loader ts-node/esm --inspect ./node_modules/vite-node/dist/cli.mjs --watch src/vite.ts",
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
