@@ -41,9 +41,7 @@ export const createSessionManager = (
     },
     signInAnonymously: async () => {
       userMeta.type = 'anonymous';
-      userMeta.id = Math.floor(
-        Math.random() * Number.MAX_SAFE_INTEGER
-      ).toString();
+      userMeta.id = crypto.randomUUID();
       userMeta.email = `anonymous-sha1-${userMeta.id}-@legitcontrol.com`;
       // token stays the same for now
       // commits also stay unchanged
