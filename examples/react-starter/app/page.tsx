@@ -12,7 +12,7 @@ import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, memo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Toaster, toast } from 'sonner';
 
@@ -41,6 +41,7 @@ function Editor() {
 
   useEffect(() => {
     if (legitFile.data !== null) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       setText(legitFile.data);
     }
   }, [legitFile.data]);
@@ -253,8 +254,10 @@ export default function Home() {
   };
 
   return (
-    <LegitProvider config={config}>
-      <Editor />
-    </LegitProvider>
+    <Suspense fallback={<div>Loading...</div>}>
+      <LegitProvider config={config}>
+        <Editor />
+      </LegitProvider>
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
-import { initLegitFs } from '@legit-sdk/core';
+import { openLegitFs } from '@legit-sdk/core';
 
-export type LegitFsInstance = Awaited<ReturnType<typeof initLegitFs>>;
+export type LegitFsInstance = Awaited<ReturnType<typeof openLegitFs>>;
 
 export type AssistantCloudConfig = {
   baseUrl: string;
