@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.2.1
+
+### Patch Changes
+
+- Create user id with UUID
+
 ## 0.2.0
 
 ### Minor Changes
