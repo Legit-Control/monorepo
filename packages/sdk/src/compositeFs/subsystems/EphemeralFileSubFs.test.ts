@@ -15,6 +15,7 @@ describe('EphemeralFileSubFs', () => {
     } as CompositeFs;
 
     ephemeralSubFs = new EphemeralSubFs({
+      name: 'ephemeral-subfs',
       parentFs,
       gitRoot: '/test',
       ephemeralPatterns: [
@@ -437,6 +438,7 @@ describe('EphemeralFileSubFs', () => {
 
       // Create a new instance - data should be gone
       const newEphemeralSubFs = new EphemeralSubFs({
+        name: 'new-ephemeral-subfs',
         parentFs,
         gitRoot: '/test',
         ephemeralPatterns: ['temp/**'],

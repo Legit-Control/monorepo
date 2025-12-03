@@ -24,6 +24,7 @@ import CompositFsFileHandle from './CompositeFsFileHandle.js';
 import { MakeDirectoryOptions, Mode } from 'node:fs';
 
 export type FileHandleDelegate = {
+  name: string;
   fileType: () => number;
   open: (
     filePath: string,
@@ -92,6 +93,7 @@ export type CompositeSubFs = Pick<
   | 'rmdir'
   | 'symlink'
 > & {
+  name: string;
   readFile(
     path: fsDisk.PathLike | IFileHandle,
     options?: IReadFileOptions | string

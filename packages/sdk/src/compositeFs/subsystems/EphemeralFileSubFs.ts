@@ -46,15 +46,18 @@ export class EphemeralSubFs extends BaseCompositeSubFs {
   }
 
   constructor({
+    name,
     parentFs,
     gitRoot,
     ephemeralPatterns,
   }: {
+    name: string;
     parentFs: CompositeFs;
     gitRoot: string;
     ephemeralPatterns: string[];
   }) {
     super({
+      name,
       parentFs,
       gitRoot,
     });

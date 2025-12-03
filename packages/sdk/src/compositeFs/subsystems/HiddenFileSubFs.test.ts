@@ -15,6 +15,7 @@ describe('createHiddenFileSubFs', () => {
     'baz/*/qux.js', // nested wildcard
   ];
   const fs = new HiddenFileSubFs({
+    name: 'hidden-files-subfs',
     gitRoot: 'not needed',
     parentFs: {} as any,
     hiddenFiles,

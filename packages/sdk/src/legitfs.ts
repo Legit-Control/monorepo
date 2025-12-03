@@ -9,6 +9,10 @@ import { HiddenFileSubFs } from './compositeFs/subsystems/HiddenFileSubFs.js';
 import { createFsFromVolume, Volume } from 'memfs';
 import { createSessionManager, LegitUser } from './sync/sessionManager.js';
 import { createGitConfigTokenStore } from './sync/createGitConfigTokenStore.js';
+import {
+  createFsOperationLogger,
+  FsOperationLogger,
+} from './compositeFs/utils/fs-operation-logger.js';
 
 export async function initMemFSLegitFs() {
   const memfsVolume = new Volume();
@@ -126,12 +130,14 @@ export async function openLegitFs({
   });
 
   const rootEphemeralFs = new EphemeralSubFs({
+    name: 'root-ephemeral',
     parentFs: rootFs,
     gitRoot,
     ephemeralPatterns: [],
   });
 
   const rootHiddenFs = new HiddenFileSubFs({
+    name: 'root-hidden',
     parentFs: rootFs,
     gitRoot,
     hiddenFiles: [],
@@ -149,6 +155,7 @@ export async function openLegitFs({
   });
 
   const gitSubFs = new GitSubFs({
+    name: 'git-subfs',
     parentFs: userSpaceFs,
     gitRoot: gitRoot,
     gitStorageFs: rootFs,
@@ -156,12 +163,14 @@ export async function openLegitFs({
 
   const hiddenFiles = showKeepFiles ? ['.git'] : ['.git', '.keep'];
   const gitFsHiddenFs = new HiddenFileSubFs({
+    name: 'git-hidden-subfs',
     parentFs: userSpaceFs,
     gitRoot,
     hiddenFiles,
   });
 
   const gitFsEphemeralFs = new EphemeralSubFs({
+    name: 'git-ephemeral-subfs',
     parentFs: userSpaceFs,
     gitRoot,
     ephemeralPatterns: [
@@ -209,6 +218,11 @@ export async function openLegitFs({
   const legitfs = Object.assign(userSpaceFs, {
     auth: sessionManager,
     sync: syncService,
+
+    setLogger(logger: FsOperationLogger | undefined) {
+      rootFs.setLoggger(logger);
+      userSpaceFs.setLoggger(logger);
+    },
 
     push: async (branches: string[]): Promise<void> => {
       //

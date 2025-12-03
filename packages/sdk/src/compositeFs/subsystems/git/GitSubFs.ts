@@ -265,17 +265,19 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
   }
 
   constructor({
+    name,
     parentFs,
     gitStorageFs,
     gitRoot,
     virtualFiles = allGitVirtualFiles,
   }: {
+    name: string;
     parentFs: CompositeFs;
     gitStorageFs: CompositeFs;
     gitRoot: string;
     virtualFiles?: VirtualFileDefinition[];
   }) {
-    super({ parentFs, gitRoot });
+    super({ name, parentFs, gitRoot });
 
     this.gitRoot = gitRoot;
     this.storageFs = gitStorageFs;

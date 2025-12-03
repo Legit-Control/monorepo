@@ -116,22 +116,35 @@ export default class CompositFsFileHandle implements ICompositFsFileHandle {
     data: TData,
     options?: IAppendFileOptions | string
   ): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'appendFile', {
+      data,
+      options,
+    });
     return await this.delegate.appendFile(this, data, options);
   }
 
   async chmod(mode: TMode): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'chmod', {
+      mode,
+    });
     return this.delegate.fchmod(this, mode);
   }
 
   async chown(uid: number, gid: number): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'chown', {
+      uid,
+      gid,
+    });
     return this.delegate.fchown(this, uid, gid);
   }
 
   async close(): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'close', {});
     return this.compositeFs.close(this);
   }
 
   async datasync(): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'datasync', {});
     return this.delegate.dataSync(this);
   }
 
@@ -141,25 +154,45 @@ export default class CompositFsFileHandle implements ICompositFsFileHandle {
     length: number,
     position: number
   ): Promise<TFileHandleReadResult> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'read', {
+      targetBufferLength: buffer.length,
+      offset,
+      length,
+      position,
+    });
     return await this.delegate.read(this, buffer, offset, length, position);
   }
 
-  readv(
+  async readv(
     buffers: ArrayBufferView[],
     position?: number | null
   ): Promise<TFileHandleReadvResult> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'readv', {
+      buffers,
+      position,
+    });
     return this.delegate.readv(this, buffers, position);
   }
   // async readFile(options?: IReadFileOptions | string): Promise<TDataOut> {
   //   return this._fs.readFile(this, options);
   // }
   async stat(options?: IStatOptions): Promise<IStats> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'stat', {
+      options,
+    });
     return this.delegate.fstat(this, options);
   }
   async truncate(len?: number): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'truncate', {
+      len,
+    });
     return this.delegate.ftruncate(this, len);
   }
   async utimes(atime: TTime, mtime: TTime): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'utimes', {
+      atime,
+      mtime,
+    });
     return this.delegate.futimes(this, atime, mtime);
   }
   async write(
@@ -168,16 +201,27 @@ export default class CompositFsFileHandle implements ICompositFsFileHandle {
     length?: number,
     position?: number
   ): Promise<TFileHandleWriteResult> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'write', {
+      buffer,
+      offset,
+      length,
+      position,
+    });
     return this.delegate.write(this, buffer, offset, length, position);
   }
   async writev(
     buffers: ArrayBufferView[],
     position?: number | null
   ): Promise<TFileHandleWritevResult> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'writev', {
+      buffers,
+      position,
+    });
     return this.delegate.writev(this, buffers, position);
   }
 
   async sync(): Promise<void> {
+    await this.compositeFs.logOperationOnFileDescsriptor(this, 'sync', {});
     return this.delegate.dataSync(this);
   }
 }

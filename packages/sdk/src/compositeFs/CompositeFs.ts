@@ -8,6 +8,7 @@ import { CompositeFsDir } from './CompositeFsDir.js';
 import { PassThroughSubFs } from './subsystems/PassThroughSubFs.js';
 import { PassThroughToAsyncFsSubFs } from './subsystems/PassThroughToAsyncFsSubFs.js';
 import { IStats } from 'memfs/lib/node/types/misc.js';
+import { FsOperationLogger } from './utils/fs-operation-logger.js';
 
 /**
  *
@@ -108,6 +109,7 @@ export class CompositeFs {
   > = new Map();
 
   openFileHandles: Map<number, CompositFsFileHandle> = new Map();
+  logOperation: FsOperationLogger | undefined;
 
   private getNextFileDescriptor() {
     const fds = Array.from(this.openFileHandles.keys());
@@ -153,6 +155,7 @@ export class CompositeFs {
 
     if (!parentFs && storageFs) {
       this.passThroughFileSystem = new PassThroughToAsyncFsSubFs({
+        name: name + '-passthrough',
         passThroughFs: storageFs,
         gitRoot: gitRoot,
         parentFs: this,
@@ -162,13 +165,48 @@ export class CompositeFs {
 
     if (!storageFs && parentFs) {
       this.passThroughFileSystem = new PassThroughSubFs({
+        name: name + '-passthrough',
         parentFs: this,
         gitRoot: gitRoot,
       });
       return;
     }
 
+
     throw new Error('invalid configuration');
+  }
+
+  setLoggger(logger: FsOperationLogger | undefined) {
+    this.logOperation = logger;
+  }
+
+  async logOperationOnFileDescsriptor(
+    fd: CompositFsFileHandle,
+    operation: string,
+    args: any
+  ) {
+    if (!this.logOperation) {
+      return;
+    }
+
+    const paths = [];
+    for (const [filePath, fds] of this.pathToFileDescriptors.entries()) {
+      if (fds.includes(fd.fd)) {
+        paths.push(filePath);
+      }
+    }
+
+    if (paths.length === 0) {
+      return;
+    }
+
+    return this.logOperation?.({
+      fsName: fd.delegate.name,
+      fd,
+      path: paths[0]!,
+      operation,
+      operationArgs: args,
+    });
   }
 
   getFilehandle(fd: number) {
@@ -231,6 +269,12 @@ export class CompositeFs {
 
   async access(filePath: string, mode?: number) {
     const fsToUse = await this.getResponsibleFs(filePath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: filePath,
+      operation: 'access',
+      operationArgs: { mode },
+    });
     return fsToUse.access(filePath, mode);
   }
 
@@ -238,6 +282,12 @@ export class CompositeFs {
     dirPath: nodeFs.PathLike,
     options?: nodeFs.OpenDirOptions
   ): Promise<CompositeFsDir> {
+    await this.logOperation?.({
+      fsName: this.name,
+      path: dirPath.toString(),
+      operation: 'opendir',
+      operationArgs: { options },
+    });
     // Ensure the directory path is within gitRoot
     const dirPathStr = dirPath.toString();
     if (!dirPathStr.startsWith(this.gitRoot)) {
@@ -255,6 +305,12 @@ export class CompositeFs {
 
   async mkdir(dirPath: string, options?: any) {
     const fsToUse = await this.getResponsibleFs(dirPath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: dirPath.toString(),
+      operation: 'mkdir',
+      operationArgs: { options },
+    });
     return fsToUse.mkdir(dirPath, options);
   }
 
@@ -268,6 +324,12 @@ export class CompositeFs {
    * @returns
    */
   async readdir(dirPath: nodeFs.PathLike, options?: any) {
+    await this.logOperation?.({
+      fsName: this.name,
+      path: dirPath.toString(),
+      operation: 'readdir',
+      operationArgs: { options },
+    });
     // Create a Union of all files from the filesystems
     // NOTE - for the list of filenames only this is enought
     // -> for stats we need to skip files we already got from a previous subFs
@@ -334,6 +396,12 @@ export class CompositeFs {
 
   async open(filePath: string, flags: string, mode?: number) {
     const responsibleFs = await this.getResponsibleFs(filePath);
+    await this.logOperation?.({
+      fsName: responsibleFs.name,
+      path: filePath,
+      operation: 'open',
+      operationArgs: { flags, mode },
+    });
     const fileHandle = await responsibleFs.open(filePath, flags, mode);
 
     const nextDescriptor = this.getNextFileDescriptor();
@@ -386,6 +454,12 @@ export class CompositeFs {
     const pathStr = path.toString();
 
     const fsToUse = await this.getResponsibleFs(path);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: pathStr,
+      operation: 'stat',
+      operationArgs: { opts },
+    });
     return fsToUse.stat(path);
   }
 
@@ -406,6 +480,12 @@ export class CompositeFs {
     opts?: { bigint?: boolean }
   ): Promise<IStats<number> | IStats<bigint>> {
     const fsToUse = await this.getResponsibleFs(path);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: path.toString(),
+      operation: 'lstat',
+      operationArgs: { opts },
+    });
     return fsToUse.lstat(path, opts);
   }
 
@@ -450,6 +530,12 @@ export class CompositeFs {
 
     // If both paths are in the same filesystem, use that filesystem's rename
     if (oldFs === newFs) {
+      await this.logOperation?.({
+        fsName: oldFs.name,
+        path: oldPath.toString(),
+        operation: 'rename',
+        operationArgs: { oldPath, newPath },
+      });
       return oldFs.rename(oldPath, newPath);
     }
 
@@ -479,6 +565,12 @@ export class CompositeFs {
 
   async rmdir(dirPath: nodeFs.PathLike, options?: nodeFs.RmDirOptions) {
     const fsToUse = await this.getResponsibleFs(dirPath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: dirPath.toString(),
+      operation: 'rmdir',
+      operationArgs: { dirPath, options },
+    });
     return fsToUse.rmdir(dirPath, options);
   }
 
@@ -502,6 +594,12 @@ export class CompositeFs {
     path: nodeFs.PathOrFileDescriptor,
     options?: any
   ): Promise<Buffer | string> {
+    await this.logOperation?.({
+      fsName: this.name,
+      path: path.toString(),
+      operation: 'readFile',
+      operationArgs: { path, options },
+    });
     let closeAfter = true;
     let fileHandle: CompositFsFileHandle;
     if (typeof path === 'number') {
@@ -555,6 +653,12 @@ export class CompositeFs {
       | BufferEncoding
       | null
   ): Promise<void> {
+    await this.logOperation?.({
+      fsName: this.name,
+      path: file.toString(),
+      operation: 'writeFile',
+      operationArgs: { data, options },
+    });
     // in case we write to a path - ensure we close the handle we use
     let closeAfter = typeof file !== 'number';
     let fileHandle: CompositFsFileHandle;

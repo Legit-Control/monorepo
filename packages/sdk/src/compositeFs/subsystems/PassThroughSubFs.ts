@@ -34,13 +34,16 @@ export class PassThroughSubFs extends BaseCompositeSubFs {
   private targetFs: CompositeFs;
 
   constructor({
+    name,
     parentFs,
     gitRoot,
   }: {
+    name: string;
     parentFs: CompositeFs;
     gitRoot: string;
   }) {
     super({
+      name,
       parentFs,
       gitRoot,
     });

@@ -14,15 +14,18 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
   private ig: ReturnType<typeof ignore>;
 
   constructor({
+    name,
     parentFs,
     gitRoot,
     hiddenFiles,
   }: {
+    name: string;
     parentFs: CompositeFs;
     gitRoot: string;
     hiddenFiles: string[];
   }) {
     super({
+      name,
       parentFs,
       gitRoot,
     });

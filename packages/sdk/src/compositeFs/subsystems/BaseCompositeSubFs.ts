@@ -39,14 +39,18 @@ export abstract class BaseCompositeSubFs implements CompositeSubFs {
 
   protected compositFs: CompositeFs;
   protected gitRoot: string;
+  name: string;
 
   constructor({
+    name,
     parentFs,
     gitRoot,
   }: {
+    name: string;
     parentFs: CompositeFs;
     gitRoot: string;
   }) {
+    this.name = name;
     this.compositFs = parentFs;
     this.gitRoot = gitRoot;
   }
