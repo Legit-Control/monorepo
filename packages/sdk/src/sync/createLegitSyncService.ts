@@ -26,12 +26,14 @@ export const createLegitSyncService = ({
   serverUrl = 'https://hub.legitcontrol.com',
   auth,
   anonymousBranch,
+  authHeaderPrefix = 'Bearer ',
 }: {
   fs: FsClient;
   gitRepoPath: string;
   serverUrl?: string;
   auth: LegitAuth;
   anonymousBranch: string;
+  authHeaderPrefix?: string;
 }) => {
   let running = false;
 
@@ -50,7 +52,7 @@ export const createLegitSyncService = ({
       remote,
       url: serverUrl!,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `${authHeaderPrefix}${token}`,
       },
     });
 
@@ -81,7 +83,7 @@ export const createLegitSyncService = ({
       remote,
       url: serverUrl!,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `${authHeaderPrefix}${token}`,
       },
     });
 

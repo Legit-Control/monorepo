@@ -72,6 +72,11 @@ export const LegitProvider = ({
           publicKey: config.publicKey,
         });
 
+        if (config.publicKey) {
+          // NOTE for now the public key functions as access token directly
+          await _legitFs.auth.addAccessToken(config.publicKey);
+        }
+
         if (_legitFs) {
           setLegitFs(_legitFs);
         }

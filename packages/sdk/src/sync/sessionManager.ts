@@ -60,8 +60,7 @@ export const createSessionManager = (
         currentTokens.accessTokens === undefined ||
         currentTokens.accessTokens.length === 0
       ) {
-        // TODO for now we just use the public key - which is not a refresh token but the access token.
-        return publicKey;
+        return undefined;
       }
       // for now we only have one token
       return currentTokens.accessTokens[0];
