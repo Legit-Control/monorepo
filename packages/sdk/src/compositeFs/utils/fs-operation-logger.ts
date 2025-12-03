@@ -9,7 +9,9 @@ export type FsOperationLogger = (args: {
   operationArgs: any;
 }) => Promise<void>;
 
-export const createFsOperationLogger = (fs: CompositeFs) => {
+export const createFsOperationFileLogger = (fs: {
+  writeFile: (path: string, data: string) => Promise<void>;
+}) => {
   return async (args: {
     fsName: string;
     fd?: CompositFsFileHandle | undefined;

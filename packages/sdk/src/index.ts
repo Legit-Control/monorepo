@@ -9,3 +9,4 @@ export * from './sync/createLegitSyncService.js';
 export * from './adapter/browser-fs-access.js';
 export * from './compositeFs/subsystems/git/virtualFiles/types/HistoryItom.js';
 export * from './compositeFs/subsystems/git/virtualFiles/types/User.js';
+export * from './compositeFs/utils/fs-operation-logger.js';

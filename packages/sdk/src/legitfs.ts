@@ -10,7 +10,7 @@ import { createFsFromVolume, Volume } from 'memfs';
 import { createSessionManager, LegitUser } from './sync/sessionManager.js';
 import { createGitConfigTokenStore } from './sync/createGitConfigTokenStore.js';
 import {
-  createFsOperationLogger,
+  createFsOperationFileLogger,
   FsOperationLogger,
 } from './compositeFs/utils/fs-operation-logger.js';
 
