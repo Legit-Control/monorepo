@@ -333,7 +333,11 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     // Remove gitRoot prefix from filePath if present
     let normalizedPath = filePath;
     if (this.gitRoot && filePath.startsWith(this.gitRoot)) {
-      normalizedPath = filePath.slice(this.gitRoot.length + 1);
+      if (this.gitRoot === '/') {
+        normalizedPath = filePath.slice(this.gitRoot.length);
+      } else {
+        normalizedPath = filePath.slice(this.gitRoot.length + 1);
+      }
     }
     const firstLegitIndex = normalizedPath.indexOf(`/${GitSubFs.LEGIT_DIR}`);
     if (firstLegitIndex === -1) {
