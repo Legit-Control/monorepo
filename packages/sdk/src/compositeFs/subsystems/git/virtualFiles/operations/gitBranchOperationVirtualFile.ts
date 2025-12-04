@@ -13,12 +13,17 @@ import {
   resolveOperationBranchName,
   operationBranchNamePostfix,
 } from './resolveOperationBranchName.js';
+import { getCurrentBranch } from '../getCurrentBranch.js';
 
 export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchOperationVirtualFile',
 
   getStats: async args => {
     const { gitRoot, nodeFs, pathParams } = args;
+
+    if (pathParams.branchName === undefined) {
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+    }
 
     let headCommit: string;
 
@@ -113,6 +118,11 @@ export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
   getFile: async args => {
     const { gitRoot, nodeFs, pathParams } = args;
 
+
+    if (pathParams.branchName === undefined) {
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+    }
+
     let operationBranchName = await resolveOperationBranchName(
       nodeFs,
       gitRoot,
@@ -156,7 +166,7 @@ export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
   }) => {
     // Parse the path to get branch name and file path
     if (pathParams.branchName === undefined) {
-      throw new Error('branchName should be in pathParams');
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
     // Convert content to Uint8Array for isomorphic-git

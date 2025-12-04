@@ -172,7 +172,6 @@ export class CompositeFs {
       return;
     }
 
-
     throw new Error('invalid configuration');
   }
 
@@ -502,6 +501,12 @@ export class CompositeFs {
 
   async unlink(filePath: nodeFs.PathLike) {
     const fsToUse = await this.getResponsibleFs(filePath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: filePath.toString(),
+      operation: 'unlink',
+      operationArgs: {},
+    });
     return fsToUse.unlink(filePath);
   }
 

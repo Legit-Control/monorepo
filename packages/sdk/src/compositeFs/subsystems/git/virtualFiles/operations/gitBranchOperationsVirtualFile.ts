@@ -13,6 +13,7 @@ import {
   resolveOperationBranchName,
   operationBranchNamePostfix,
 } from './resolveOperationBranchName.js';
+import { getCurrentBranch } from '../getCurrentBranch.js';
 
 export type Operation = {
   oid: string;
@@ -68,7 +69,7 @@ export const gitBranchOperationsVirtualFile: VirtualFileDefinition = {
     const { gitRoot, nodeFs, pathParams } = args;
 
     if (pathParams.branchName === undefined) {
-      throw new Error('branchName should be in pathParams');
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
     let operationBranchName = await resolveOperationBranchName(
@@ -169,6 +170,10 @@ export const gitBranchOperationsVirtualFile: VirtualFileDefinition = {
 
   getFile: async args => {
     const { gitRoot, nodeFs, pathParams } = args;
+
+    if (pathParams.branchName === undefined) {
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+    }
 
     // Read all commits from the operation branch and collect their messages
     let operationBranchName = await resolveOperationBranchName(
