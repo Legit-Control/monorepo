@@ -47,6 +47,19 @@ import { gitBranchHistory } from './virtualFiles/gitBranchHistory.js';
 import { gitBranchOperationHeadVirtualFile } from './virtualFiles/operations/gitBranchOperationHeadVirtualFile.js';
 import { gitCurrentBranchVirtualFile } from './virtualFiles/gitCurrentBranchVirtualFile.js';
 
+function getGitCache(fs: any): any {
+  // If it's a CompositeFs with gitCache, use it
+  if (fs && fs.gitCache !== undefined) {
+    return fs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (fs && fs.parentFs) {
+    return getGitCache(fs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
 const handlers = {
   noAdditionalFiles: () => [],
   listBranches: () => ['main', 'dev', 'feature-x', 'feature/login'],

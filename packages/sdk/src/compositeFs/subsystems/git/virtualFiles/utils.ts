@@ -12,13 +12,15 @@ import { PathLike } from 'fs';
 export async function tryResolveRef(
   fs: FsClient,
   gitRoot: string,
-  refName: string
+  refName: string,
+  gitCache?: any
 ) {
   try {
     const branchCommit = await git.resolveRef({
       fs: fs,
       dir: gitRoot,
       ref: `refs/heads/${refName}`,
+      cache: gitCache || {},
     });
     return branchCommit;
   } catch (e) {
@@ -152,6 +154,7 @@ export async function buildUpdatedTree({
   addKeepIfEmpty,
   deleteKeepIfNotEmpty,
   keepFilename = '.keep',
+  gitCache,
 }: {
   dir: string;
   fs: IFs;
@@ -165,6 +168,7 @@ export async function buildUpdatedTree({
    * if undefined -> this is a copy operation, no change on the source tree
    */
   deletePathParts: string[] | undefined;
+  gitCache?: any;
 
   /**
    * path split by separator
@@ -199,7 +203,7 @@ export async function buildUpdatedTree({
   // read current tree entries
   let newEntries: TreeObject = [];
   if (currentOid) {
-    const { tree } = await git.readTree({ fs, dir: dir, oid: currentOid });
+    const { tree } = await git.readTree({ fs, dir: dir, oid: currentOid, cache: gitCache || {} });
     newEntries = [...tree];
   }
 
@@ -268,7 +272,7 @@ export async function buildUpdatedTree({
 
     if (updated) {
       // the new entries get sorted from isomorphics GitTree constructor
-      const newOid = await git.writeTree({ fs, dir, tree: newEntries });
+      const newOid = await git.writeTree({ fs, dir, tree: newEntries, cache: gitCache || {} });
       return newOid;
     } else {
       if (currentOid === undefined) {
@@ -448,7 +452,7 @@ export async function buildUpdatedTree({
 
     if (updated) {
       // the new entries get sorted from isomorphics GitTree constructor
-      const newOid = await git.writeTree({ fs, dir, tree: newEntries });
+      const newOid = await git.writeTree({ fs, dir, tree: newEntries, cache: gitCache || {} });
       return newOid;
     } else {
       if (currentOid === undefined) {
