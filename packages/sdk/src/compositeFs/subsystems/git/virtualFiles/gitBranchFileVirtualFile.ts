@@ -3,7 +3,7 @@ import {
   tryResolveRef,
   resolveGitObjAtPath,
   buildUpdatedTree,
-  getGitCacheFromArgs,
+  buildUpdatedTreeFromArgs,
 } from './utils.js';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
@@ -172,7 +172,14 @@ async function buildTreeWithoutFile(
 export const gitBranchFileVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchFileVirtualFile',
 
-  getStats: async ({ gitRoot, nodeFs, filePath, cacheFs, pathParams }) => {
+  getStats: async ({
+    gitRoot,
+    nodeFs,
+    filePath,
+    cacheFs,
+    pathParams,
+    userSpaceFs,
+  }) => {
     if (pathParams.branchName === undefined) {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
@@ -199,6 +206,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       nodeFs,
       commitSha: branchCommit,
       pathParams,
+      gitCache: getGitCacheFromFs(userSpaceFs),
     });
 
     if (!fileOrFolder) {
@@ -300,7 +308,14 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       } as any;
     }
   },
-  getFile: async ({ filePath, gitRoot, nodeFs, cacheFs, pathParams }) => {
+  getFile: async ({
+    filePath,
+    gitRoot,
+    nodeFs,
+    cacheFs,
+    pathParams,
+    userSpaceFs,
+  }) => {
     if (pathParams.branchName === undefined) {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
@@ -359,6 +374,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
         nodeFs,
         commitSha: branchCommit,
         pathParams,
+        gitCache: getGitCacheFromFs(userSpaceFs),
       });
 
       if (!fileOrFolder) {
@@ -597,6 +613,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
     pathParams,
     newPathParams,
     author,
+    userSpaceFs,
   }): Promise<void> {
     // Parse the path to get branch name and file path
 
@@ -664,6 +681,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       commitSha: oldBranchCommit,
       filePath: filePath,
       pathParams: pathParams,
+      gitCache: getGitCacheFromFs(userSpaceFs),
     });
 
     if (existingAtOldPath === undefined) {

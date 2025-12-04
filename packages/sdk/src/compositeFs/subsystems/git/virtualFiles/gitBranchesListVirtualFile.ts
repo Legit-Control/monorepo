@@ -48,12 +48,11 @@ export const gitBranchesListVirtualFile: VirtualFileDefinition = {
   getFile: async ({ gitRoot, nodeFs, userSpaceFs }) => {
     try {
       const branches = (
-        await git.listBranches({ fs: nodeFs, dir: gitRoot, cache: getGitCacheFromFs(userSpaceFs) })
+        await git.listBranches({ fs: nodeFs, dir: gitRoot })
       ).filter(branch => branch.indexOf('/') === -1);
       const currentBranch = await git.currentBranch({
         fs: nodeFs,
         dir: gitRoot,
-        cache: getGitCacheFromFs(userSpaceFs),
       });
 
       const branchesInfo = await Promise.all(
@@ -62,7 +61,6 @@ export const gitBranchesListVirtualFile: VirtualFileDefinition = {
             fs: nodeFs,
             dir: gitRoot,
             ref: branch,
-            cache: getGitCacheFromFs(userSpaceFs),
           });
           return branch;
         })

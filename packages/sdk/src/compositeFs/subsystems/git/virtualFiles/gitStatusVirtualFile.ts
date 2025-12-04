@@ -59,15 +59,18 @@ export const gitStatusVirtualFile: VirtualFileDefinition = {
 
     try {
       const currentBranch =
-        (await git.currentBranch({ fs: nodeFs, dir: gitRoot, cache: getGitCacheFromFs(userSpaceFs) })) || 'HEAD';
+        (await git.currentBranch({ fs: nodeFs, dir: gitRoot })) || 'HEAD';
       const headCommit = await git.resolveRef({
         fs: nodeFs,
         dir: gitRoot,
         ref: 'HEAD',
-        cache: getGitCacheFromFs(userSpaceFs),
       });
 
-      const statusMatrix = await git.statusMatrix({ fs: nodeFs, dir: gitRoot, cache: getGitCacheFromFs(userSpaceFs) });
+      const statusMatrix = await git.statusMatrix({
+        fs: nodeFs,
+        dir: gitRoot,
+        cache: getGitCacheFromFs(userSpaceFs),
+      });
 
       const modifiedFiles = statusMatrix
         .filter(

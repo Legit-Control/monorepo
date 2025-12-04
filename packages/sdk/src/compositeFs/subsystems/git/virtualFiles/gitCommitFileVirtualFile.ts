@@ -2,13 +2,39 @@ import git from 'isomorphic-git';
 
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
-import { resolveGitObjAtPath } from './utils.js';
+import { resolveGitObjAtPath, resolveGitObjAtPathFromArgs } from './utils.js';
 import { ENOENTError } from '../../../errors/ENOENTError.js';
+
+function getGitCacheFromArgs(args: VirtualFileArgs): any {
+  // Access gitCache through the userSpaceFs hierarchy
+  if (args.userSpaceFs && args.userSpaceFs.gitCache !== undefined) {
+    return args.userSpaceFs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (args.userSpaceFs && args.userSpaceFs.parentFs) {
+    return getGitCacheFromFs(args.userSpaceFs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
+function getGitCacheFromFs(fs: any): any {
+  // If it's a CompositeFs with gitCache, use it
+  if (fs && fs.gitCache !== undefined) {
+    return fs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (fs && fs.parentFs) {
+    return getGitCacheFromFs(fs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
 
 export const gitCommitFileVirtualFile: VirtualFileDefinition = {
   type: 'gitCommitFileVirtualFile',
 
-  getStats: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
+  getStats: async ({ filePath, gitRoot, nodeFs, pathParams, userSpaceFs }) => {
     if (!pathParams.sha_1_1_2) {
       throw new Error('sha_1_1_2 should be in pathParams');
     }
@@ -25,6 +51,7 @@ export const gitCommitFileVirtualFile: VirtualFileDefinition = {
       nodeFs,
       commitSha,
       pathParams,
+      gitCache: getGitCacheFromFs(userSpaceFs),
     });
 
     if (!fileOrFolder) {
@@ -112,7 +139,7 @@ export const gitCommitFileVirtualFile: VirtualFileDefinition = {
       } as any;
     }
   },
-  getFile: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
+  getFile: async ({ filePath, gitRoot, nodeFs, pathParams, userSpaceFs }) => {
     if (!pathParams.sha_1_1_2) {
       throw new Error('sha_1_1_2 should be in pathParams');
     }
@@ -130,6 +157,7 @@ export const gitCommitFileVirtualFile: VirtualFileDefinition = {
         nodeFs,
         commitSha: commitSha,
         pathParams,
+        gitCache: getGitCacheFromFs(userSpaceFs),
       });
       if (!fileOrFolder) {
         return undefined;
@@ -140,6 +168,7 @@ export const gitCommitFileVirtualFile: VirtualFileDefinition = {
           fs: nodeFs,
           dir: gitRoot,
           oid: fileOrFolder.oid,
+          cache: getGitCacheFromFs(userSpaceFs),
         });
 
         return {

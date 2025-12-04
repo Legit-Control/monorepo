@@ -46,7 +46,6 @@ export async function tryResolveRef(
       fs: fs,
       dir: gitRoot,
       ref: `refs/heads/${refName}`,
-      cache: gitCache || {},
     });
     return branchCommit;
   } catch (e) {
@@ -65,7 +64,6 @@ export async function tryResolveRefFromArgs(
       fs: fs,
       dir: gitRoot,
       ref: `refs/heads/${refName}`,
-      cache: getGitCacheFromArgs(args),
     });
     return branchCommit;
   } catch (e) {
@@ -248,7 +246,12 @@ export async function buildUpdatedTree({
   // read current tree entries
   let newEntries: TreeObject = [];
   if (currentOid) {
-    const { tree } = await git.readTree({ fs, dir: dir, oid: currentOid, cache: gitCache || {} });
+    const { tree } = await git.readTree({
+      fs,
+      dir: dir,
+      oid: currentOid,
+      cache: gitCache || {},
+    });
     newEntries = [...tree];
   }
 
@@ -317,7 +320,7 @@ export async function buildUpdatedTree({
 
     if (updated) {
       // the new entries get sorted from isomorphics GitTree constructor
-      const newOid = await git.writeTree({ fs, dir, tree: newEntries, cache: gitCache || {} });
+      const newOid = await git.writeTree({ fs, dir, tree: newEntries });
       return newOid;
     } else {
       if (currentOid === undefined) {
@@ -470,7 +473,7 @@ export async function buildUpdatedTree({
               const keepIdx = newEntries.findIndex(
                 e => e.path === keepFilename
               );
-              
+
               if (keepIdx !== -1) {
                 newEntries.splice(keepIdx, 1);
               }
@@ -497,7 +500,7 @@ export async function buildUpdatedTree({
 
     if (updated) {
       // the new entries get sorted from isomorphics GitTree constructor
-      const newOid = await git.writeTree({ fs, dir, tree: newEntries, cache: gitCache || {} });
+      const newOid = await git.writeTree({ fs, dir, tree: newEntries });
       return newOid;
     } else {
       if (currentOid === undefined) {
@@ -563,18 +566,23 @@ export async function resolveGitObjAtPath({
   nodeFs,
   commitSha,
   pathParams,
+  gitCache,
 }: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'nodeFs' | 'pathParams'> & {
   commitSha: string;
+  gitCache: any;
 }): Promise<
   | { type: 'tree'; oid: string; entries: string[] }
   | { type: 'blob'; oid: string }
   | undefined
 > {
+  const cache = gitCache || {};
+
   if (!pathParams.filePath) {
     const tree = await git.readTree({
       fs: nodeFs,
       dir: gitRoot,
       oid: commitSha,
+      cache: cache,
     });
     const entries = tree.tree.map(entry => entry.path);
     return {
@@ -589,6 +597,7 @@ export async function resolveGitObjAtPath({
     fs: nodeFs,
     dir: gitRoot,
     trees: [git.TREE({ ref: commitSha })],
+    cache: cache,
     map: async (filepath, [entry]) => {
       if (filepath === pathParams.filePath && entry) {
         const type = await entry.type();
@@ -602,6 +611,7 @@ export async function resolveGitObjAtPath({
             fs: nodeFs,
             dir: gitRoot,
             oid: await entry.oid(),
+            cache: cache,
           });
           const entries = tree.tree.map(entry => entry.path);
           return {
@@ -625,4 +635,29 @@ export async function resolveGitObjAtPath({
   );
 
   return fileOrFolder;
+}
+
+export async function resolveGitObjAtPathFromArgs({
+  filePath,
+  gitRoot,
+  nodeFs,
+  commitSha,
+  pathParams,
+  args,
+}: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'nodeFs' | 'pathParams'> & {
+  commitSha: string;
+  args: VirtualFileArgs;
+}): Promise<
+  | { type: 'tree'; oid: string; entries: string[] }
+  | { type: 'blob'; oid: string }
+  | undefined
+> {
+  return await resolveGitObjAtPath({
+    filePath,
+    gitRoot,
+    nodeFs,
+    commitSha,
+    pathParams,
+    gitCache: getGitCacheFromArgs(args),
+  });
 }

@@ -45,14 +45,12 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
         fs: nodeFs,
         dir: gitRoot,
         ref: pathParams.branchName,
-        cache: getGitCacheFromFs(userSpaceFs),
       });
     } catch {
       headCommit = await git.resolveRef({
         fs: nodeFs,
         dir: gitRoot,
         ref: `refs/heads/${pathParams.branchName}`,
-        cache: getGitCacheFromFs(userSpaceFs),
       });
     }
 
@@ -109,14 +107,12 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
           fs: nodeFs,
           dir: gitRoot,
           ref: pathParams.branchName,
-          cache: getGitCacheFromFs(userSpaceFs),
         });
       } catch {
         headCommit = await git.resolveRef({
           fs: nodeFs,
           dir: gitRoot,
           ref: `refs/heads/${pathParams.branchName}`,
-          cache: getGitCacheFromFs(userSpaceFs),
         });
       }
 
@@ -168,7 +164,6 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
       ref: 'refs/heads/' + pathParams.branchName,
       value: newHead,
       force: true,
-      cache: getGitCacheFromFs(userSpaceFs),
     });
   },
 
