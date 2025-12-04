@@ -75,6 +75,7 @@ export const LegitProvider = ({
         if (config.publicKey) {
           // NOTE for now the public key functions as access token directly
           await _legitFs.auth.addAccessToken(config.publicKey);
+          _legitFs.sync.start();
         }
 
         if (_legitFs) {
@@ -106,7 +107,7 @@ export const LegitProvider = ({
           setHead(newHead);
         }
       } catch (err) {
-        setError(err as Error);
+        // TODO: for now ignore error because of polling design
       }
     }, DEFAULT_POLL_INTERVAL);
 

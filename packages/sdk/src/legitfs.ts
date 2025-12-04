@@ -212,7 +212,7 @@ export async function openLegitFs({
   });
 
   if (publicKey) {
-    syncService.start();
+    // syncService.start();
   }
 
   const legitfs = Object.assign(userSpaceFs, {
