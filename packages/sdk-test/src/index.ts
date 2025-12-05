@@ -1,12 +1,8 @@
-export * from './compositeFs/CompositeFs.js';
-export * from './compositeFs/subsystems/HiddenFileSubFs.js';
-export * from './compositeFs/subsystems/EphemeralFileSubFs.js';
-export * from './compositeFs/subsystems/PassThroughSubFs.js';
-export * from './compositeFs/subsystems/git/GitSubFs.js';
-export * from './compositeFs/subsystems/git/virtualFiles/operations/gitBranchOperationsVirtualFile.js';
-export * from './legitfs.js';
-export * from './sync/createLegitSyncService.js';
+// Import browser polyfills first to set up globals like Buffer
+import './browser-polyfills.js';
+
+// Browser-specific exports
 export * from './adapter/browser-fs-access.js';
-export * from './compositeFs/subsystems/git/virtualFiles/types/HistoryItom.js';
-export * from './compositeFs/subsystems/git/virtualFiles/types/User.js';
-export * from './compositeFs/utils/fs-operation-logger.js';
+
+// Core exports
+export * from './index-server.js';

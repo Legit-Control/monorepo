@@ -1,5 +1,53 @@
 # @legit-sdk/core
 
+## 0.2.9
+
+### Patch Changes
+
+- test v8
+
+## 0.2.8
+
+### Patch Changes
+
+- Test v7
+
+## 0.2.7
+
+### Patch Changes
+
+- test v6
+
+## 0.2.6
+
+### Patch Changes
+
+- Test v5
+
+## 0.2.5
+
+### Patch Changes
+
+- Test v3
+
+## 0.2.4
+
+### Patch Changes
+
+- Test v3
+
+## 0.2.3
+
+### Patch Changes
+
+- Test v2
+
+## 0.2.2
+
+### Patch Changes
+
+- Test
+
 ## 0.2.1
 
 ### Patch Changes

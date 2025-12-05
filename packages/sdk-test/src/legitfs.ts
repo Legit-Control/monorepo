@@ -18,8 +18,10 @@ export async function initMemFSLegitFs() {
   const memfsVolume = new Volume();
   const memfs = createFsFromVolume(memfsVolume);
 
-  // @ts-ignore -- initLegitFs will expect memfs type in the future
-  return openLegitFs(memfs as any, '/');
+  return await openLegitFs({
+    storageFs: memfs as unknown as typeof nodeFs,
+    gitRoot: '/',
+  });
 }
 
 /**
