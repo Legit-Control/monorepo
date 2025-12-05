@@ -1,0 +1,182 @@
+import git from 'isomorphic-git';
+
+import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
+import * as nodeFs from 'node:fs';
+import { resolveGitObjAtPath } from './utils.js';
+import { ENOENTError } from '../../../errors/ENOENTError.js';
+
+export const gitCommitFileVirtualFile: VirtualFileDefinition = {
+  type: 'gitCommitFileVirtualFile',
+
+  getStats: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
+    if (!pathParams.sha_1_1_2) {
+      throw new Error('sha_1_1_2 should be in pathParams');
+    }
+
+    if (!pathParams.sha1_3__40) {
+      throw new Error('sha1_3__40 should be in pathParams');
+    }
+
+    const commitSha = pathParams.sha_1_1_2 + pathParams.sha1_3__40;
+
+    const fileOrFolder = await resolveGitObjAtPath({
+      filePath,
+      gitRoot,
+      nodeFs,
+      commitSha,
+      pathParams,
+    });
+
+    if (!fileOrFolder) {
+      throw new ENOENTError(
+        `ENOENT: no such file or directory, stat '${filePath}'`,
+        filePath
+      );
+    }
+
+    const commit = await git.readCommit({
+      fs: nodeFs,
+      dir: gitRoot,
+      oid: commitSha,
+    });
+    const { commit: commitObj } = commit;
+    const commitTimeMs = commitObj.committer.timestamp * 1000;
+
+    if (fileOrFolder.type === 'tree') {
+      return {
+        mode: 0o644,
+        size: 0, // start with no time,
+        isFile: () => true,
+        isDirectory: () => true,
+        isSymbolicLink: () => false,
+        isBlockDevice: () => false,
+        isCharacterDevice: () => false,
+        isSocket: () => false,
+        isFIFO: () => false,
+        isFileSync: () => true,
+        isDirectorySync: () => false,
+        dev: 0,
+        ino: 0,
+        nlink: 1,
+        uid: 0,
+        gid: 0,
+        rdev: 0,
+        blksize: 4096,
+        blocks: 0,
+        atimeMs: commitTimeMs,
+        mtimeMs: commitTimeMs,
+        ctimeMs: commitTimeMs,
+        birthtimeMs: commitTimeMs,
+        atime: new Date(commitTimeMs),
+        mtime: new Date(commitTimeMs),
+        ctime: new Date(commitTimeMs),
+        birthtime: new Date(commitTimeMs),
+      } as any;
+    } else {
+      // NOTE we could extract the size by only reading the header from loose object https://github.com/isomorphic-git/isomorphic-git/blob/main/src/models/GitObject.js#L15
+      // or the length from pack file https://git-scm.com/docs/pack-format
+      const { blob } = await git.readBlob({
+        fs: nodeFs,
+        dir: gitRoot,
+        oid: fileOrFolder.oid,
+      });
+
+      return {
+        mode: 0o644,
+        size: blob.length,
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+        isBlockDevice: () => false,
+        isCharacterDevice: () => false,
+        isSocket: () => false,
+        isFIFO: () => false,
+        isFileSync: () => true,
+        isDirectorySync: () => false,
+        dev: 0,
+        ino: 0,
+        nlink: 1,
+        uid: 0,
+        gid: 0,
+        rdev: 0,
+        blksize: 4096,
+        blocks: Math.ceil(blob.length / 4096),
+        atimeMs: commitTimeMs,
+        mtimeMs: commitTimeMs,
+        ctimeMs: commitTimeMs,
+        birthtimeMs: commitTimeMs,
+        atime: new Date(commitTimeMs),
+        mtime: new Date(commitTimeMs),
+        ctime: new Date(commitTimeMs),
+        birthtime: new Date(commitTimeMs),
+      } as any;
+    }
+  },
+  getFile: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
+    if (!pathParams.sha_1_1_2) {
+      throw new Error('sha_1_1_2 should be in pathParams');
+    }
+
+    if (!pathParams.sha1_3__40) {
+      throw new Error('sha1_3__40 should be in pathParams');
+    }
+
+    const commitSha = pathParams.sha_1_1_2 + pathParams.sha1_3__40;
+
+    try {
+      const fileOrFolder = await resolveGitObjAtPath({
+        filePath,
+        gitRoot,
+        nodeFs,
+        commitSha: commitSha,
+        pathParams,
+      });
+      if (!fileOrFolder) {
+        return undefined;
+      }
+
+      if (fileOrFolder.type === 'blob') {
+        const { blob } = await git.readBlob({
+          fs: nodeFs,
+          dir: gitRoot,
+          oid: fileOrFolder.oid,
+        });
+
+        return {
+          type: 'file',
+          content: Buffer.from(blob),
+          mode: 0o644,
+          size: blob.length,
+          oid: fileOrFolder.oid,
+        };
+      } else {
+        const allEntries = Array.from(
+          new Set([...fileOrFolder.entries.filter(v => v !== '.keep')])
+        );
+        return {
+          type: 'directory',
+          content: allEntries,
+          mode: 0o755,
+        };
+        // tree..
+        // return {
+        //   type: 'directory',
+        //   content: fileOrFolder.entries.filter(v => v !== '.keep'),
+        //   mode: 0o755,
+        // };
+      }
+    } catch (error) {
+      return undefined;
+    }
+  },
+  rename(args) {
+    throw new Error('not implementsd');
+  },
+  mkdir: async function (
+    args: VirtualFileArgs & {
+      options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
+    }
+  ): Promise<void> {
+    throw new Error('not implemented');
+  },
+};
