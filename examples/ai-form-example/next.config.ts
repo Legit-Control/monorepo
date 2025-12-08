@@ -1,33 +1,33 @@
 import type { NextConfig } from 'next';
-import path from 'path';
+// import path from 'path';
 
-const useSourceFiles = process.env.USE_SOURCE_FILES === 'true';
-const isDev = process.env.NODE_ENV === 'development';
+// const useSourceFiles = process.env.USE_SOURCE_FILES === 'true';
+// const isDev = process.env.NODE_ENV === 'development';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@legit-sdk/core', '@legit-sdk/assistant-ui'],
   turbopack: {
-    resolveAlias: {
-      '@legit-sdk/core':
-        useSourceFiles || isDev
-          ? '../../packages/sdk/src'
-          : '../../packages/sdk/dist',
-      '@legit-sdk/assistant-ui':
-        useSourceFiles || isDev
-          ? '../../packages/sdk-assistant-ui/src'
-          : '../../packages/sdk-assistant-ui/dist',
-    },
+    // resolveAlias: {
+    //   '@legit-sdk/core':
+    //     useSourceFiles || isDev
+    //       ? '../../packages/sdk/src'
+    //       : '../../packages/sdk/dist',
+    //   '@legit-sdk/assistant-ui':
+    //     useSourceFiles || isDev
+    //       ? '../../packages/sdk-assistant-ui/src'
+    //       : '../../packages/sdk-assistant-ui/dist',
+    // },
     resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
   },
   webpack: (config, { isServer, webpack }) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@legit-sdk/core': path.resolve(__dirname, '../../packages/sdk/src'),
-      '@legit-sdk/assistant-ui': path.resolve(
-        __dirname,
-        '../../packages/sdk-assistant-ui/src'
-      ),
-    };
+    // config.resolve.alias = {
+    //   ...config.resolve.alias,
+    //   '@legit-sdk/core': path.resolve(__dirname, '../../packages/sdk/src'),
+    //   '@legit-sdk/assistant-ui': path.resolve(
+    //     __dirname,
+    //     '../../packages/sdk-assistant-ui/src'
+    //   ),
+    // };
 
     config.resolve.extensionAlias = {
       '.js': ['.ts', '.tsx', '.js', '.jsx'],

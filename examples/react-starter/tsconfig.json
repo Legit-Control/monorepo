@@ -19,12 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      // Point to dist files for type checking (source files are used via webpack/turbopack aliases)
-      "@legit-sdk/core": ["../../packages/sdk/dist/index.d.ts"],
-      "@legit-sdk/core/*": ["../../packages/sdk/dist/*"],
-      "@legit-sdk/react": ["../../packages/sdk-react/dist/index.d.ts"],
-      "@legit-sdk/react/*": ["../../packages/sdk-react/dist/*"]
+      "@/*": ["./*"]
     }
   },
   "include": [

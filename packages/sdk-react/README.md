@@ -94,8 +94,3 @@ type UseLegitFileReturn = {
   legitFs: LegitFs | null;
 };
 ```
-
-## See Also
-
-- [Starter Example](../../examples/react-starter) - Full working example
-- [Spec Documentation](./spec.md) - Detailed API documentation

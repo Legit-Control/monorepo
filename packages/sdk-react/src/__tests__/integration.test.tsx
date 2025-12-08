@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   act,
   cleanup,
@@ -7,13 +7,16 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { mockedLegitFs, mockOpenLegitFs } from '../__mocks__/mockLegitFs';
+import {
+  mockedLegitFsWithMemoryFs,
+  mockOpenLegitFsWithMemoryFs,
+} from '../__mocks__/mockLegitFs';
 import React from 'react';
 import { mockConfig } from '../__mocks__/mockConfig';
 import { mockCreateLegitSyncService } from '../__mocks__/mockCreateLegitSyncService';
 
 vi.mock('@legit-sdk/core', () => ({
-  openLegitFs: mockOpenLegitFs,
+  openLegitFsWithMemoryFs: mockOpenLegitFsWithMemoryFs,
   createLegitSyncService: mockCreateLegitSyncService,
 }));
 
@@ -58,15 +61,17 @@ describe('React wrapper integration', () => {
       });
 
     let content = 'hello';
-    mockedLegitFs.promises.readFile.mockImplementation((p: string) => {
-      if (p.endsWith('/.legit/branches/anonymous/.legit/history'))
-        return Promise.resolve(JSON.stringify([{ oid: '1' }]));
-      if (p.endsWith('/.legit/branches/anonymous/.legit/head'))
-        return Promise.resolve('h1');
-      if (p.endsWith('/.legit/branches/anonymous/doc.txt'))
-        return Promise.resolve(content);
-      return Promise.resolve('');
-    });
+    mockedLegitFsWithMemoryFs.promises.readFile.mockImplementation(
+      (p: string) => {
+        if (p.endsWith('/.legit/branches/anonymous/.legit/history'))
+          return Promise.resolve(JSON.stringify([{ oid: '1' }]));
+        if (p.endsWith('/.legit/branches/anonymous/.legit/head'))
+          return Promise.resolve('h1');
+        if (p.endsWith('/.legit/branches/anonymous/doc.txt'))
+          return Promise.resolve(content);
+        return Promise.resolve('');
+      }
+    );
 
     render(
       <LegitProvider config={mockConfig}>
@@ -87,7 +92,7 @@ describe('React wrapper integration', () => {
     fireEvent.change(input, { target: { value: 'edited text' } });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() =>
-      expect(mockedLegitFs.promises.writeFile).toHaveBeenCalled()
+      expect(mockedLegitFsWithMemoryFs.promises.writeFile).toHaveBeenCalled()
     );
     expect((input as HTMLInputElement).value).toBe('edited text');
 
@@ -96,23 +101,25 @@ describe('React wrapper integration', () => {
 
   it('handles ENOENT on initialization and creates file on save', async () => {
     // Simulate missing file -> ENOENT
-    mockedLegitFs.promises.readFile.mockImplementation((p: string) => {
-      if (p.endsWith('/.legit/branches/anonymous/.legit/history'))
-        return Promise.reject(
-          Object.assign(new Error('ENOENT: no such file or directory'), {
-            code: 'ENOENT',
-          })
-        );
-      if (p.endsWith('/.legit/branches/anonymous/.legit/head'))
-        return Promise.resolve('h1');
-      if (p.endsWith('/.legit/branches/anonymous/doc.txt'))
-        return Promise.reject(
-          Object.assign(new Error('ENOENT: no such file or directory'), {
-            code: 'ENOENT',
-          })
-        );
-      return Promise.resolve('');
-    });
+    mockedLegitFsWithMemoryFs.promises.readFile.mockImplementation(
+      (p: string) => {
+        if (p.endsWith('/.legit/branches/anonymous/.legit/history'))
+          return Promise.reject(
+            Object.assign(new Error('ENOENT: no such file or directory'), {
+              code: 'ENOENT',
+            })
+          );
+        if (p.endsWith('/.legit/branches/anonymous/.legit/head'))
+          return Promise.resolve('h1');
+        if (p.endsWith('/.legit/branches/anonymous/doc.txt'))
+          return Promise.reject(
+            Object.assign(new Error('ENOENT: no such file or directory'), {
+              code: 'ENOENT',
+            })
+          );
+        return Promise.resolve('');
+      }
+    );
 
     render(
       <LegitProvider config={mockConfig}>
@@ -131,7 +138,7 @@ describe('React wrapper integration', () => {
     fireEvent.click(screen.getByText('Save'));
 
     await waitFor(() =>
-      expect(mockedLegitFs.promises.writeFile).toHaveBeenCalledWith(
+      expect(mockedLegitFsWithMemoryFs.promises.writeFile).toHaveBeenCalledWith(
         '/.legit/branches/anonymous/doc.txt',
         'created file',
         'utf8'

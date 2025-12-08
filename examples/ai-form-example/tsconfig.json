@@ -8,31 +8,15 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "ES2023"
-    ],
+    "lib": ["dom", "dom.iterable", "ES2023"],
     "stripInternal": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@assistant-ui/*": [
-        "../../packages/*/src"
-      ],
-      "@assistant-ui/react/*": [
-        "../../packages/react/src/*"
-      ],
-      "@assistant-ui/tap/*": [
-        "../../packages/tap/src/*"
-      ],
-      "assistant-stream": [
-        "../../packages/assistant-stream/src"
-      ],
-      "assistant-stream/*": [
-        "../../packages/assistant-stream/src/*"
-      ]
+      "@/*": ["./*"],
+      "@assistant-ui/*": ["../../packages/*/src"],
+      "@assistant-ui/react/*": ["../../packages/react/src/*"],
+      "@assistant-ui/tap/*": ["../../packages/tap/src/*"],
+      "assistant-stream": ["../../packages/assistant-stream/src"],
+      "assistant-stream/*": ["../../packages/assistant-stream/src/*"]
     },
     "allowJs": true,
     "skipLibCheck": true,
@@ -54,7 +38,5 @@
     "eslint.config.mjs",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

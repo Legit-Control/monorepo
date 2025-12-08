@@ -1,20 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import { mockedLegitFs, mockOpenLegitFs } from '../__mocks__/mockLegitFs';
+import { render, screen, waitFor } from '@testing-library/react';
+import { mockOpenLegitFsWithMemoryFs } from '../__mocks__/mockLegitFs';
 import { mockConfig } from '../__mocks__/mockConfig';
-import {
-  mockCreateLegitSyncService,
-  mockLegitSyncService,
-} from '../__mocks__/mockCreateLegitSyncService';
+import { mockCreateLegitSyncService } from '../__mocks__/mockCreateLegitSyncService';
 
 // mock the sdk
 vi.mock('@legit-sdk/core', () => ({
   createLegitSyncService: mockCreateLegitSyncService,
-  openLegitFs: mockOpenLegitFs,
+  openLegitFsWithMemoryFs: mockOpenLegitFsWithMemoryFs,
 }));
 
-import { LegitConfig, LegitProvider, useLegitContext } from '../LegitProvider';
-import { openLegitFs } from '@legit-sdk/core';
+import { LegitProvider, useLegitContext } from '../LegitProvider';
+import { openLegitFsWithMemoryFs } from '@legit-sdk/core';
 import { useEffect, useState } from 'react';
 
 describe('Initializes legitFs', () => {
@@ -42,15 +39,15 @@ describe('Initializes legitFs', () => {
 
     // Wait for legitFs to initialize
     await waitFor(() => expect(screen.getByText('ready')).toBeDefined());
-    expect(openLegitFs).toHaveBeenCalled();
+    expect(openLegitFsWithMemoryFs).toHaveBeenCalled();
     expect(setIntervalSpy).toHaveBeenCalled();
     unmount();
   });
 
   it('returns error if openLegitFs fails', async () => {
-    (openLegitFs as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('Init failed')
-    );
+    (
+      openLegitFsWithMemoryFs as unknown as ReturnType<typeof vi.fn>
+    ).mockRejectedValueOnce(new Error('Init failed'));
 
     const Consumer = () => {
       const { error } = useLegitContext();
@@ -114,10 +111,10 @@ describe('polls HEAD', () => {
 
     // mock the getCurrentBranch method
     const getCurrentBranch = vi.fn().mockResolvedValue('anonymous');
-    mockOpenLegitFs.mockResolvedValueOnce({
+    mockOpenLegitFsWithMemoryFs.mockResolvedValueOnce({
       promises: { readFile, writeFile: vi.fn() },
       getCurrentBranch,
-    } as unknown as ReturnType<typeof openLegitFs>);
+    } as unknown as ReturnType<typeof openLegitFsWithMemoryFs>);
 
     const { unmount } = render(
       <LegitProvider config={mockConfig}>

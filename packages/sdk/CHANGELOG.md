@@ -1,5 +1,17 @@
 # @legit-sdk/core
 
+## 0.2.3
+
+### Patch Changes
+
+- Update server build configuration for ssr use case
+
+## 0.2.2
+
+### Patch Changes
+
+- Add server build without polyfills, root build is for browser use
+
 ## 0.2.1
 
 ### Patch Changes

@@ -14,12 +14,18 @@ import {
   FsOperationLogger,
 } from './compositeFs/utils/fs-operation-logger.js';
 
-export async function initMemFSLegitFs() {
+// same props as openLegitFs
+export async function openLegitFsWithMemoryFs(
+  props?: Parameters<typeof openLegitFs>[0]
+) {
   const memfsVolume = new Volume();
   const memfs = createFsFromVolume(memfsVolume);
 
-  // @ts-ignore -- initLegitFs will expect memfs type in the future
-  return openLegitFs(memfs as any, '/');
+  return openLegitFs({
+    ...props,
+    storageFs: props?.storageFs ? props.storageFs : (memfs as any),
+    gitRoot: props?.gitRoot || '/',
+  });
 }
 
 /**

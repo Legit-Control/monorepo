@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/core",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "Legit SDK - Infrastructure for write-enabled AI",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -11,6 +11,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.js"
     }
   },
   "scripts": {
@@ -31,6 +36,8 @@
   "files": [
     "dist/index.js",
     "dist/index.d.ts",
+    "dist/server.js",
+    "dist/server.d.ts",
     "LICENSE"
   ],
   "devDependencies": {
@@ -38,6 +45,7 @@
     "browser-fs-access": "^0.38.0",
     "buffer": "^6.0.3",
     "esbuild": "^0.24.2",
+    "esbuild-plugins-node-modules-polyfill": "^1.7.1",
     "events": "^3.3.0",
     "https-browserify": "^1.0.0",
     "path-browserify": "^1.0.1",

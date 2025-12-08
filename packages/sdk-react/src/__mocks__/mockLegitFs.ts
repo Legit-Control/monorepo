@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-export const mockedLegitFs = {
+export const mockedLegitFsWithMemoryFs = {
   promises: {
     readFile: vi.fn(),
     writeFile: vi.fn(),
@@ -8,4 +8,6 @@ export const mockedLegitFs = {
   getCurrentBranch: vi.fn().mockResolvedValue('anonymous'),
 };
 
-export const mockOpenLegitFs = vi.fn().mockResolvedValue(mockedLegitFs);
+export const mockOpenLegitFsWithMemoryFs = vi
+  .fn()
+  .mockResolvedValue(mockedLegitFsWithMemoryFs);
