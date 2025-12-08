@@ -1,5 +1,50 @@
 # @legit-sdk/react
 
+## 0.2.8
+
+### Patch Changes
+
+- conditional alias ssr build to use core/server import
+
+## 0.2.7
+
+### Patch Changes
+
+- Depend on core/server as unopinionated
+
+## 0.2.6
+
+### Patch Changes
+
+- Add react and react-dom to external buidl config for server config
+
+## 0.2.5
+
+### Patch Changes
+
+- Add exports
+
+## 0.2.4
+
+### Patch Changes
+
+- Add react and react-dom to external in esbuild config
+
+## 0.2.3
+
+### Patch Changes
+
+- Update server build configuration for ssr use case
+- Updated dependencies
+  - @legit-sdk/core@0.2.3
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @legit-sdk/core@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes

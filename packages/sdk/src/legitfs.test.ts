@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Volume, createFsFromVolume } from 'memfs';
 import * as isogit from 'isomorphic-git';
-import { openLegitFs } from './legitfs.js';
+import { openLegitFs, openLegitFsWithMemoryFs } from './legitfs.js';
 import fs from 'fs';
 
 const repoPath = '/repo';
@@ -750,4 +750,20 @@ describe('openLegitFs', () => {
   it.todo('should read files from previous commit');
   it.todo('should list files from previous commit');
   it.todo('should handle branch creation and switching');
+});
+
+describe('openLegitFsWithMemoryFs', () => {
+  beforeEach(async () => {
+    await setupRepo();
+    legitfs = await openLegitFsWithMemoryFs();
+  });
+
+  it('should open a legitfs instance with memory fs', async () => {
+    const legitfs = await openLegitFsWithMemoryFs();
+    const branches = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches`,
+      'utf-8'
+    );
+    expect(branches).toContain('anonymous');
+  });
 });

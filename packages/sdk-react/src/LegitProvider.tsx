@@ -9,11 +9,10 @@ import {
   ReactNode,
   useRef,
 } from 'react';
-import { openLegitFs } from '@legit-sdk/core'; // your SDK import
-import fs from 'memfs'; // in-memory FS for demo
+import { openLegitFsWithMemoryFs } from '@legit-sdk/core';
 
 export interface LegitContextValue {
-  legitFs: Awaited<ReturnType<typeof openLegitFs>> | null;
+  legitFs: Awaited<ReturnType<typeof openLegitFsWithMemoryFs>> | null;
   loading: boolean;
   head: string | null;
   rollback: (commitHash: string) => Promise<void>;
@@ -53,7 +52,7 @@ export const LegitProvider = ({
 }: LegitProviderProps) => {
   const [isFirstRender, setIsFirstRender] = useState(true);
   const [legitFs, setLegitFs] = useState<Awaited<
-    ReturnType<typeof openLegitFs>
+    ReturnType<typeof openLegitFsWithMemoryFs>
   > | null>(null);
 
   const headRef = useRef<string | null>(null);
@@ -65,12 +64,11 @@ export const LegitProvider = ({
 
     const init = async () => {
       try {
-        const _legitFs = await openLegitFs({
-          storageFs: fs as unknown as typeof import('node:fs'),
+        const _legitFs = await openLegitFsWithMemoryFs({
           gitRoot: config.gitRoot,
           serverUrl: config.serverUrl,
           publicKey: config.publicKey,
-        });
+        } as Parameters<typeof openLegitFsWithMemoryFs>[0]);
 
         if (config.publicKey) {
           // NOTE for now the public key functions as access token directly

@@ -5,9 +5,9 @@ import {
   useLegitFile,
   useLegitContext,
   LegitConfig,
-} from '@legit-sdk/react';
+} from '@legit-sdk/react/server';
 
-import { HistoryItem } from '@legit-sdk/core';
+// import { HistoryItem } from '@legit-sdk/core/server';
 import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import Image from 'next/image';
@@ -40,10 +40,12 @@ function Editor() {
   }, [legitFs, searchParams]);
 
   useEffect(() => {
-    if (legitFile.data !== null) {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      setText(legitFile.data);
-    }
+    const runAsync = async () => {
+      if (legitFile.data !== null) {
+        setText(legitFile.data);
+      }
+    };
+    runAsync();
   }, [legitFile.data]);
 
   const handleShare = async () => {
@@ -157,7 +159,14 @@ function Editor() {
 }
 
 type HistoryItemProps = {
-  item: HistoryItem;
+  item: {
+    oid: string;
+    message: string;
+    parent: string[];
+    author: {
+      timestamp: number;
+    };
+  };
   isActive: boolean;
   onCheckout: (oid: string) => void;
   getPastState: (commitHash: string) => Promise<string>;
