@@ -10,6 +10,7 @@ import { ENOENTError } from '../../../errors/ENOENTError.js';
 import * as nodeFs from 'node:fs';
 import { CompositeFs } from '../../../CompositeFs.js';
 import { getCurrentBranch } from './getCurrentBranch.js';
+import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
 
@@ -415,12 +416,14 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       throw new Error('filePath should be in pathParams');
     }
     // Get current branch commit
-    const branchCommit = await git.resolveRef({
-      fs: nodeFs,
-      dir: gitRoot,
-      ref: pathParams.branchName,
-    });
-
+    const branchCommit = await tryResolveRef(
+      nodeFs,
+      gitRoot,
+      pathParams.branchName
+    );
+    if (!branchCommit) {
+      throw new Error('Invalid branch file path - branch must exist');
+    }
     // Read current tree
     const currentTree = await git.readTree({
       fs: nodeFs,
@@ -516,14 +519,17 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.branch({
         fs: nodeFs,
         dir: gitRoot,
-        ref: pathParams.branchName,
+        ref: decodeBranchNameFromVfs(pathParams.branchName),
         object: currentHead,
       });
-      branchCommit = await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: `refs/heads/${pathParams.branchName}`,
-      });
+      branchCommit = await tryResolveRef(
+        nodeFs,
+        gitRoot,
+        pathParams.branchName
+      );
+      if (!branchCommit) {
+        throw new Error('Could not create branch for writeFile');
+      }
     }
 
     // read tree also accepts a git commit - it will resolve the tree within the commit
@@ -561,7 +567,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.writeRef({
         fs: nodeFs,
         dir: gitRoot,
-        ref: `refs/heads/${pathParams.branchName}`,
+        ref: `refs/heads/${decodeBranchNameFromVfs(pathParams.branchName)}`,
         value: newCommitOid,
         force: true,
       });
@@ -629,14 +635,18 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.branch({
         fs: nodeFs,
         dir: gitRoot,
-        ref: newPathParams.branchName,
+        ref: decodeBranchNameFromVfs(newPathParams.branchName),
         object: currentHead,
       });
-      currentBranchCommit = await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: `refs/heads/${newPathParams.branchName}`,
-      });
+      currentBranchCommit = await tryResolveRef(
+        nodeFs,
+        gitRoot,
+        newPathParams.branchName
+      );
+
+      if (currentBranchCommit === undefined) {
+        throw new Error('Could not create branch for rename operation');
+      }
     }
 
     if (newPathParams.branchName !== pathParams.branchName) {
@@ -688,7 +698,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.writeRef({
         fs: nodeFs,
         dir: gitRoot,
-        ref: `refs/heads/${newPathParams.branchName}`,
+        ref: `refs/heads/${decodeBranchNameFromVfs(newPathParams.branchName)}`,
         value: newCommitOid,
         force: true,
       });
@@ -746,14 +756,18 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.branch({
         fs: args.nodeFs,
         dir: args.gitRoot,
-        ref: args.pathParams.branchName,
+        ref: decodeBranchNameFromVfs(args.pathParams.branchName),
         object: currentHead,
       });
-      branchCommit = await git.resolveRef({
-        fs: args.nodeFs,
-        dir: args.gitRoot,
-        ref: `refs/heads/${args.pathParams.branchName}`,
-      });
+      branchCommit = await tryResolveRef(
+        args.nodeFs,
+        args.gitRoot,
+        args.pathParams.branchName
+      );
+
+      if (branchCommit === undefined) {
+        throw new Error('Could not create branch for mkdir operation');
+      }
     }
 
     // read tree also accepts a git commit - it will resolve the tree within the commit
@@ -801,7 +815,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.writeRef({
         fs: args.nodeFs,
         dir: args.gitRoot,
-        ref: `refs/heads/${args.pathParams.branchName}`,
+        ref: `refs/heads/${decodeBranchNameFromVfs(args.pathParams.branchName)}`,
         value: newCommitOid,
         force: true,
       });
@@ -818,11 +832,15 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       throw new Error('filePath should be in pathParams');
     }
     // Get current branch commit
-    const branchCommit = await git.resolveRef({
-      fs: nodeFs,
-      dir: gitRoot,
-      ref: pathParams.branchName,
-    });
+    const branchCommit = await tryResolveRef(
+      nodeFs,
+      gitRoot,
+      pathParams.branchName
+    );
+
+    if (!branchCommit) {
+      throw new Error('Invalid branch file path - branch must exist');
+    }
 
     // Read current tree
     const currentTree = await git.readTree({
@@ -860,7 +878,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       await git.writeRef({
         fs: nodeFs,
         dir: gitRoot,
-        ref: `refs/heads/${pathParams.branchName}`,
+        ref: `refs/heads/${decodeBranchNameFromVfs(pathParams.branchName)}`,
         value: newCommitOid,
         force: true,
       });

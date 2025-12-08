@@ -4,6 +4,7 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { PathLike } from 'node:fs';
 import { getCurrentBranch } from './getCurrentBranch.js';
+import { tryResolveRef } from './utils.js';
 
 // .legit/branches -> list of branches
 
@@ -15,20 +16,14 @@ export const gitBranchHistory: VirtualFileDefinition = {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
-    let headCommit: string;
+    let headCommit = await tryResolveRef(
+      nodeFs,
+      gitRoot,
+      pathParams.branchName
+    );
 
-    try {
-      headCommit = await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: pathParams.branchName,
-      });
-    } catch {
-      headCommit = await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: `refs/heads/${pathParams.branchName}`,
-      });
+    if (!headCommit) {
+      throw new Error(`Branch ${pathParams.branchName} does not exist`);
     }
 
     const commit = await git.readCommit({
@@ -83,12 +78,11 @@ export const gitBranchHistory: VirtualFileDefinition = {
     const commits: any[] = [];
     if (branchName) {
       // Resolve the operation branch ref
-      const operationBranchRef = await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: `refs/heads/${branchName}`,
-      });
-
+      const operationBranchRef = await tryResolveRef(
+        nodeFs,
+        gitRoot,
+        branchName
+      );
       let isFirstOperation = false;
 
       // Walk through the commits in the operation branch

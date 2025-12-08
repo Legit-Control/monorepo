@@ -2,6 +2,7 @@ import git from 'isomorphic-git';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch, setCurrentBranch } from './getCurrentBranch.js';
+import { tryResolveRef } from './utils.js';
 
 export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
   type: 'gitCurrentBranchVirtualFile',
@@ -55,22 +56,12 @@ export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
     const newBranchName = content.toString().trim();
 
     // Check that the branch exists before setting it
-    try {
-      await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: newBranchName,
-      });
-    } catch {
-      try {
-        await git.resolveRef({
-          fs: nodeFs,
-          dir: gitRoot,
-          ref: `refs/heads/${newBranchName}`,
-        });
-      } catch {
-        throw new Error(`Branch ${newBranchName} does not exist in the repository`);
-      }
+
+    const ref = await tryResolveRef(nodeFs, gitRoot, newBranchName);
+    if (!ref) {
+      throw new Error(
+        `Branch ${newBranchName} does not exist in the repository`
+      );
     }
 
     // Use setCurrentBranch to set the new branch

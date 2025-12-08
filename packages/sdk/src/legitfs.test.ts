@@ -746,6 +746,90 @@ describe('openLegitFs', () => {
     await fsHandle2.close();
   });
 
+  it('a file should not be listed after deletion', async () => {
+    const filePath = `${repoPath}/.legit/branches/main/test.txt`;
+    // const filePath2 = `${repoPath}/.legit/branches/main/test2.txt`;
+
+    // Get current valid head
+    await legitfs.promises.writeFile(filePath, 'content');
+    // await legitfs.promises.writeFile(filePath2, 'content');
+
+    const fsHandle = await legitfs.promises.open(filePath, 'a+');
+    const statsBefore = await fsHandle.stat();
+
+    expect(statsBefore.size).toBe(7);
+
+    const folderContentBefore = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches/main`
+    );
+
+    expect(folderContentBefore).toContain('test.txt');
+
+    await legitfs.promises.unlink(filePath);
+
+    const folderContent = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches/main`
+    );
+
+    expect(folderContent).not.toContain('test.txt');
+  });
+
+  it('folder should return dir entries', async () => {
+    const filePath = `${repoPath}/.legit/branches/main/test.txt`;
+    // const filePath2 = `${repoPath}/.legit/branches/main/test2.txt`;
+
+    // Get current valid head
+    await legitfs.promises.writeFile(filePath, 'content');
+    // await legitfs.promises.writeFile(filePath2, 'content');
+
+    const fsHandle = await legitfs.promises.open(filePath, 'a+');
+    const statsBefore = await fsHandle.stat();
+
+    expect(statsBefore.size).toBe(7);
+
+    const folderContentBefore = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches/main`
+    );
+
+    expect(folderContentBefore).toContain('test.txt');
+
+    await legitfs.promises.unlink(filePath);
+
+    const folderContent = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches/main`
+    );
+
+    expect(folderContent).not.toContain('test.txt');
+  });
+
+  it('folder should return dir entries', async () => {
+    const filePath = `${repoPath}/.legit/branches/my.name.space/test.txt`;
+    // const filePath2 = `${repoPath}/.legit/branches/main/test2.txt`;
+
+    // Get current valid head
+    await legitfs.promises.writeFile(filePath, 'content');
+    // await legitfs.promises.writeFile(filePath2, 'content');
+
+    const fsHandle = await legitfs.promises.open(filePath, 'a+');
+    const statsBefore = await fsHandle.stat();
+
+    expect(statsBefore.size).toBe(7);
+
+    const folderContentBefore = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches/my.name.space`
+    );
+
+    expect(folderContentBefore).toContain('test.txt');
+
+    await legitfs.promises.unlink(filePath);
+
+    const folderContent = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches/main`
+    );
+
+    expect(folderContent).not.toContain('test.txt');
+  });
+
   it.todo('should read files from previous commit');
   it.todo('should list files from previous commit');
   it.todo('should handle branch creation and switching');

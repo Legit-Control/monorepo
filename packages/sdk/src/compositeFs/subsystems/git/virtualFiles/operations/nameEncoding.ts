@@ -56,3 +56,16 @@ export function decodeName(branch: string): string {
       .replace(new RegExp(EN_SPACE, 'g'), ' ')
   );
 }
+
+// VFS branch name encoding: slash → dot, existing dot → %2E
+export function encodeBranchNameForVfs(branchName: string): string {
+  return branchName
+    .replace(/\./g, '%2E')  // encode existing dots first
+    .replace(/\//g, '.');    // then replace slashes with dots
+}
+
+export function decodeBranchNameFromVfs(encodedName: string): string {
+  return encodedName
+    .replace(/\./g, '/')     // replace dots back to slashes
+    .replace(/%2E/g, '.');   // decode %2E back to dots
+}

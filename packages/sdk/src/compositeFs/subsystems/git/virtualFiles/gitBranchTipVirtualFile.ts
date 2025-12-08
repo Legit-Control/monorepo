@@ -2,6 +2,7 @@ import git from 'isomorphic-git';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
+import { tryResolveRef } from './utils.js';
 
 export const gitBranchTipVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchTipVirtualFile',
@@ -18,27 +19,26 @@ export const gitBranchTipVirtualFile: VirtualFileDefinition = {
   },
 
   getFile: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
-    
     if (!pathParams.branchName) {
       throw new Error('branchName should be in pathParams');
     }
 
-    try {
-      const tipCommit = await git.resolveRef({
-        fs: nodeFs,
-        dir: gitRoot,
-        ref: `refs/heads/${pathParams.branchName}`,
-      });
+    const tipCommit = await tryResolveRef(
+      nodeFs,
+      gitRoot,
+      pathParams.branchName
+    );
 
-      return {
-        type: 'file',
-        content: tipCommit + '\n',
-        mode: 0o644,
-        size: tipCommit.length + 1,
-      };
-    } catch (error) {
+    if (tipCommit === undefined) {
       return undefined;
     }
+
+    return {
+      type: 'file',
+      content: tipCommit + '\n',
+      mode: 0o644,
+      size: tipCommit.length + 1,
+    };
   },
   rename(args) {
     throw new Error('not implementsd');

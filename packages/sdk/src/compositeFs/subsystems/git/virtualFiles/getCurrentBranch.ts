@@ -1,4 +1,8 @@
 import git from 'isomorphic-git';
+import {
+  decodeBranchNameFromVfs,
+  encodeBranchNameForVfs,
+} from './operations/nameEncoding.js';
 export async function getCurrentBranch(
   gitRoot: string,
   nodeFs: any // The actual node fs for git operations
@@ -11,7 +15,7 @@ export async function getCurrentBranch(
     });
 
     if (currentBranch) {
-      return currentBranch;
+      return encodeBranchNameForVfs(currentBranch);
     }
   } catch (error) {
     // Config not set, fall through to default
@@ -24,7 +28,7 @@ export async function getCurrentBranch(
       dir: gitRoot,
       path: 'init.defaultBranch',
     });
-    return defaultBranch || 'main';
+    return encodeBranchNameForVfs(defaultBranch) || 'main';
   } catch (error) {
     return 'main';
   }
@@ -38,6 +42,6 @@ export async function setCurrentBranch(
     fs: nodeFs,
     dir: gitRoot,
     path: 'user.legit-current-branch',
-    value: branchName,
+    value: decodeBranchNameFromVfs(branchName),
   });
 }

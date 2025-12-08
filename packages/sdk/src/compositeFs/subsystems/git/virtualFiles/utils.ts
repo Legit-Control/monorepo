@@ -8,6 +8,7 @@ import { VirtualFileArgs } from './gitVirtualFiles.js';
 
 import { IFs } from 'memfs';
 import { PathLike } from 'fs';
+import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 
 export async function tryResolveRef(
   fs: FsClient,
@@ -18,7 +19,7 @@ export async function tryResolveRef(
     const branchCommit = await git.resolveRef({
       fs: fs,
       dir: gitRoot,
-      ref: `refs/heads/${refName}`,
+      ref: `refs/heads/${decodeBranchNameFromVfs(refName)}`,
     });
     return branchCommit;
   } catch (e) {
@@ -421,7 +422,7 @@ export async function buildUpdatedTree({
               const keepIdx = newEntries.findIndex(
                 e => e.path === keepFilename
               );
-              
+
               if (keepIdx !== -1) {
                 newEntries.splice(keepIdx, 1);
               }
