@@ -760,7 +760,7 @@ describe('openLegitFsWithMemoryFs', () => {
   it('should open a legitfs instance with memory fs', async () => {
     const legitfs = await openLegitFsWithMemoryFs();
     const branches = await legitfs.promises.readdir(
-      `${repoPath}/.legit/branches`,
+      `/.legit/branches`,
       'utf-8'
     );
     expect(branches).toContain('anonymous');
@@ -776,7 +776,7 @@ describe('top level legit', () => {
       gitRoot: '/',
     });
     const branches = await legitfs.promises.readdir(
-      `${repoPath}/.legit/branches`,
+      `/.legit/branches`,
       'utf-8'
     );
     expect(branches).toContain('anonymous');
