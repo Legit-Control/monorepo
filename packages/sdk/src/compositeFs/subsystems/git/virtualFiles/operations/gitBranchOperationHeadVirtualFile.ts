@@ -9,6 +9,7 @@ import { getCurrentBranch } from '../getCurrentBranch.js';
 
 export const gitBranchOperationHeadVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchOperationHeadVirtualFile',
+  rootType: 'file',
 
   getStats: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {

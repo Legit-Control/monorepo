@@ -6,6 +6,7 @@ import { toDirEntry } from './utils.js';
 
 export const gitCommitVirtualFolder: VirtualFileDefinition = {
   type: 'gitCommitVirtualFolder',
+  rootType: 'folder',
 
   getStats: async args => {
     // TODO use the commit where the file was changed last as base

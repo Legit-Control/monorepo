@@ -159,6 +159,7 @@ async function buildTreeWithoutFile(
  */
 export const gitBranchFileVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchFileVirtualFile',
+  rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs, filePath, cacheFs, pathParams }) => {
     if (pathParams.branchName === undefined) {

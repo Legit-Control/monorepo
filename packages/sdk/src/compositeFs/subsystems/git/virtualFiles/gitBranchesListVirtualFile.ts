@@ -10,6 +10,7 @@ import { encodeBranchNameForVfs } from './operations/nameEncoding.js';
 
 export const gitBranchesListVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchesListVirtualFile',
+  rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs }) => {
     const gitDir = gitRoot + '/' + '.git';

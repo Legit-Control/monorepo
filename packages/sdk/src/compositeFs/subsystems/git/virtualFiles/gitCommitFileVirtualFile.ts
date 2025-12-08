@@ -8,6 +8,7 @@ import { IDirent } from 'memfs/lib/node/types/misc.js';
 
 export const gitCommitFileVirtualFile: VirtualFileDefinition = {
   type: 'gitCommitFileVirtualFile',
+  rootType: 'file',
 
   getStats: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
     if (!pathParams.sha_1_1_2) {

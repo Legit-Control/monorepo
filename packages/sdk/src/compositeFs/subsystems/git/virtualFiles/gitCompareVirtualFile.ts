@@ -5,6 +5,7 @@ import * as nodeFs from 'node:fs';
 
 export const gitCompareVirtualFile: VirtualFileDefinition = {
   type: 'gitCompareVirtualFile',
+  rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {

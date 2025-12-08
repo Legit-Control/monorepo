@@ -46,6 +46,7 @@ import { getThreadName } from './virtualFiles/operations/getThreadName.js';
 import { gitBranchHistory } from './virtualFiles/gitBranchHistory.js';
 import { gitBranchOperationHeadVirtualFile } from './virtualFiles/operations/gitBranchOperationHeadVirtualFile.js';
 import { gitCurrentBranchVirtualFile } from './virtualFiles/gitCurrentBranchVirtualFile.js';
+import { toDirEntry } from './virtualFiles/utils.js';
 
 const handlers = {
   noAdditionalFiles: () => [],
@@ -785,19 +786,31 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
       const siblings = parsed?.staticSiblings ?? [];
 
+      // Merge siblings and entries, remove duplicates, and sort POSIX-style
+      const allFolders = Array.from(
+        new Set([
+          ...result.content,
+          ...siblings.map(s =>
+            toDirEntry({
+              name: s.segment,
+              parent: pathStr,
+              isDir: s.type === 'folder',
+            })
+          ),
+        ])
+      ).sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        })
+      );
+
       // @ts-ignore
       if (options?.withFileTypes) {
         // TODO implement Dirent return type
-        return result.content
+        return allFolders;
       }
-     
-      // Merge siblings and entries, remove duplicates, and sort POSIX-style
-      const allFolders = Array.from(new Set([...result.content, ...siblings])).sort(
-        (a, b) =>
-          a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-      );
-
-      return allFolders;
+      return allFolders.map(entry => entry.name);
     }
 
     return [];

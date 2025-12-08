@@ -17,6 +17,7 @@ import { getCurrentBranch } from '../getCurrentBranch.js';
 
 export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchOperationVirtualFile',
+  rootType: 'file',
 
   getStats: async args => {
     const { gitRoot, nodeFs, pathParams } = args;

@@ -36,6 +36,7 @@ export interface VirtualFileArgs {
 
 export type VirtualFileDefinition = {
   type: string;
+  rootType: 'folder' | 'file';
   getFile: (args: VirtualFileArgs) => Promise<VirtualFile | undefined>;
   getStats: (args: VirtualFileArgs) => Promise<nodeFs.Stats>;
   onFileChanged?: (args: VirtualFileArgs) => Promise<void>;
