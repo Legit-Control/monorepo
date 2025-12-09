@@ -802,7 +802,7 @@ describe('openLegitFs', () => {
     expect(folderContent).not.toContain('test.txt');
   });
 
-  it('folder should return dir entries', async () => {
+  it('should return dir entries for namespaced branch (with dots)', async () => {
     const filePath = `${repoPath}/.legit/branches/my.name.space/test.txt`;
     // const filePath2 = `${repoPath}/.legit/branches/main/test2.txt`;
 
@@ -824,7 +824,7 @@ describe('openLegitFs', () => {
     await legitfs.promises.unlink(filePath);
 
     const folderContent = await legitfs.promises.readdir(
-      `${repoPath}/.legit/branches/main`
+      `${repoPath}/.legit/branches/my.name.space`
     );
 
     expect(folderContent).not.toContain('test.txt');
