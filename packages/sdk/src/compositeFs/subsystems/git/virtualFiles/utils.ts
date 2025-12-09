@@ -8,9 +8,9 @@ import { VirtualFileArgs } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 
 import { IFs } from 'memfs';
-import { PathLike } from 'fs';
 
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
+import { IDirent } from 'memfs/lib/node/types/misc.js';
 
 export async function tryResolveRef(
   fs: FsClient,
