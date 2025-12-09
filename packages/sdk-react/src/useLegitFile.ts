@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useLegitContext } from './LegitProvider';
-import { HistoryItem, openLegitFs } from '@legit-sdk/core';
+
+// Type-only import to avoid loading the module during SSR
+type HistoryItem = import('@legit-sdk/core').HistoryItem;
+type OpenLegitFs = (typeof import('@legit-sdk/core'))['openLegitFs'];
 
 export interface UseLegitFileOptions {
   initialData?: string;
@@ -13,7 +16,7 @@ export type UseLegitFileReturn = {
   getPastState: (commitHash: string) => Promise<string>;
   loading: boolean;
   error?: Error;
-  legitFs: Awaited<ReturnType<typeof openLegitFs>> | null;
+  legitFs: Awaited<ReturnType<OpenLegitFs>> | null;
 };
 
 export function useLegitFile(
@@ -32,6 +35,12 @@ export function useLegitFile(
 
   // Load file + history when legitFs is ready or HEAD changes
   useEffect(() => {
+    // SSR safety: no-op in SSR
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     if (!legitFs) return;
 
     let isCancelled = false;
@@ -96,6 +105,9 @@ export function useLegitFile(
   // Save function
   const save = useCallback(
     async (newText: string) => {
+      // SSR safety: no-op in SSR
+      if (typeof window === 'undefined') return;
+
       if (!legitFs) return;
 
       try {
@@ -155,6 +167,9 @@ export function useLegitFile(
 
   const getPastState = useCallback(
     async (oid: string) => {
+      // SSR safety: return empty string in SSR
+      if (typeof window === 'undefined') return '';
+
       if (!legitFs) return '';
       try {
         // Remove leading slash from path for git commit file access

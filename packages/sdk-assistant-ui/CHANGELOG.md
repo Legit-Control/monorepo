@@ -1,5 +1,12 @@
 # @legit-sdk/assistant-ui
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [7e9e64f]
+  - @legit-sdk/core@0.2.4
+
 ## 0.2.3
 
 ### Patch Changes

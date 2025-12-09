@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanilla JS + @legit-sdk/core</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Vanilla JS + @legit-sdk/core</h1>
+      <p>A simple HTML/JS/CSS example using the Legit SDK</p>
+    </header>
+
+    <main>
+      <div class="controls">
+        <button id="initBtn">Initialize LegitFS</button>
+        <button id="writeBtn" disabled>Write File</button>
+        <button id="readBtn" disabled>Read File</button>
+        <button id="listBtn" disabled>List Directory</button>
+      </div>
+
+      <div class="status" id="status">
+        <p>Click "Initialize LegitFS" to get started</p>
+      </div>
+
+      <div class="editor">
+        <label for="fileContent">File Content:</label>
+        <textarea id="fileContent" rows="10" placeholder="Enter file content here...">Hello from vanilla JavaScript!
+This is a test file created with @legit-sdk/core.</textarea>
+      </div>
+
+      <div class="output">
+        <label>Output:</label>
+        <pre id="output"></pre>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
+

@@ -24,6 +24,7 @@ export const AssistantSidebar: FC<PropsWithChildren> = ({ children }) => {
       direction="horizontal"
       className="max-h-[calc(100vh-100px)]"
     >
+      {/* @ts-ignore */}
       <ResizablePanel>{children}</ResizablePanel>
       <ResizableHandle />
       <ResizablePanel>

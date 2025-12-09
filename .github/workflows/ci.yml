@@ -30,3 +30,91 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+  test-repos:
+    name: Test Repositories
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: true
+
+      - name: Build SDK packages
+        run: pnpm build
+
+      - name: Test Node.js Server
+        working-directory: test-repos/node-server
+        run: |
+          pnpm install
+          OUTPUT=$(pnpm start 2>&1) || exit 1
+          echo "$OUTPUT"
+          # Verify no errors in output
+          if echo "$OUTPUT" | grep -qi "error\|❌\|failed"; then
+            echo "❌ Errors detected in Node.js server output"
+            exit 1
+          fi
+          # Verify successful completion
+          if ! echo "$OUTPUT" | grep -q "All operations completed successfully"; then
+            echo "❌ Node.js server did not complete successfully"
+            exit 1
+          fi
+          echo "✅ Node.js server test passed"
+
+      - name: Build and Test React Vite App
+        working-directory: test-repos/react-vite
+        run: |
+          pnpm install
+          OUTPUT=$(pnpm build 2>&1) || exit 1
+          echo "$OUTPUT"
+          # Verify no build errors
+          if echo "$OUTPUT" | grep -qi "error\|failed"; then
+            echo "❌ Build errors detected in React Vite app"
+            exit 1
+          fi
+          # Check if build output exists and is valid
+          test -f dist/index.html || (echo "❌ dist/index.html not found" && exit 1)
+          test -d dist/assets || (echo "❌ dist/assets directory not found" && exit 1)
+          echo "✅ React Vite app build successful"
+
+      - name: Build and Test Vanilla JS App
+        working-directory: test-repos/vanilla-js
+        run: |
+          pnpm install
+          OUTPUT=$(pnpm build 2>&1) || exit 1
+          echo "$OUTPUT"
+          # Verify no build errors
+          if echo "$OUTPUT" | grep -qi "error\|failed"; then
+            echo "❌ Build errors detected in Vanilla JS app"
+            exit 1
+          fi
+          # Check if build output exists and is valid
+          test -f dist/index.html || (echo "❌ dist/index.html not found" && exit 1)
+          test -d dist/assets || (echo "❌ dist/assets directory not found" && exit 1)
+          echo "✅ Vanilla JS app build successful"
+
+      - name: Build Next.js App
+        working-directory: test-repos/next
+        run: |
+          pnpm install
+          OUTPUT=$(pnpm build 2>&1) || exit 1
+          echo "$OUTPUT"
+          # Verify no build errors
+          if echo "$OUTPUT" | grep -qi "error\|failed\|Build failed"; then
+            echo "❌ Build errors detected in Next.js app"
+            exit 1
+          fi
+          # Check if build output exists
+          test -d .next || (echo "❌ .next directory not found" && exit 1)
+          echo "✅ Next.js app build successful"

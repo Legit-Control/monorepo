@@ -1,0 +1,16 @@
+{
+  "name": "node-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@legit-sdk/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20"
+  }
+}
