@@ -1,5 +1,11 @@
 # @legit-sdk/react
 
+## 0.2.15
+
+### Patch Changes
+
+- Resolved big parts of complexity by reducing the export to one bundle that is pure client side.
+
 ## 0.2.14
 
 ### Patch Changes
