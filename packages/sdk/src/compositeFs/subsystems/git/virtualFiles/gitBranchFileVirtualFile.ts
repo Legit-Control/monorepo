@@ -10,6 +10,8 @@ import { ENOENTError } from '../../../errors/ENOENTError.js';
 import * as nodeFs from 'node:fs';
 import { CompositeFs } from '../../../CompositeFs.js';
 import { getCurrentBranch } from './getCurrentBranch.js';
+import Dirent from 'memfs/lib/node/Dirent.js';
+import { IDirent } from 'memfs/lib/node/types/misc.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
@@ -157,6 +159,7 @@ async function buildTreeWithoutFile(
  */
 export const gitBranchFileVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchFileVirtualFile',
+  rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs, filePath, cacheFs, pathParams }) => {
     if (pathParams.branchName === undefined) {
@@ -291,26 +294,6 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
-    let memoryDirEntries: string[] = [];
-
-    // try {
-    //   const stat = await cacheFs.promises.stat(filePath);
-    //   if (stat && stat.isFile()) {
-    //     const content = await cacheFs.promises.readFile(filePath, {
-    //       encoding: 'buffer',
-    //     });
-    //     return {
-    //       type: 'file',
-    //       content: content,
-    //       mode: stat.mode as number,
-    //       size: stat.size as number,
-    //       oid: undefined,
-    //     };
-    //   }
-    // } catch (e) {
-    //   // ignore cache errors
-    // }
-
     try {
       let branchCommit = await tryResolveRef(
         nodeFs,
@@ -366,25 +349,29 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
           oid: fileOrFolder.oid,
         };
       } else {
-        const cacheEntries: string[] = [];
+        const cacheEntries: IDirent[] = [];
         try {
           const stat = await cacheFs.promises.stat(filePath);
           if (stat && stat.isDirectory()) {
-            const cached = await cacheFs.promises.readdir(filePath, {
-              withFileTypes: false,
-              encoding: 'utf-8',
-            });
-            cacheEntries.push(...(cached as string[]));
+            const cached = (await cacheFs.promises.readdir(filePath, {
+              withFileTypes: true,
+            })) as IDirent[];
+            cacheEntries.push(...(cached as IDirent[]));
           }
         } catch (e) {
           // ignore cache errors
         }
         const allEntries = Array.from(
           new Set([...cacheEntries, ...fileOrFolder.entries])
-        );
+        ) as (IDirent & { parent: string; path: string })[];
         return {
           type: 'directory',
-          content: allEntries,
+          content: allEntries.map(entry => ({
+            ...entry,
+            name: entry.name.toString(),
+            path: `${filePath}`,
+            parentPath: `${filePath}`,
+          })),
           mode: 0o755,
         };
         // tree..
@@ -670,7 +657,14 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       fs: nodeFs,
       deletePathParts: pathParams.filePath.split('/'),
       addPathParts: newPathParams.filePath.split('/'),
-      addObj: existingAtOldPath,
+      addObj:
+        existingAtOldPath.type === 'blob'
+          ? { type: 'blob', oid: existingAtOldPath.oid }
+          : {
+              type: 'tree',
+              oid: existingAtOldPath.oid,
+              entries: existingAtOldPath.entries.map(e => e.name.toString()),
+            },
       treeOid: currentBranchCommit,
       addKeepIfEmpty: true,
       deleteKeepIfNotEmpty: true,

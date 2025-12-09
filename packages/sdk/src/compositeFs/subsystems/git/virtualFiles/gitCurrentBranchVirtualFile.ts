@@ -6,6 +6,7 @@ import { tryResolveRef } from './utils.js';
 
 export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
   type: 'gitCurrentBranchVirtualFile',
+  rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs }) => {
     const branchName = await getCurrentBranch(gitRoot, nodeFs);

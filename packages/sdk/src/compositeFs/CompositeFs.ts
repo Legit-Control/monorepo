@@ -49,7 +49,17 @@ export class CompositeFs {
       options?: nodeFs.OpenDirOptions
     ) => Promise<CompositeFsDir>;
     mkdir: (dirPath: string, options?: any) => Promise<void>;
-    readdir: (dirPath: nodeFs.PathLike, options?: any) => Promise<string[]>;
+    readdir: {
+      (
+        dirPath: nodeFs.PathLike,
+        options?: string | { withFileTypes?: false }
+      ): Promise<string[]>;
+
+      (
+        dirPath: nodeFs.PathLike,
+        options: { withFileTypes: true }
+      ): Promise<nodeFs.Dirent[]>;
+    };
     open: (
       filePath: string,
       flags: string,

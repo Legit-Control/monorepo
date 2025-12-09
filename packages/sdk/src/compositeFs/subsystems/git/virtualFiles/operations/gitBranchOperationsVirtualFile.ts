@@ -64,6 +64,7 @@ function folderStats(
 
 export const gitBranchOperationsVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchOperationsVirtualFile',
+  rootType: 'file',
 
   getStats: async args => {
     const { gitRoot, nodeFs, pathParams } = args;

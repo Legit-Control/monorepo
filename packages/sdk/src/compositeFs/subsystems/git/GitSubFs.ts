@@ -46,6 +46,7 @@ import { getThreadName } from './virtualFiles/operations/getThreadName.js';
 import { gitBranchHistory } from './virtualFiles/gitBranchHistory.js';
 import { gitBranchOperationHeadVirtualFile } from './virtualFiles/operations/gitBranchOperationHeadVirtualFile.js';
 import { gitCurrentBranchVirtualFile } from './virtualFiles/gitCurrentBranchVirtualFile.js';
+import { toDirEntry } from './virtualFiles/utils.js';
 
 const handlers = {
   noAdditionalFiles: () => [],
@@ -756,10 +757,6 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
   ): Promise<string[] | Buffer[] | nodeFs.Dirent[]> {
     const pathStr = path.toString();
 
-    // if (!this.isLegitPath(pathStr)) {
-    //   return ['.legit'] as string[];
-    // }
-
     const parsed = this.getRouteHandler(pathStr);
 
     if (!parsed) {
@@ -785,19 +782,31 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
       const siblings = parsed?.staticSiblings ?? [];
 
-      // TODO check if result.content is an array already
-      let entries = result.content as string[];
-      if (entries && !Array.isArray(result.content)) {
-        entries = JSON.parse(result.content as string) as string[];
-      }
-
       // Merge siblings and entries, remove duplicates, and sort POSIX-style
-      const allFolders = Array.from(new Set([...entries, ...siblings])).sort(
-        (a, b) =>
-          a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+      const allFolders = Array.from(
+        new Set([
+          ...result.content,
+          ...siblings.map(s =>
+            toDirEntry({
+              name: s.segment,
+              parent: pathStr,
+              isDir: s.type === 'folder',
+            })
+          ),
+        ])
+      ).sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        })
       );
 
-      return allFolders;
+      // @ts-ignore
+      if (options?.withFileTypes) {
+        // TODO implement Dirent return type
+        return allFolders;
+      }
+      return allFolders.map(entry => entry.name);
     }
 
     return [];

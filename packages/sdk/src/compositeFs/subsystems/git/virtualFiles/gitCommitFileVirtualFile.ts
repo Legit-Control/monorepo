@@ -4,9 +4,11 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { resolveGitObjAtPath } from './utils.js';
 import { ENOENTError } from '../../../errors/ENOENTError.js';
+import { IDirent } from 'memfs/lib/node/types/misc.js';
 
 export const gitCommitFileVirtualFile: VirtualFileDefinition = {
   type: 'gitCommitFileVirtualFile',
+  rootType: 'file',
 
   getStats: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
     if (!pathParams.sha_1_1_2) {
@@ -151,11 +153,16 @@ export const gitCommitFileVirtualFile: VirtualFileDefinition = {
         };
       } else {
         const allEntries = Array.from(
-          new Set([...fileOrFolder.entries.filter(v => v !== '.keep')])
+          new Set([...fileOrFolder.entries.filter(v => v.name !== '.keep')])
         );
         return {
           type: 'directory',
-          content: allEntries,
+          content: allEntries.map(entry => ({
+            ...entry,
+            name: entry.name.toString(),
+            path: `${filePath}`,
+            parentPath: `${filePath}`,
+          })),
           mode: 0o755,
         };
         // tree..

@@ -17,6 +17,7 @@ export function getFileStatus(
 
 export const gitStatusVirtualFile: VirtualFileDefinition = {
   type: 'gitStatusVirtualFile',
+  rootType: 'file',
 
   getStats: async args => {
     const gitDir = args.gitRoot + '/' + '.git';

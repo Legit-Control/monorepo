@@ -18,7 +18,8 @@ const stubStats = async () =>
 const vfd = {
   noAdditionalFiles: {
     type: 'directory',
-    pattern: /.*/,
+    rootType: 'folder',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -26,7 +27,8 @@ const vfd = {
   },
   listBranches: {
     type: 'listBranches',
-    pattern: /.*/,
+    rootType: 'folder',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -34,7 +36,8 @@ const vfd = {
   },
   branchFile: {
     type: 'branchFile',
-    pattern: /.*/,
+    rootType: 'folder',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -42,7 +45,8 @@ const vfd = {
   },
   branchHead: {
     type: 'branchHead',
-    pattern: /.*/,
+    rootType: 'file',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -50,7 +54,8 @@ const vfd = {
   },
   branchTip: {
     type: 'branchTip',
-    pattern: /.*/,
+    rootType: 'file',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -58,7 +63,8 @@ const vfd = {
   },
   branchOperation: {
     type: 'branchOperation',
-    pattern: /.*/,
+    rootType: 'file',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -66,7 +72,8 @@ const vfd = {
   },
   listCommits: {
     type: 'listCommits',
-    pattern: /.*/,
+    rootType: 'file',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -74,7 +81,8 @@ const vfd = {
   },
   commitsTwoChars: {
     type: 'commitsTwoChars',
-    pattern: /.*/,
+    rootType: 'folder',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -82,7 +90,8 @@ const vfd = {
   },
   commitsThirtyEightChars: {
     type: 'commitsThirtyEightChars',
-    pattern: /.*/,
+    rootType: 'folder',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
@@ -90,13 +99,14 @@ const vfd = {
   },
   commitFile: {
     type: 'commitFile',
-    pattern: /.*/,
+    rootType: 'folder',
+
     getFile: stub,
     getStats: stubStats,
     rename: stub,
     mkdir: stub,
   },
-};
+} satisfies Record<string, VirtualFileDefinition>;
 
 describe('createRouteMatcher', () => {
   // a handler resolves the files/folders in a tree
@@ -112,7 +122,7 @@ describe('createRouteMatcher', () => {
     // .legit/branches
     branches: {
       // '.' special case for folder entry
-      '.': vfd.listBranches,
+      '.': vfd.listBranches!,
       // branch name is not optional (single brackets [parameter_name]) for all sub handlers
       '[branch-name]': {
         '.legit': {

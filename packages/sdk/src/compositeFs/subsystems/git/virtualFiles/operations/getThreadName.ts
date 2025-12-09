@@ -18,6 +18,7 @@ import { encodeName, decodeName } from './nameEncoding.js';
 
 export const getThreadName: VirtualFileDefinition = {
   type: 'getThreadName',
+  rootType: 'file',
 
   getStats: async args => {
     const { gitRoot, nodeFs, pathParams } = args;

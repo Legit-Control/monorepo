@@ -10,6 +10,7 @@ import { tryResolveRef } from './utils.js';
 
 export const gitBranchHistory: VirtualFileDefinition = {
   type: 'gitBranchHistory',
+  rootType: 'file',
 
   getStats: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {

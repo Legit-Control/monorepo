@@ -6,6 +6,7 @@ import { tryResolveRef } from './utils.js';
 
 export const gitBranchTipVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchTipVirtualFile',
+  rootType: 'file',
   getStats: async args => {
     // TODO use the information within the tip tag
     const gitDir = args.gitRoot + '/' + '.git';

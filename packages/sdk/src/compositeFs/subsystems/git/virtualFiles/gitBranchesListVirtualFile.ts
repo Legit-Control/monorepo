@@ -3,12 +3,14 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
 import { PathLike } from 'node:fs';
+import { toDirEntry } from './utils.js';
 import { encodeBranchNameForVfs } from './operations/nameEncoding.js';
 
 // .legit/branches -> list of branches
 
 export const gitBranchesListVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchesListVirtualFile',
+  rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs }) => {
     const gitDir = gitRoot + '/' + '.git';
@@ -20,7 +22,7 @@ export const gitBranchesListVirtualFile: VirtualFileDefinition = {
       throw new Error(`ENOENT: no such file or directory, stat '${gitDir}'`);
     }
   },
-  getFile: async ({ gitRoot, nodeFs }) => {
+  getFile: async ({ gitRoot, nodeFs, filePath }) => {
     try {
       const branches = await git.listBranches({ fs: nodeFs, dir: gitRoot });
 
@@ -31,7 +33,11 @@ export const gitBranchesListVirtualFile: VirtualFileDefinition = {
             dir: gitRoot,
             ref: branch,
           });
-          return encodeBranchNameForVfs(branch);
+          return toDirEntry({
+            parent: filePath,
+            name: encodeBranchNameForVfs(branch),
+            isDir: true,
+          });
         })
       );
 

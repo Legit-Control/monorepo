@@ -7,7 +7,7 @@ export type LegitRouteNode = {
 
 export type MatchResult = {
   handler: VirtualFileDefinition;
-  staticSiblings: string[];
+  staticSiblings: { segment: string; type: 'folder' | 'file' }[];
   params: Record<string, string>;
 };
 
@@ -21,7 +21,7 @@ export class LegitPathRouter {
   public compiledRoutes: {
     regex: RegExp;
     paramNames: string[];
-    staticSiblings: string[];
+    staticSiblings: { segment: string; type: 'folder' | 'file' }[];
     handler: VirtualFileDefinition;
   }[];
 
@@ -29,7 +29,10 @@ export class LegitPathRouter {
     // Flatten tree into route patterns
     const flatRoutes: Record<
       string,
-      { handler: VirtualFileDefinition; siblings: string[] }
+      {
+        handler: VirtualFileDefinition;
+        siblings: { segment: string; type: 'folder' | 'file' }[];
+      }
     > = {};
     const walk = (node: LegitRouteDescriptor, path: string) => {
       if (typeof node.type === 'string') {
@@ -40,7 +43,7 @@ export class LegitPathRouter {
         // its a VirtualFileDefinition
         const vFile = node as VirtualFileDefinition;
       } else {
-        const siblings = [];
+        const siblings: { segment: string; type: 'folder' | 'file' }[] = [];
 
         // its a folder
         for (const [segment, child] of Object.entries(node)) {
@@ -89,7 +92,7 @@ export class LegitPathRouter {
             }
           } else {
             // only non dynamic segments are added as siblings
-            siblings.push(segment);
+            siblings.push({ segment, type: child['.'] ? 'folder' : 'file' });
             walk(child, path ? `${path}/${segment}` : segment);
           }
         }
