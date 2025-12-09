@@ -95,9 +95,9 @@ export class LegitPathRouter {
         }
       }
     };
-    for (const [root, node] of Object.entries(routes)) {
-      walk(node, root);
-    }
+
+    walk(routes, '');
+    // for (const s
 
     // Compile route patterns to regex and param extractors
     this.compiledRoutes = Object.entries(flatRoutes).map(([pattern, entry]) => {

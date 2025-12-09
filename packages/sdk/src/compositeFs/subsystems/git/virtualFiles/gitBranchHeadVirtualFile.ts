@@ -2,13 +2,14 @@ import git from 'isomorphic-git';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
+import { getCurrentBranch } from './getCurrentBranch.js';
 
 export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchHeadVirtualFile',
 
   getStats: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {
-      throw new Error('branchName should be in pathParams');
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
     let headCommit: string;
@@ -68,7 +69,7 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
   },
   getFile: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {
-      throw new Error('branchName should be in pathParams');
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
     try {
@@ -112,7 +113,7 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
       content,
     });
     if (pathParams.branchName === undefined) {
-      throw new Error('branchName should be in pathParams');
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
     const newHead = content.toString().trim();

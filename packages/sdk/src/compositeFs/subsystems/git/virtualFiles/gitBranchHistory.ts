@@ -3,6 +3,7 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
 import { PathLike } from 'node:fs';
+import { getCurrentBranch } from './getCurrentBranch.js';
 
 // .legit/branches -> list of branches
 
@@ -11,7 +12,7 @@ export const gitBranchHistory: VirtualFileDefinition = {
 
   getStats: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {
-      throw new Error('branchName should be in pathParams');
+      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
 
     let headCommit: string;
@@ -74,6 +75,10 @@ export const gitBranchHistory: VirtualFileDefinition = {
 
     // Read all commits from the operation branch and collect their messages
     let branchName = pathParams.branchName;
+
+    if (branchName === undefined) {
+      branchName = await getCurrentBranch(gitRoot, nodeFs);
+    }
 
     const commits: any[] = [];
     if (branchName) {

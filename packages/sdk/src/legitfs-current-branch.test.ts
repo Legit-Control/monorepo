@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Volume, createFsFromVolume } from 'memfs';
 import * as isogit from 'isomorphic-git';
-import { openLegitFs, openLegitFsWithMemoryFs } from './legitfs.js';
+import { openLegitFs } from './legitfs.js';
+import fs from 'fs';
 
 const repoPath = '/repo';
 const files = {
@@ -64,7 +65,7 @@ describe('openLegitFs', () => {
   });
 
   it('should read files from branch', async () => {
-    const mainBranchPath = `${repoPath}/.legit/branches/main/a.txt`;
+    const mainBranchPath = `${repoPath}/a.txt`;
     const handle = await legitfs.promises.open(mainBranchPath, 'r');
     const buffer = Buffer.alloc(6);
     const { bytesRead } = await handle.read(buffer, 0, 6, 0);
@@ -73,34 +74,28 @@ describe('openLegitFs', () => {
   });
 
   it('should list files in branch folder', async () => {
-    const entries = await legitfs.promises.readdir(
-      `${repoPath}/.legit/branches/main/f`
-    );
+    const entries = await legitfs.promises.readdir(`${repoPath}/f`);
     expect(entries).toContain('b.txt');
     expect(entries).toContain('c.txt');
   });
 
   it('should stat and lstat files', async () => {
-    const stats = await legitfs.promises.stat(
-      `${repoPath}/.legit/branches/main/a.txt`
-    );
+    const stats = await legitfs.promises.stat(`${repoPath}/a.txt`);
     expect(stats.isFile()).toBe(true);
     expect(stats.size).toBe(files['/a.txt'].length);
-    const lstats = await legitfs.promises.lstat(
-      `${repoPath}/.legit/branches/main/a.txt`
-    );
+    const lstats = await legitfs.promises.lstat(`${repoPath}/a.txt`);
     expect(lstats.isFile()).toBe(true);
   });
 
   it('should write a new file to branch', async () => {
-    const newFilePath = `${repoPath}/.legit/branches/main/new.txt`;
+    const newFilePath = `${repoPath}/new.txt`;
     await legitfs.promises.writeFile(newFilePath, 'New file');
     const content = await legitfs.promises.readFile(newFilePath, 'utf-8');
     expect(content).toBe('New file');
   });
 
   it('should override the file content and truncate the file if needed', async () => {
-    const newFilePath = `${repoPath}/.legit/branches/main/new.txt`;
+    const newFilePath = `${repoPath}/new.txt`;
     await legitfs.promises.writeFile(newFilePath, 'Content before truncate');
     const contentBefor = await legitfs.promises.readFile(newFilePath, 'utf-8');
     expect(contentBefor).toBe('Content before truncate');
@@ -111,7 +106,7 @@ describe('openLegitFs', () => {
   });
 
   it('should add and remove keep file when adding/removing files and folders', async () => {
-    const folderAPath = `${repoPath}/.legit/branches/main/folderA`;
+    const folderAPath = `${repoPath}/folderA`;
     const folderBPath = `${folderAPath}/folderB`;
 
     /**
@@ -126,16 +121,14 @@ describe('openLegitFs', () => {
     );
 
     const statsFolderA = await legitfs.promises.stat(folderAPath);
-    const statsA = await legitfs.promises.stat(
-      `${repoPath}/.legit/branches/main/a.txt`
-    );
+    const statsA = await legitfs.promises.stat(`${repoPath}/a.txt`);
 
     expect(statsA.mtime.getTime()).toBe(0);
     expect(statsFolderA.mtime.getTime()).not.toBe(0);
   });
 
   it('should add and remove keep file when adding/removing files and folders', async () => {
-    const folderAPath = `${repoPath}/.legit/branches/main/folderA`;
+    const folderAPath = `${repoPath}/folderA`;
     const folderBPath = `${folderAPath}/folderB`;
 
     /**
@@ -226,7 +219,7 @@ describe('openLegitFs', () => {
     expect((await commits()).length).toBe(1);
 
     // Create folder
-    const folderPath = `${repoPath}/.legit/branches/main/newfolder/subfolder`;
+    const folderPath = `${repoPath}/newfolder/subfolder`;
     await legitfs.promises.mkdir(folderPath);
     const stats = await legitfs.promises.stat(folderPath);
     expect(stats.isDirectory()).toBe(true);
@@ -259,7 +252,7 @@ describe('openLegitFs', () => {
     expect((await commits()).length).toBe(3);
 
     // Rename folder
-    const renamedFolder = `${repoPath}/.legit/branches/main/renamedfolder`;
+    const renamedFolder = `${repoPath}/renamedfolder`;
     await legitfs.promises.rename(folderPath, renamedFolder);
     const statsRenamed = await legitfs.promises.stat(renamedFolder);
     expect(statsRenamed.isDirectory()).toBe(true);
@@ -274,7 +267,7 @@ describe('openLegitFs', () => {
 
     // Move the test file into the root folder
     const testFileInFolder = `${renamedFolder}/test.txt`;
-    const testFileInRoot = `${repoPath}/.legit/branches/main/test.txt`;
+    const testFileInRoot = `${repoPath}/test.txt`;
     await legitfs.promises.rename(testFileInFolder, testFileInRoot);
     const movedContent = await legitfs.promises.readFile(
       testFileInRoot,
@@ -289,7 +282,7 @@ describe('openLegitFs', () => {
     expect(statsRenamedAferMove.isDirectory()).toBe(true);
 
     // Move file into folder
-    const fileInRoot = `${repoPath}/.legit/branches/main/a.txt`;
+    const fileInRoot = `${repoPath}/a.txt`;
     const fileInFolder = `${renamedFolder}/a.txt`;
     await legitfs.promises.rename(fileInRoot, fileInFolder);
     const content = await legitfs.promises.readFile(fileInFolder, 'utf-8');
@@ -298,7 +291,7 @@ describe('openLegitFs', () => {
     expect((await commits()).length).toBe(6);
 
     // Rerename folder
-    const rerenamedFolder = `${repoPath}/.legit/branches/main/rerenamedfolder`;
+    const rerenamedFolder = `${repoPath}/rerenamedfolder`;
     await legitfs.promises.rename(renamedFolder, rerenamedFolder);
     const statsRerenamed = await legitfs.promises.stat(rerenamedFolder);
     expect(statsRerenamed.isDirectory()).toBe(true);
@@ -306,7 +299,7 @@ describe('openLegitFs', () => {
     expect((await commits()).length).toBe(7);
 
     // Move file back to root
-    const fileBackToRoot = `${repoPath}/.legit/branches/main/a.txt`;
+    const fileBackToRoot = `${repoPath}/a.txt`;
     const fileInRereNamedFolder = `${rerenamedFolder}/a.txt`;
     await legitfs.promises.rename(fileInRereNamedFolder, fileBackToRoot);
     const contentBack = await legitfs.promises.readFile(
@@ -329,10 +322,10 @@ describe('openLegitFs', () => {
   });
 
   it('should get consistent stats for the branch folder over time', async () => {
-    const legitFolderPath = `${repoPath}/.legit/branches/main`;
+    const legitFolderPath = `${repoPath}`;
     const stats1 = await legitfs.promises.stat(legitFolderPath);
     await new Promise(resolve => setTimeout(resolve, 20));
-    const legitFolderPath2 = `${repoPath}/.legit/branches/main/.legit`;
+    const legitFolderPath2 = `${repoPath}/.legit`;
     const stats12 = await legitfs.promises.stat(legitFolderPath2);
     const stats2 = await legitfs.promises.stat(legitFolderPath);
 
@@ -344,7 +337,7 @@ describe('openLegitFs', () => {
   });
 
   it('should get consistent stats for .legit folder in main branch over time', async () => {
-    const legitFolderPath = `${repoPath}/.legit/branches/main`;
+    const legitFolderPath = `${repoPath}`;
     const stats1 = await legitfs.promises.stat(legitFolderPath);
     await new Promise(resolve => setTimeout(resolve, 20));
     const stats2 = await legitfs.promises.stat(legitFolderPath);
@@ -357,14 +350,12 @@ describe('openLegitFs', () => {
   });
 
   it('should not list hidden files in branch', async () => {
-    const entries = await legitfs.promises.readdir(
-      `${repoPath}/.legit/branches/main`
-    );
+    const entries = await legitfs.promises.readdir(`${repoPath}`);
     expect(entries).not.toContain('.git');
   });
 
   it('should delete files in branch', async () => {
-    const filePath = `${repoPath}/.legit/branches/main/a.txt`;
+    const filePath = `${repoPath}/a.txt`;
     await legitfs.promises.unlink(filePath);
     await expect(legitfs.promises.stat(filePath)).rejects.toThrow();
   });
@@ -376,7 +367,7 @@ describe('openLegitFs', () => {
       legitfs.promises.writeFile(hiddenFile, 'hidden')
     ).rejects.toThrow(/hidden/i);
     // Create ephemeral file
-    const ephemeralFile = `${repoPath}/.legit/branches/main/._temp`;
+    const ephemeralFile = `${repoPath}/._temp`;
     await legitfs.promises.writeFile(ephemeralFile, 'ephemeral');
     await expect(memfs.promises.open(ephemeralFile, 'r')).rejects.toThrow(
       /ENOENT/i
@@ -384,15 +375,15 @@ describe('openLegitFs', () => {
   });
 
   it('should reflect a new commit in the head file', async () => {
-    const filePath = `${repoPath}/.legit/branches/main/a.txt`;
-    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const filePath = `${repoPath}/a.txt`;
+    const headFilePath = `${repoPath}/.legit/head`;
 
     const initialHead = await legitfs.promises.readFile(headFilePath, 'utf-8');
     expect(initialHead).toMatch(/^[0-9a-f]{40}$/);
 
     // Make a new commit by writing a new file
     await legitfs.promises.writeFile(
-      `${repoPath}/.legit/branches/main/newfile.txt`,
+      `${repoPath}/newfile.txt`,
       'New file content'
     );
 
@@ -402,8 +393,8 @@ describe('openLegitFs', () => {
   });
 
   it('should reflect a new commit in the head file when using open and filehandler', async () => {
-    const filePath = `${repoPath}/.legit/branches/main/a.txt`;
-    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const filePath = `${repoPath}/a.txt`;
+    const headFilePath = `${repoPath}/.legit/head`;
 
     const headFileHandler = await legitfs.promises.open(headFilePath, 'r');
     const headBytes = new Uint8Array(40);
@@ -411,7 +402,7 @@ describe('openLegitFs', () => {
 
     // Make a new commit by writing a new file
     await legitfs.promises.writeFile(
-      `${repoPath}/.legit/branches/main/newfile.txt`,
+      `${repoPath}/newfile.txt`,
       'New file content'
     );
 
@@ -425,8 +416,8 @@ describe('openLegitFs', () => {
   });
 
   it('should reflect the new content of a file - updated by another process when using open and filehandler', async () => {
-    const filePath = `${repoPath}/.legit/branches/main/a.txt`;
-    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const filePath = `${repoPath}/a.txt`;
+    const headFilePath = `${repoPath}/.legit/head`;
 
     const contentAfter = 'A file updated';
 
@@ -452,7 +443,7 @@ describe('openLegitFs', () => {
   });
 
   it('should create a new file in the branch', async () => {
-    const newFilePath = `${repoPath}/.legit/branches/main/created.txt`;
+    const newFilePath = `${repoPath}/created.txt`;
     const content = 'This is a new file';
 
     const exists = await legitfs.promises
@@ -467,7 +458,7 @@ describe('openLegitFs', () => {
   });
 
   it('should create a new file in the branch using open with wx flag', async () => {
-    const newFilePath = `${repoPath}/.legit/branches/main/created-wx.txt`;
+    const newFilePath = `${repoPath}/created-wx.txt`;
     const content = 'This is a new file (wx)';
 
     const exists = await legitfs.promises
@@ -502,7 +493,7 @@ describe('openLegitFs', () => {
     expect(afterCommits).toBe(initialCommits);
 
     // Write ephemeral file in legit branch
-    const ephemeralBranch = `${repoPath}/.legit/branches/main/.~lock.test1`;
+    const ephemeralBranch = `${repoPath}/.~lock.test1`;
     await legitfs.promises.writeFile(ephemeralBranch, 'ephemeral branch');
     expect(await legitfs.promises.readFile(ephemeralBranch, 'utf-8')).toBe(
       'ephemeral branch'
@@ -514,8 +505,8 @@ describe('openLegitFs', () => {
   });
 
   it('should create operation commits with correct parentage and messages', async () => {
-    const textFilePath = `${repoPath}/.legit/branches/main/text.txt`;
-    const operationFilePath = `${repoPath}/.legit/branches/main/.legit/operation`;
+    const textFilePath = `${repoPath}/text.txt`;
+    const operationFilePath = `${repoPath}/.legit/operation`;
     const operationBranch = `refs/heads/${'legit/__main-operation'}`;
 
     // 1. Create text.txt in main branch
@@ -596,7 +587,7 @@ describe('openLegitFs', () => {
     expect(opCommits3[0]?.commit.parent[1]).toBe(mainCommit2);
 
     // Read the operation history file and check if all operations are present
-    const operationHistoryPath = `${repoPath}/.legit/branches/main/.legit/operationHistory`;
+    const operationHistoryPath = `${repoPath}/.legit/operationHistory`;
     const operationHistoryContent = await legitfs.promises.readFile(
       operationHistoryPath,
       'utf-8'
@@ -607,14 +598,14 @@ describe('openLegitFs', () => {
   });
 
   it.todo('should handle undo and redo operations', async () => {
-    const textFilePath = `${repoPath}/.legit/branches/main/text.txt`;
-    const operationFilePath = `${repoPath}/.legit/branches/main/.legit/operation`;
+    const textFilePath = `${repoPath}/text.txt`;
+    const operationFilePath = `${repoPath}/.legit/operation`;
     const operationBranch = `refs/heads/${'legit____main-operation'}`;
 
     // Create text.txt in main branch
     // await legitfs.promises.writyxeFile(textFilePath, 'hello world');
 
-    const undoFilePath = `${repoPath}/.legit/branches/main/.legit/undo`;
+    const undoFilePath = `${repoPath}/.legit/undo`;
     const undoHash = await legitfs.promises.readFile(undoFilePath, 'utf-8');
     expect(undoHash.trim()).toBe('');
 
@@ -622,12 +613,12 @@ describe('openLegitFs', () => {
 
     // read the undo file to see if we can undo
     // read the redo file - it should be empty at this point
-    const redoFilePath = `${repoPath}/.legit/branches/main/.legit/redo`;
+    const redoFilePath = `${repoPath}/.legit/redo`;
     const redoHash = await legitfs.promises.readFile(redoFilePath, 'utf-8');
     expect(redoHash.trim()).toBe('');
 
     // now perform the undo by writing the undo hash to the operation file
-    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const headFilePath = `${repoPath}/.legit/head`;
     await legitfs.promises.writeFile(headFilePath, `${undoHash.trim()}`);
 
     // read the undo file to see if we can undo
@@ -647,8 +638,8 @@ describe('openLegitFs', () => {
   });
 
   it('should allow reading and setting the head file to change branch state', async () => {
-    const textFilePath = `${repoPath}/.legit/branches/main/text.txt`;
-    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const textFilePath = `${repoPath}/text.txt`;
+    const headFilePath = `${repoPath}/.legit/head`;
 
     // Create initial file and get first commit
     await legitfs.promises.writeFile(textFilePath, 'initial content');
@@ -679,7 +670,7 @@ describe('openLegitFs', () => {
     // TODO #filehandle add when filehandles are implemented properly
     // await expect(
     //   legitfs.promises.readFile(
-    //     `${repoPath}/.legit/branches/main/second.txt`,
+    //     `${repoPath}/second.txt`,
     //     'utf-8'
     //   )
     // ).rejects.toThrow();
@@ -694,7 +685,7 @@ describe('openLegitFs', () => {
   });
 
   it('should handle invalid commit hash when setting head file', async () => {
-    const headFilePath = `${repoPath}/.legit/branches/main/.legit/head`;
+    const headFilePath = `${repoPath}/.legit/head`;
     const invalidHash = '0000000000000000000000000000000000000000';
 
     // Get current valid head
@@ -725,7 +716,7 @@ describe('openLegitFs', () => {
   });
 
   it('truncate and write file', async () => {
-    const filePath = `${repoPath}/.legit/branches/main/test.txt`;
+    const filePath = `${repoPath}/test.txt`;
 
     // Get current valid head
     await legitfs.promises.writeFile(filePath, 'content');
@@ -746,38 +737,64 @@ describe('openLegitFs', () => {
     await fsHandle2.close();
   });
 
-  it.todo('should read files from previous commit');
-  it.todo('should list files from previous commit');
-  it.todo('should handle branch creation and switching');
-});
+  it('should handle branch creation and switching', async () => {
+    const testFilePath = `${repoPath}/test.txt`;
+    const test2FilePath = `${repoPath}/test2.txt`;
+    const currentBranchPath = `${repoPath}/.legit/currentBranch`;
+    const testBranchFilePath = `${repoPath}/.legit/branches/test-branch/test2.txt`;
 
-describe('openLegitFsWithMemoryFs', () => {
-  beforeEach(async () => {
-    await setupRepo();
-    legitfs = await openLegitFsWithMemoryFs();
-  });
+    // 1. Write test2.txt to test-branch by writing to /.legit/branches/test-branch/test2.txt
+    // This should automatically create the test-branch
+    await legitfs.promises.writeFile(testBranchFilePath, 'Test branch content');
 
-  it('should open a legitfs instance with memory fs', async () => {
-    const legitfs = await openLegitFsWithMemoryFs();
-    const branches = await legitfs.promises.readdir(
-      `/.legit/branches`,
+    // 2. Write a test file to main branch
+    await legitfs.promises.writeFile(testFilePath, 'Main branch content');
+    expect(await legitfs.promises.readFile(testFilePath, 'utf-8')).toBe(
+      'Main branch content'
+    );
+
+    // 3. Set current branch by writing 'test-branch' to /.legit/currentBranch file
+    await legitfs.promises.writeFile(currentBranchPath, 'test-branch');
+
+    // 4. Verify the current branch file contains the new branch name
+    const currentBranch = await legitfs.promises.readFile(
+      currentBranchPath,
       'utf-8'
     );
-    expect(branches).toContain('anonymous');
-  });
-});
+    expect(currentBranch.trim()).toBe('test-branch');
 
-describe('top level legit', () => {
-  it('should open a legitfs instance with memory fs', async () => {
-    const memfsVolume = new Volume();
-    const _memfs = createFsFromVolume(memfsVolume);
-    legitfs = await openLegitFs({
-      storageFs: _memfs as any,
-      gitRoot: '/',
-      anonymousBranch: 'main',
-      showKeepFiles: false,
-    });
-    const branches = await legitfs.promises.readdir(`/`, 'utf-8');
-    expect(branches).toContain('.legit');
+    // 5. Check if we can read test2.txt from the root folder /test2.txt
+    // This should now read from the test-branch since it's the current branch
+    expect(await legitfs.promises.readFile(test2FilePath, 'utf-8')).toBe(
+      'Test branch content'
+    );
+
+    const content = await legitfs.promises
+      .readFile(testFilePath, 'utf-8')
+      .catch(() => undefined);
+
+    // 6. Verify that the original test.txt from main branch is no longer visible
+    expect(content).toBeUndefined();
+
+    // 7. Switch back to main branch
+    await legitfs.promises.writeFile(currentBranchPath, 'main');
+    const currentBranchAfterSwitch = await legitfs.promises.readFile(
+      currentBranchPath,
+      'utf-8'
+    );
+    expect(currentBranchAfterSwitch.trim()).toBe('main');
+
+    // 8. Verify we can read test.txt from main branch again
+    expect(await legitfs.promises.readFile(testFilePath, 'utf-8')).toBe(
+      'Main branch content'
+    );
+
+    // 9. Verify test2.txt is no longer accessible from root
+    await expect(
+      legitfs.promises.readFile(test2FilePath, 'utf-8')
+    ).rejects.toThrow();
   });
+
+  it.todo('should read files from previous commit');
+  it.todo('should list files from previous commit');
 });

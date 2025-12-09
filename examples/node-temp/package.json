@@ -1,0 +1,17 @@
+{
+  "name": "node-temp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@legit-sdk/core": "workspace:*",
+    "memfs": "^4.51.1"
+  }
+}
