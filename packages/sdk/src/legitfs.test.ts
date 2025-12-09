@@ -858,11 +858,10 @@ describe('top level legit', () => {
     legitfs = await openLegitFs({
       storageFs: _memfs as any,
       gitRoot: '/',
+      anonymousBranch: 'main',
+      showKeepFiles: false,
     });
-    const branches = await legitfs.promises.readdir(
-      `/.legit/branches`,
-      'utf-8'
-    );
-    expect(branches).toContain('anonymous');
+    const branches = await legitfs.promises.readdir(`/`, 'utf-8');
+    expect(branches).toContain('.legit');
   });
 });
