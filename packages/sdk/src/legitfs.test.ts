@@ -850,6 +850,21 @@ describe('readDir', () => {
   });
 });
 
+describe('readdir .claude', () => {
+  beforeEach(async () => {
+    await setupRepo();
+    legitfs = await openLegitFsWithMemoryFs();
+  });
+
+  it('should read folder with fileTypes', async () => {
+    const legitfs = await openLegitFsWithMemoryFs();
+    const branches = await legitfs.promises.readdir(`/.claude/readdir`, {
+      withFileTypes: true,
+    });
+    expect(branches.map(b => b.name)).toContain('anonymous');
+  });
+});
+
 describe('openLegitFsWithMemoryFs', () => {
   beforeEach(async () => {
     await setupRepo();

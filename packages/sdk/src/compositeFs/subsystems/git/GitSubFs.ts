@@ -46,6 +46,7 @@ import { getThreadName } from './virtualFiles/operations/getThreadName.js';
 import { gitBranchHistory } from './virtualFiles/gitBranchHistory.js';
 import { gitBranchOperationHeadVirtualFile } from './virtualFiles/operations/gitBranchOperationHeadVirtualFile.js';
 import { gitCurrentBranchVirtualFile } from './virtualFiles/gitCurrentBranchVirtualFile.js';
+import { claudeVirtualSessionFileVirtualFile } from './virtualFiles/claudeVirtualSessionFileVirtualFile.js';
 import { toDirEntry } from './virtualFiles/utils.js';
 
 const handlers = {
@@ -238,6 +239,9 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       //     '[...filePath]': gitCompareVirtualFile,
       //   }
       // }
+    },
+    '.claude': {
+      '[[...filePath]]': claudeVirtualSessionFileVirtualFile,
     },
     '[[...filePath]]': gitBranchFileVirtualFile,
   });
@@ -756,6 +760,10 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
       | null
   ): Promise<string[] | Buffer[] | nodeFs.Dirent[]> {
     const pathStr = path.toString();
+
+    // if (!this.isLegitPath(pathStr)) {
+    //   return ['.legit'] as string[];
+    // }
 
     const parsed = this.getRouteHandler(pathStr);
 
