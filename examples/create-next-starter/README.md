@@ -116,7 +116,7 @@ public/
 
 ## Learn More
 
-- [Legit SDK Documentation](../../packages/sdk-react/readme.md)
+- [Legit SDK Documentation](../../packages/sdk-react/README.md)
 - [Next.js Documentation](https://nextjs.org/docs)
 
 ## Building Your Own Starter
