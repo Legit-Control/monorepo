@@ -17,7 +17,7 @@ Please fill out the sections below — the more context, the better. 🙌
 ### ✅ Pre-checks
 
 - [ ] I’ve searched the existing [issues](../../issues) and found **no similar feature request**.
-- [ ] I’ve checked the [💬 Discord community](https://discord.gg/legitcontrol) to see if this feature was already discussed.
+- [ ] I’ve checked the [💬 Discord community](https://discord.gg/67Tw9ZeMSB) to see if this feature was already discussed.
 
 ---
 
