@@ -5,6 +5,34 @@
 
 set -e
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+# Edit the patterns below to customize which files and links are checked
+
+# Files to exclude from checking (glob patterns)
+# Add patterns to exclude specific files or directories
+EXCLUDE_FILE_PATTERNS=(
+    "*/node_modules/*"
+    "*/dist/*"
+    "*/.git/*"
+    # "*/CHANGELOG.md"  # Uncomment to exclude all CHANGELOG files
+    # "*/examples/*"     # Uncomment to exclude examples directory
+)
+
+# Links to ignore (regex patterns)
+# Links matching these patterns will not be reported as broken
+IGNORE_LINK_PATTERNS=(
+    "^mailto:core@"
+    "^http://localhost"
+    "^../../issues$"
+    # "^https://example.com/.*"  # Uncomment to ignore specific domain
+)
+
+# ============================================================================
+# END CONFIGURATION
+# ============================================================================
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -17,9 +45,15 @@ if ! command -v markdown-link-check &> /dev/null; then
     npm install -g markdown-link-check
 fi
 
-# Find all markdown files, excluding node_modules and dist directories
+# Build find command with exclude patterns
+FIND_ARGS=("." "-name" "*.md")
+for pattern in "${EXCLUDE_FILE_PATTERNS[@]}"; do
+    FIND_ARGS+=("-not" "-path" "$pattern")
+done
+
+# Find all markdown files using the configured patterns
 echo -e "${YELLOW}Finding all markdown files...${NC}"
-md_files=$(find . -name "*.md" -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.git/*")
+md_files=$(find "${FIND_ARGS[@]}")
 
 if [ -z "$md_files" ]; then
     echo -e "${YELLOW}No markdown files found.${NC}"
@@ -41,8 +75,44 @@ while IFS= read -r file; do
     if [ -f "$file" ]; then
         echo -e "${YELLOW}Checking: $file${NC}"
         
-        # Run markdown-link-check and capture output and exit code
-        if output=$(markdown-link-check "$file" 2>&1); then
+        # Create temporary config file with ignore patterns if any are defined
+        if [ ${#IGNORE_LINK_PATTERNS[@]} -gt 0 ]; then
+            TEMP_CONFIG=$(mktemp)
+            
+            # Build mN config with ignore patterns
+            echo "{" > "$TEMP_CONFIG"
+            echo "  \"ignorePatterns\": [" >> "$TEMP_CONFIG"
+            PATTERN_COUNT=${#IGNORE_LINK_PATTERNS[@]}
+            for i in "${!IGNORE_LINK_PATTERNS[@]}"; do
+                pattern="${IGNORE_LINK_PATTERNS[$i]}"
+                echo "    {" >> "$TEMP_CONFIG"
+                echo "      \"pattern\": \"$pattern\"" >> "$TEMP_CONFIG"
+                if [ $((i + 1)) -lt $PATTERN_COUNT ]; then
+                    echo "    }," >> "$TEMP_CONFIG"
+                else
+                    echo "    }" >> "$TEMP_CONFIG"
+                fi
+            done
+            echo "  ]" >> "$TEMP_CONFIG"
+            echo "}" >> "$TEMP_CONFIG"
+            
+            # Run markdown-link-check with config
+            if output=$(markdown-link-check --config "$TEMP_CONFIG" "$file" 2>&1); then
+                MLC_SUCCESS=true
+            else
+                MLC_SUCCESS=false
+            fi
+            rm -f "$TEMP_CONFIG"
+        else
+            # Run without config if no ignore patterns
+            if output=$(markdown-link-check "$file" 2>&1); then
+                MLC_SUCCESS=true
+            else
+                MLC_SUCCESS=false
+            fi
+        fi
+        
+        if [ "$MLC_SUCCESS" = true ]; then
             echo -e "${GREEN}✓ $file - OK${NC}\n"
         else
             echo -e "${RED}✗ $file - FAILED${NC}"
