@@ -30,68 +30,7 @@ function getGitCacheFromFs(fs: any): any {
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
 
-async function buildTreeWithoutFile(
-  compositFs: CompositeFs,
-  gitRoot: string,
-  treeOid: string,
-  pathParts: string[]
-): Promise<string> {
-  const [currentPart, ...restParts] = pathParts;
 
-  if (!currentPart) {
-    return treeOid;
-  }
-
-  const { tree } = await git.readTree({
-    fs: compositFs,
-    dir: gitRoot,
-    oid: treeOid,
-    cache: getGitCacheFromFs(compositFs),
-  });
-
-  let newEntries = [...tree];
-  const entryIndex = newEntries.findIndex(e => e.path === currentPart);
-
-  if (entryIndex === -1) {
-    // File doesn't exist, return unchanged tree
-    return treeOid;
-  }
-
-  if (restParts.length === 0) {
-    // Remove the file entry
-    newEntries.splice(entryIndex, 1);
-  } else {
-    // Recurse into subdirectory
-    const entry = newEntries[entryIndex];
-    if (entry && entry.type === 'tree') {
-      const newSubtreeOid = await buildTreeWithoutFile(
-        compositFs,
-        gitRoot,
-        entry.oid,
-        restParts
-      );
-      if (newSubtreeOid !== entry.oid) {
-        newEntries[entryIndex] = {
-          mode: entry.mode,
-          path: entry.path,
-          type: entry.type,
-          oid: newSubtreeOid,
-        };
-      } else {
-        return treeOid; // No changes
-      }
-    } else {
-      return treeOid; // Can't traverse into a blob
-    }
-  }
-
-  // Write new tree
-  return await git.writeTree({
-    fs: compositFs,
-    dir: gitRoot,
-    tree: newEntries,
-  });
-}
 
 /**
  * # How to present an empyt folder in git

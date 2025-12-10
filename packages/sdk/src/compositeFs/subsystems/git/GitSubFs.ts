@@ -49,34 +49,6 @@ import { gitCurrentBranchVirtualFile } from './virtualFiles/gitCurrentBranchVirt
 import { claudeVirtualSessionFileVirtualFile } from './virtualFiles/claudeVirtualSessionFileVirtualFile.js';
 import { toDirEntry } from './virtualFiles/utils.js';
 
-function getGitCache(fs: any): any {
-  // If it's a CompositeFs with gitCache, use it
-  if (fs && fs.gitCache !== undefined) {
-    return fs.gitCache;
-  }
-  // If it has a parent, traverse up to find the gitCache
-  if (fs && fs.parentFs) {
-    return getGitCache(fs.parentFs);
-  }
-  // Default to empty object if no cache found
-  return {};
-}
-
-const handlers = {
-  noAdditionalFiles: () => [],
-  listBranches: () => ['main', 'dev', 'feature-x', 'feature/login'],
-  branchFile: () => 'branch file',
-  branchHead: () => 'branch head',
-  branchTip: () => 'branch tip',
-  branchOperation: () => 'branch operation',
-  commitFile: () => 'commit file',
-  commitsTwoChars: () => ['ab', 'cd', 'ef'],
-  commitsThirtyEightChars: () => [
-    'dsdasdasdasdasdasdasdasdasdasdasdasdasdas',
-    'abcdefghijklmnopqrstuvwxyz123456',
-  ],
-};
-
 const stub = async () => undefined;
 const stubStats = async () =>
   ({
@@ -272,8 +244,6 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     }
   > = {};
 
-  private virtualFiles: VirtualFileDefinition[];
-  private legitFileNames: string[];
   storageFs: CompositeFs;
 
   async getAuthor(): Promise<{
@@ -303,35 +273,22 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     parentFs,
     gitStorageFs,
     gitRoot,
-    virtualFiles = allGitVirtualFiles,
   }: {
     name: string;
     parentFs: CompositeFs;
     gitStorageFs: CompositeFs;
     gitRoot: string;
-    virtualFiles?: VirtualFileDefinition[];
   }) {
     super({ name, parentFs, gitRoot });
 
     this.gitRoot = gitRoot;
     this.storageFs = gitStorageFs;
     this.memFs = createFsFromVolume(new Volume());
-    this.virtualFiles = virtualFiles;
-
-    // TODO source this from the virtual files directly
-    this.legitFileNames = ['branches', 'commits'];
   }
 
   async responsible(filePath: string): Promise<boolean> {
     return true;
     // return true this.isLegitPath(filePath);
-  }
-
-  private isLegitPath(path: string): boolean {
-    return (
-      path.includes(`/${GitSubFs.LEGIT_DIR}/`) ||
-      path.includes(`/${GitSubFs.LEGIT_DIR}`)
-    );
   }
 
   private getRouteHandler(filePath: string): MatchResult | undefined {
@@ -546,17 +503,6 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
   override async access(path: PathLike, mode?: number): Promise<void> {
     // for now just use the stats call
     await this.stat(path);
-
-    // const pathStr = path.toString();
-    // const vFileDescriptor = this.getVirtualDescriptor(pathStr);
-    // if (!vFileDescriptor) {
-    //   const legitDirMatch = this.legitFileNames.some((fn) =>
-    //     pathStr.endsWith(`.legit/${fn}`),
-    //   );
-    //   if (!legitDirMatch) {
-    //     throw new Error(`ENOENT: no such file or directory, stat '${pathStr}'`);
-    //   }
-    // }
   }
 
   override async futimes(

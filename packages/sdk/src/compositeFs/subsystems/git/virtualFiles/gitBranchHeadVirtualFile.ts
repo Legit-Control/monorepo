@@ -4,19 +4,6 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch } from './getCurrentBranch.js';
 
-function getGitCacheFromArgs(args: VirtualFileArgs): any {
-  // Access gitCache through the userSpaceFs hierarchy
-  if (args.userSpaceFs && args.userSpaceFs.gitCache !== undefined) {
-    return args.userSpaceFs.gitCache;
-  }
-  // If it has a parent, traverse up to find the gitCache
-  if (args.userSpaceFs && args.userSpaceFs.parentFs) {
-    return getGitCacheFromFs(args.userSpaceFs.parentFs);
-  }
-  // Default to empty object if no cache found
-  return {};
-}
-
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
   if (fs && fs.gitCache !== undefined) {

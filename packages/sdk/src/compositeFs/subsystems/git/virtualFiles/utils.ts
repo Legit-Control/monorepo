@@ -1,5 +1,4 @@
 import git, {
-  currentBranch,
   FsClient,
   TreeEntry,
   TreeObject,
