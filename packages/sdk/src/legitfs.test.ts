@@ -858,10 +858,40 @@ describe('readdir .claude', () => {
 
   it('should read folder with fileTypes', async () => {
     const legitfs = await openLegitFsWithMemoryFs();
-    const branches = await legitfs.promises.readdir(`/.claude/readdir`, {
+    const claudeFolder = await legitfs.promises.readdir(`/.claude`, {
       withFileTypes: true,
     });
-    expect(branches.map(b => b.name)).toContain('anonymous');
+    expect(claudeFolder.map(b => b.name)).toContain('settings.json');
+
+    // Create a folder
+    await legitfs.promises.mkdir(`/.claude/test-folder`);
+    const folderAfterCreate = await legitfs.promises.readdir(`/.claude`, {
+      withFileTypes: true,
+    });
+    expect(folderAfterCreate.map(b => b.name)).toContain('test-folder');
+
+    // Remove the folder
+    await legitfs.promises.rmdir(`/.claude/test-folder`);
+    const folderAfterRemove = await legitfs.promises.readdir(`/.claude`, {
+      withFileTypes: true,
+    });
+    expect(folderAfterRemove.map(b => b.name)).not.toContain('test-folder');
+
+    // Create a file
+    await legitfs.promises.writeFile(`/.claude/test-file.txt`, 'test content');
+    const folderAfterFileCreate = await legitfs.promises.readdir(`/.claude`, {
+      withFileTypes: true,
+    });
+    expect(folderAfterFileCreate.map(b => b.name)).toContain('test-file.txt');
+
+    // Remove the file
+    await legitfs.promises.unlink(`/.claude/test-file.txt`);
+    const folderAfterFileRemove = await legitfs.promises.readdir(`/.claude`, {
+      withFileTypes: true,
+    });
+    expect(folderAfterFileRemove.map(b => b.name)).not.toContain(
+      'test-file.txt'
+    );
   });
 });
 
