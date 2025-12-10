@@ -1,0 +1,153 @@
+# stuff that gets generated during test setup
+/__tests__/__fixtures__/.superblock.txt
+/__tests__/__fixtures__/index.json
+
+# Dist
+/http
+/managers
+/models
+/index.cjs
+/index.d.cts
+/index.js
+/index.d.ts
+/index.umd.min.js
+/index.umd.min.js.LICENSE.txt
+/index.umd.min.d.ts
+/index.umd.min.js.map
+/internal-apis.js
+/internal-apis.d.ts
+/internal-apis.cjs
+/internal-apis.umd.min.js
+/internal-apis.umd.min.js.LICENSE.txt
+/internal-apis.umd.min.js.map
+/dist
+
+# Test run artifacts
+/coverage
+/junit
+/browser-tests.json
+/size_report.html
+/__tests__/__examples__/**
+
+# PGP misc
+openpgp.store/
+private.key
+
+# Website Stuff
+/website/build/
+/website/node_modules
+/website/static/js/isomorphic-git
+/website/static/js/codemirrorify.js
+/website/translated_docs
+/website/yarn.lock
+/website/i18n/*
+!website/i18n/en.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# Webstorm development environment
+.idea/
+
+# Vim swap files
+*.swp
+*.swo
+
+# AUTO-GENERATED DOCS --- DO NOT EDIT BELOW THIS LINE
+docs/abortMerge.md
+docs/add.md
+docs/addNote.md
+docs/addRemote.md
+docs/annotatedTag.md
+docs/branch.md
+docs/checkout.md
+docs/clone.md
+docs/commit.md
+docs/currentBranch.md
+docs/deleteBranch.md
+docs/deleteRef.md
+docs/deleteRemote.md
+docs/deleteTag.md
+docs/expandOid.md
+docs/expandRef.md
+docs/fastForward.md
+docs/fetch.md
+docs/findMergeBase.md
+docs/findRoot.md
+docs/getConfig.md
+docs/getConfigAll.md
+docs/getRemoteInfo.md
+docs/getRemoteInfo2.md
+docs/hashBlob.md
+docs/indexPack.md
+docs/init.md
+docs/isDescendent.md
+docs/isIgnored.md
+docs/listBranches.md
+docs/listFiles.md
+docs/listNotes.md
+docs/listRefs.md
+docs/listRemotes.md
+docs/listServerRefs.md
+docs/listTags.md
+docs/log.md
+docs/merge.md
+docs/packObjects.md
+docs/pull.md
+docs/push.md
+docs/readBlob.md
+docs/readCommit.md
+docs/readNote.md
+docs/readObject.md
+docs/readTag.md
+docs/readTree.md
+docs/remove.md
+docs/removeNote.md
+docs/renameBranch.md
+docs/resetIndex.md
+docs/resolveRef.md
+docs/setConfig.md
+docs/stash.md
+docs/status.md
+docs/statusMatrix.md
+docs/tag.md
+docs/updateIndex.md
+docs/version.md
+docs/walk.md
+docs/writeBlob.md
+docs/writeCommit.md
+docs/writeObject.md
+docs/writeRef.md
+docs/writeTag.md
+docs/writeTree.md

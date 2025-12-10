@@ -4,11 +4,37 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch } from './getCurrentBranch.js';
 
+function getGitCacheFromArgs(args: VirtualFileArgs): any {
+  // Access gitCache through the userSpaceFs hierarchy
+  if (args.userSpaceFs && args.userSpaceFs.gitCache !== undefined) {
+    return args.userSpaceFs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (args.userSpaceFs && args.userSpaceFs.parentFs) {
+    return getGitCacheFromFs(args.userSpaceFs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
+function getGitCacheFromFs(fs: any): any {
+  // If it's a CompositeFs with gitCache, use it
+  if (fs && fs.gitCache !== undefined) {
+    return fs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (fs && fs.parentFs) {
+    return getGitCacheFromFs(fs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
 export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchHeadVirtualFile',
   rootType: 'file',
 
-  getStats: async ({ gitRoot, nodeFs, pathParams }) => {
+  getStats: async ({ gitRoot, nodeFs, pathParams, userSpaceFs }) => {
     if (pathParams.branchName === undefined) {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
@@ -33,6 +59,7 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
       fs: nodeFs,
       dir: gitRoot,
       oid: headCommit,
+      cache: getGitCacheFromFs(userSpaceFs),
     });
     const { commit: commitObj } = commit;
     const commitTimeMs = commitObj.committer.timestamp * 1000;
@@ -68,7 +95,7 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
       birthtime: new Date(commitTimeMs),
     } as any;
   },
-  getFile: async ({ gitRoot, nodeFs, pathParams }) => {
+  getFile: async ({ gitRoot, nodeFs, pathParams, userSpaceFs }) => {
     if (pathParams.branchName === undefined) {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
@@ -108,6 +135,7 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
     content,
     cacheFs,
     pathParams,
+    userSpaceFs,
   }) => {
     console.log('gitBranchHeadVirtualFile writeFile called', {
       pathParams,
@@ -125,6 +153,7 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
         fs: nodeFs,
         dir: gitRoot,
         oid: newHead,
+        cache: getGitCacheFromFs(userSpaceFs),
       });
     } catch (error) {
       throw new Error(`Commit ${newHead} does not exist in the repository`);

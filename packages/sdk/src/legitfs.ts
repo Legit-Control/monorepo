@@ -14,6 +14,19 @@ import {
   FsOperationLogger,
 } from './compositeFs/utils/fs-operation-logger.js';
 
+function getGitCache(fs: any): any {
+  // If it's a CompositeFs with gitCache, use it
+  if (fs && fs.gitCache !== undefined) {
+    return fs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (fs && fs.parentFs) {
+    return getGitCache(fs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
 // same props as openLegitFs
 export async function openLegitFsWithMemoryFs(
   props?: Parameters<typeof openLegitFs>[0]
@@ -60,14 +73,24 @@ export async function openLegitFs({
 
   if (!repoExists) {
     // initiliaze git repo with anonyomous branch
-    await git.init({ fs: storageFs, dir: '/', defaultBranch: anonymousBranch });
+    await git.init({
+      fs: storageFs,
+      dir: '/',
+      defaultBranch: anonymousBranch,
+    });
     await storageFs.promises.writeFile(gitRoot + '/.keep', '');
-    await git.add({ fs: storageFs, dir: '/', filepath: '.keep' });
+    await git.add({
+      fs: storageFs,
+      dir: '/',
+      filepath: '.keep',
+      cache: getGitCache(storageFs),
+    });
     await git.commit({
       fs: storageFs,
       dir: '/',
       message: 'Initial commit',
       author: { name: 'Test', email: 'test@example.com' },
+      cache: getGitCache(storageFs),
     });
 
     await git.setConfig({
@@ -134,6 +157,9 @@ export async function openLegitFs({
     storageFs,
     gitRoot,
   });
+
+  // Initialize gitCache
+  rootFs.gitCache = {};
 
   const rootEphemeralFs = new EphemeralSubFs({
     name: 'root-ephemeral',
@@ -261,7 +287,10 @@ export async function openLegitFs({
     },
     setCurrentBranch: async (branch: string): Promise<void> => {
       // check if branch exists
-      const branches = await git.listBranches({ fs: storageFs, dir: gitRoot });
+      const branches = await git.listBranches({
+        fs: storageFs,
+        dir: gitRoot,
+      });
       const branchExists = branches.includes(branch);
       if (!branchExists) {
         await syncService?.loadBranch(branch);

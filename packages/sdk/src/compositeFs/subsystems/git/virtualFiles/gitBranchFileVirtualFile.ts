@@ -3,6 +3,7 @@ import {
   tryResolveRef,
   resolveGitObjAtPath,
   buildUpdatedTree,
+  buildUpdatedTreeFromArgs,
 } from './utils.js';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
@@ -13,6 +14,19 @@ import { getCurrentBranch } from './getCurrentBranch.js';
 import Dirent from 'memfs/lib/node/Dirent.js';
 import { IDirent } from 'memfs/lib/node/types/misc.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
+
+function getGitCacheFromFs(fs: any): any {
+  // If it's a CompositeFs with gitCache, use it
+  if (fs && fs.gitCache !== undefined) {
+    return fs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (fs && fs.parentFs) {
+    return getGitCacheFromFs(fs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
 
@@ -32,6 +46,7 @@ async function buildTreeWithoutFile(
     fs: compositFs,
     dir: gitRoot,
     oid: treeOid,
+    cache: getGitCacheFromFs(compositFs),
   });
 
   let newEntries = [...tree];
@@ -161,7 +176,14 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchFileVirtualFile',
   rootType: 'folder',
 
-  getStats: async ({ gitRoot, nodeFs, filePath, cacheFs, pathParams }) => {
+  getStats: async ({
+    gitRoot,
+    nodeFs,
+    filePath,
+    cacheFs,
+    pathParams,
+    userSpaceFs,
+  }) => {
     if (pathParams.branchName === undefined) {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
@@ -188,6 +210,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       nodeFs,
       commitSha: branchCommit,
       pathParams,
+      gitCache: getGitCacheFromFs(userSpaceFs),
     });
 
     if (!fileOrFolder) {
@@ -289,7 +312,14 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       } as any;
     }
   },
-  getFile: async ({ filePath, gitRoot, nodeFs, cacheFs, pathParams }) => {
+  getFile: async ({
+    filePath,
+    gitRoot,
+    nodeFs,
+    cacheFs,
+    pathParams,
+    userSpaceFs,
+  }) => {
     if (pathParams.branchName === undefined) {
       pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
     }
@@ -328,6 +358,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
         nodeFs,
         commitSha: branchCommit,
         pathParams,
+        gitCache: getGitCacheFromFs(userSpaceFs),
       });
 
       if (!fileOrFolder) {
@@ -575,6 +606,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
     pathParams,
     newPathParams,
     author,
+    userSpaceFs,
   }): Promise<void> {
     // Parse the path to get branch name and file path
 
@@ -646,6 +678,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       commitSha: oldBranchCommit,
       filePath: filePath,
       pathParams: pathParams,
+      gitCache: getGitCacheFromFs(userSpaceFs),
     });
 
     if (existingAtOldPath === undefined) {

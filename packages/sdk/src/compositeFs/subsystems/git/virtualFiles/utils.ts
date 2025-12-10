@@ -12,10 +12,55 @@ import { IFs } from 'memfs';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 import { IDirent } from 'memfs/lib/node/types/misc.js';
 
+function getGitCacheFromArgs(args: VirtualFileArgs): any {
+  // Access gitCache through the userSpaceFs hierarchy
+  if (args.userSpaceFs && args.userSpaceFs.gitCache !== undefined) {
+    return args.userSpaceFs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (args.userSpaceFs && args.userSpaceFs.parentFs) {
+    return getGitCacheFromFs(args.userSpaceFs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
+function getGitCacheFromFs(fs: any): any {
+  // If it's a CompositeFs with gitCache, use it
+  if (fs && fs.gitCache !== undefined) {
+    return fs.gitCache;
+  }
+  // If it has a parent, traverse up to find the gitCache
+  if (fs && fs.parentFs) {
+    return getGitCacheFromFs(fs.parentFs);
+  }
+  // Default to empty object if no cache found
+  return {};
+}
+
 export async function tryResolveRef(
   fs: FsClient,
   gitRoot: string,
-  refName: string
+  refName: string,
+  gitCache?: any
+) {
+  try {
+    const branchCommit = await git.resolveRef({
+      fs: fs,
+      dir: gitRoot,
+      ref: `refs/heads/${decodeBranchNameFromVfs(refName)}`,
+    });
+    return branchCommit;
+  } catch (e) {
+    return undefined;
+  }
+}
+
+export async function tryResolveRefFromArgs(
+  fs: FsClient,
+  gitRoot: string,
+  refName: string,
+  args: VirtualFileArgs
 ) {
   try {
     const branchCommit = await git.resolveRef({
@@ -155,6 +200,7 @@ export async function buildUpdatedTree({
   addKeepIfEmpty,
   deleteKeepIfNotEmpty,
   keepFilename = '.keep',
+  gitCache,
 }: {
   dir: string;
   fs: IFs;
@@ -168,6 +214,7 @@ export async function buildUpdatedTree({
    * if undefined -> this is a copy operation, no change on the source tree
    */
   deletePathParts: string[] | undefined;
+  gitCache?: any;
 
   /**
    * path split by separator
@@ -202,7 +249,12 @@ export async function buildUpdatedTree({
   // read current tree entries
   let newEntries: TreeObject = [];
   if (currentOid) {
-    const { tree } = await git.readTree({ fs, dir: dir, oid: currentOid });
+    const { tree } = await git.readTree({
+      fs,
+      dir: dir,
+      oid: currentOid,
+      cache: gitCache || {},
+    });
     newEntries = [...tree];
   }
 
@@ -464,24 +516,163 @@ export async function buildUpdatedTree({
   }
 }
 
+export async function buildUpdatedTreeFromArgs({
+  dir,
+  fs,
+  treeOid: currentOid,
+  deletePathParts,
+  addPathParts,
+  addObj,
+  addKeepIfEmpty,
+  deleteKeepIfNotEmpty,
+  keepFilename = '.keep',
+  args,
+}: {
+  dir: string;
+  fs: IFs;
+  treeOid: string | undefined;
+  deletePathParts: string[] | undefined;
+  addPathParts: string[] | undefined;
+  addObj:
+    | {
+        type: 'tree';
+        oid: string;
+        entries: string[];
+      }
+    | {
+        type: 'blob';
+        oid: string;
+      }
+    | undefined;
+  addKeepIfEmpty: boolean;
+  deleteKeepIfNotEmpty: boolean;
+  keepFilename?: string;
+  args: VirtualFileArgs;
+}): Promise<string | undefined> {
+  return await buildUpdatedTree({
+    dir,
+    fs,
+    treeOid: currentOid,
+    deletePathParts,
+    addPathParts,
+    addObj,
+    addKeepIfEmpty,
+    deleteKeepIfNotEmpty,
+    keepFilename,
+    gitCache: getGitCacheFromArgs(args),
+  });
+}
+
+// Recursive function to find a git object at a specific path
+async function findGitObjectAtPath(
+  nodeFs: any,
+  gitRoot: string,
+  treeOid: string,
+  pathParts: string[],
+  partIndex: number = 0,
+  cache: any = {}
+): Promise<
+  | { type: 'tree'; oid: string; entries: IDirent[] }
+  | { type: 'blob'; oid: string }
+  | undefined
+> {
+  // Read the current tree
+  const { tree } = await git.readTree({
+    fs: nodeFs,
+    dir: gitRoot,
+    oid: treeOid,
+    cache: cache,
+  });
+
+  // If we're at the target path and this is a tree
+  if (pathParts.length === partIndex) {
+    return {
+      type: 'tree',
+      entries: tree.map(entry =>
+        toDirEntry({
+          parent: pathParts.join('/'),
+          name: entry.path,
+          isDir: entry.type === 'tree',
+        })
+      ),
+      oid: treeOid,
+    };
+  }
+
+  const nextPart = pathParts[partIndex];
+
+  // Find the entry in the current tree that matches the next path part
+  const entry = tree.find(treeEntry => treeEntry.path === nextPart);
+
+  if (!entry) {
+    return undefined;
+  }
+
+  // If we're at the final path part
+  if (pathParts.length === partIndex + 1) {
+    if (entry.type === 'blob') {
+      return {
+        type: 'blob',
+        oid: entry.oid,
+      };
+    } else if (entry.type === 'tree') {
+      // For tree entries at the final path, read the tree to get entries
+      const subTree = await git.readTree({
+        fs: nodeFs,
+        dir: gitRoot,
+        oid: entry.oid,
+        cache: cache,
+      });
+      return {
+        type: 'tree',
+        entries: subTree.tree.map(subEntry =>
+          toDirEntry({
+            parent: pathParts.join('/'),
+            name: subEntry.path,
+            isDir: subEntry.type === 'tree',
+          })
+        ),
+        oid: subTree.oid,
+      };
+    }
+  } else if (entry.type === 'tree') {
+    // Continue recursing into subdirectories
+    return await findGitObjectAtPath(
+      nodeFs,
+      gitRoot,
+      entry.oid,
+      pathParts,
+      partIndex + 1,
+      cache
+    );
+  }
+
+  return undefined;
+}
+
 export async function resolveGitObjAtPath({
   filePath,
   gitRoot,
   nodeFs,
   commitSha,
   pathParams,
+  gitCache,
 }: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'nodeFs' | 'pathParams'> & {
   commitSha: string;
+  gitCache: any;
 }): Promise<
   | { type: 'tree'; oid: string; entries: IDirent[] }
   | { type: 'blob'; oid: string }
   | undefined
 > {
+  const cache = gitCache || {};
+
   if (!pathParams.filePath) {
     const tree = await git.readTree({
       fs: nodeFs,
       dir: gitRoot,
       oid: commitSha,
+      cache: cache,
     });
     const entries = tree.tree.map(entry =>
       toDirEntry({
@@ -497,50 +688,60 @@ export async function resolveGitObjAtPath({
     };
   }
 
-  // Walk the tree to find the file
-  const results = await git.walk({
-    fs: nodeFs,
-    dir: gitRoot,
-    trees: [git.TREE({ ref: commitSha })],
-    map: async (filepath, [entry]) => {
-      if (filepath === pathParams.filePath && entry) {
-        const type = await entry.type();
-        if (type === 'blob') {
-          return {
-            type: 'blob',
-            oid: await entry.oid(),
-          };
-        } else if (type == 'tree') {
-          const tree = await git.readTree({
-            fs: nodeFs,
-            dir: gitRoot,
-            oid: await entry.oid(),
-          });
-          const entries = tree.tree.map(entry =>
-            toDirEntry({
-              parent: filePath,
-              name: entry.path,
-              isDir: entry.type === 'tree',
-            })
-          );
-          return {
-            type: 'tree',
-            entries: entries,
-            oid: tree.oid,
-          };
-        }
-      }
-      return;
-    },
-  });
+  // // Walk the tree to find the file
+  // const results = await git.walk({
+  //   fs: nodeFs,
+  //   dir: gitRoot,
+  //   trees: [git.TREE({ ref: commitSha })],
+  //   map: async (filepath, [entry]) => {
+  //     if (filepath === pathParams.filePath && entry) {
+  //       const type = await entry.type();
+  //       if (type === 'blob') {
+  //         return {
+  //           type: 'blob',
+  //           oid: await entry.oid(),
+  //         };
+  //       } else if (type == 'tree') {
+  //         const tree = await git.readTree({
+  //           fs: nodeFs,
+  //           dir: gitRoot,
+  //           oid: await entry.oid(),
+  //         });
+  //         const entries = tree.tree.map(entry =>
+  //           toDirEntry({
+  //             parent: filePath,
+  //             name: entry.path,
+  //             isDir: entry.type === 'tree',
+  //           })
+  //         );
+  //         return {
+  //           type: 'tree',
+  //           entries: entries,
+  //           oid: tree.oid,
+  //         };
+  //       }
+  //     }
+  //     return;
+  //   },
+  // });
 
-  const fileOrFolder = results.find(
-    (
-      r:
-        | { type: 'tree'; entries: IDirent[] }
-        | { type: 'blob'; oid: string }
-        | undefined
-    ) => r !== undefined
+  // const fileOrFolder = results.find(
+  //   (
+  //     r:
+  //       | { type: 'tree'; entries: IDirent[] }
+  //       | { type: 'blob'; oid: string }
+  //       | undefined
+  //   ) => r !== undefined
+  const pathParts = pathParams.filePath ? pathParams.filePath.split('/') : [];
+
+  // Use recursive function to find the file or folder at the specified path
+  const fileOrFolder = await findGitObjectAtPath(
+    nodeFs,
+    gitRoot,
+    commitSha,
+    pathParts,
+    0,
+    cache
   );
 
   return fileOrFolder;
@@ -563,4 +764,29 @@ export function toDirEntry(args: {
     parentPath: args.parent,
     path: args.parent,
   };
+}
+
+export async function resolveGitObjAtPathFromArgs({
+  filePath,
+  gitRoot,
+  nodeFs,
+  commitSha,
+  pathParams,
+  args,
+}: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'nodeFs' | 'pathParams'> & {
+  commitSha: string;
+  args: VirtualFileArgs;
+}): Promise<
+  | { type: 'tree'; oid: string; entries: IDirent[] }
+  | { type: 'blob'; oid: string }
+  | undefined
+> {
+  return await resolveGitObjAtPath({
+    filePath,
+    gitRoot,
+    nodeFs,
+    commitSha,
+    pathParams,
+    gitCache: getGitCacheFromArgs(args),
+  });
 }

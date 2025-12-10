@@ -1,0 +1,6 @@
+export { FileSystem } from './FileSystem.js'
+export { GitAnnotatedTag } from './GitAnnotatedTag.js'
+export { GitCommit } from './GitCommit.js'
+export { GitObject } from './GitObject.js'
+export { GitPackIndex } from './GitPackIndex.js'
+export { GitTree } from './GitTree.js'

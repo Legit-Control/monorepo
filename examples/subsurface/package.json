@@ -1,0 +1,34 @@
+{
+  "name": "subsurface",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "dev:turbopack": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@legit-sdk/core": "workspace:*",
+    "@legit-sdk/react": "workspace:*",
+    "diff-match-patch-ts": "^0.6.0",
+    "isomorphic-git": "^1.34.0",
+    "memfs": "^4.49.0",
+    "next": "16.0.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "sonner": "^2.0.7",
+    "timeago.js": "^4.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

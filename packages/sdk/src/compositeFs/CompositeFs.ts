@@ -111,6 +111,7 @@ export class CompositeFs {
   parentFs: CompositeFs | undefined;
   name: string;
   defaultBranch: string;
+  gitCache: any;
 
   pathToFileDescriptors: Map<
     /** path */
