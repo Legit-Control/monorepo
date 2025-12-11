@@ -1,6 +1,6 @@
 {
-  "name": "@legit-sdk/next-starter",
-  "version": "0.1.2",
+  "name": "@legit-sdk/create-next-starter",
+  "version": "0.1.0",
   "description": "A starter template for Next.js with Legit SDK integration for local-first document editing and version control",
   "type": "module",
   "bin": {
@@ -62,5 +62,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

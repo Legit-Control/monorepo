@@ -13,7 +13,7 @@ const projectName = process.argv[2];
 
 if (!projectName) {
   console.error('Error: Project name is required');
-  console.log('Usage: npx @legit-sdk/next-starter <project-name>');
+  console.log('Usage: npx @legit-sdk/create-next-starter <project-name>');
   process.exit(1);
 }
 
@@ -44,8 +44,10 @@ if (!existsSync(packageJsonPath)) {
 // Verify it's the correct package
 try {
   const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-  if (pkg.name !== '@legit-sdk/next-starter') {
-    console.error('Error: Found package.json but it is not @legit-sdk/next-starter');
+  if (pkg.name !== '@legit-sdk/create-next-starter') {
+    console.error(
+      'Error: Found package.json but it is not @legit-sdk/create-next-starter'
+    );
     process.exit(1);
   }
 } catch (error) {
@@ -110,7 +112,9 @@ delete newPackageJson.publishConfig;
 
 // Replace workspace dependencies with published versions
 if (newPackageJson.dependencies) {
-  if (newPackageJson.dependencies['@legit-sdk/react']?.startsWith('workspace:')) {
+  if (
+    newPackageJson.dependencies['@legit-sdk/react']?.startsWith('workspace:')
+  ) {
     newPackageJson.dependencies['@legit-sdk/react'] = '^0.2.15';
   }
 }
@@ -127,12 +131,13 @@ if (existsSync(tsconfigPath)) {
   try {
     const tsconfigContent = readFileSync(tsconfigPath, 'utf-8');
     const tsconfig = JSON.parse(tsconfigContent);
-    
+
     // Remove any path mappings that reference local packages
     if (tsconfig.compilerOptions?.paths) {
       const filteredPaths = Object.fromEntries(
         Object.entries(tsconfig.compilerOptions.paths).filter(
-          ([, value]) => !Array.isArray(value) || !value.some(v => v.includes('../../'))
+          ([, value]) =>
+            !Array.isArray(value) || !value.some(v => v.includes('../../'))
         )
       );
       if (Object.keys(filteredPaths).length === 0) {
@@ -140,19 +145,21 @@ if (existsSync(tsconfigPath)) {
       } else {
         tsconfig.compilerOptions.paths = filteredPaths;
       }
-      
+
       // Remove exclude entries that reference monorepo paths
       if (tsconfig.exclude) {
         tsconfig.exclude = tsconfig.exclude.filter(
-          (exclude) => !exclude.includes('../../')
+          exclude => !exclude.includes('../../')
         );
       }
-      
+
       writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + '\n');
     }
   } catch (error) {
     console.error('Error parsing tsconfig.json:', error.message);
-    console.error('Note: If the file contains comments (// or /* */), please remove them as Node\'s JSON.parse() cannot handle them.');
+    console.error(
+      "Note: If the file contains comments (// or /* */), please remove them as Node's JSON.parse() cannot handle them."
+    );
     process.exit(1);
   }
 }
