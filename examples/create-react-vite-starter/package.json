@@ -1,15 +1,15 @@
 {
   "name": "@legit-sdk/create-react-vite-starter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A starter template for React + Vite with Legit SDK integration for local-first document editing and version control",
   "type": "module",
   "bin": {
-    "create-react-vite-starter": ".bin/cli.js"
+    "create-react-vite-starter": "bin/cli.js"
   },
   "files": [
     "src",
     "public",
-    ".bin",
+    "bin",
     "*.ts",
     "*.tsx",
     "*.js",
@@ -65,8 +65,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "engines": {
-    "node": ">=22"
   }
 }
