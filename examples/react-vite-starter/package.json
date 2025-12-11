@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/react-vite-starter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A starter template for React + Vite with Legit SDK integration for local-first document editing and version control",
   "type": "module",
   "bin": {
