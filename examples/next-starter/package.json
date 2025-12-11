@@ -1,7 +1,40 @@
 {
-  "name": "next-starter",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@legit-sdk/next-starter",
+  "version": "0.1.1",
+  "description": "A starter template for Next.js with Legit SDK integration for local-first document editing and version control",
+  "type": "module",
+  "bin": {
+    "next-starter": ".bin/cli/js"
+  },
+  "files": [
+    "app",
+    "public",
+    ".bin",
+    "*.ts",
+    "*.tsx",
+    "*.js",
+    "*.mjs",
+    "*.json",
+    "*.css",
+    "README.md",
+    ".gitignore"
+  ],
+  "keywords": [
+    "nextjs",
+    "next",
+    "starter",
+    "template",
+    "legit-sdk",
+    "local-first",
+    "version-control"
+  ],
+  "author": "Legit Control",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/legitcontrol/monorepo.git",
+    "directory": "examples/next-starter"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,7 +42,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@legit-sdk/react": "workspace:*",
+    "@legit-sdk/react": "^0.2.15",
     "diff-match-patch-ts": "^0.6.0",
     "next": "16.0.7",
     "react": "19.2.0",
@@ -26,5 +59,8 @@
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
