@@ -27,6 +27,7 @@ import {
   createFsOperationFileLogger,
   FsOperationLogger,
 } from './compositeFs/utils/fs-operation-logger.js';
+import { gitApplyCurrentChangesToVirtualFile } from './compositeFs/subsystems/git/virtualFiles/gitApplyCurrentChangesToVirtualFile.js';
 
 function getGitCache(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -211,6 +212,7 @@ export async function openLegitFs({
       operationHistory: gitBranchOperationsVirtualFile,
       history: gitBranchHistory,
       currentBranch: gitCurrentBranchVirtualFile,
+      'apply-changes': gitApplyCurrentChangesToVirtualFile,
       branches: {
         '.': gitBranchesListVirtualFile,
         '[branchName]': {
@@ -296,6 +298,7 @@ export async function openLegitFs({
       '**/lu[0-9a-zA-Z]*.tmp',
       // legit uses a tmp file as well
       '**/.metaentries.json.tmp',
+      '**/**.tmp.**',
       '**/**.sb-**',
     ],
   });

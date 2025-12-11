@@ -857,7 +857,10 @@ describe('readdir .claude', () => {
   });
 
   it('should read folder with fileTypes', async () => {
-    const legitfs = await openLegitFsWithMemoryFs();
+    // @ts-ignore
+    const legitfs = await openLegitFsWithMemoryFs({
+      claudeHandler: true,
+    });
     const claudeFolder = await legitfs.promises.readdir(`/.claude`, {
       withFileTypes: true,
     });
