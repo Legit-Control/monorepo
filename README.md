@@ -17,7 +17,7 @@ And it’s easy because you interact through the **file system API** (Legit FS) 
 ### Quick Links
 
 - [Documentation](https://legitcontrol.com/docs): Full guide and API reference
-- [Getting Started](https://legitcontrol.com/docs/quick-start): Minimal example to get your first LegitFS repo up
+- [Getting Started](https://legitcontrol.com/docs/quickstart): Minimal example to get your first LegitFS repo up
 - [Example Starter](https://legitcontrol.com/docs/examples): See a working editor demo with history tracking
 - [Contributing](./CONTRIBUTING.md): How to contribute, including the Contributor License Agreement
 

@@ -118,3 +118,26 @@ jobs:
           # Check if build output exists
           test -d .next || (echo "❌ .next directory not found" && exit 1)
           echo "✅ Next.js app build successful"
+
+  markdown-link-check:
+    name: Check Markdown Links
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9 # or your current pnpm version
+          run_install: true
+
+      - name: Check markdown links
+        run: pnpm check-links

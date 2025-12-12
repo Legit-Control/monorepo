@@ -17,7 +17,7 @@ Please fill out the sections below to help us understand and reproduce your issu
 
 - [ ] I’ve searched the existing [issues](../../issues) and found **no similar bug report**.
 - [ ] I’m using the **latest version** of the Legit SDK.
-- [ ] I understand that general questions or setup help may be better suited for our [💬 Discord community](https://discord.gg/legitcontrol).
+- [ ] I understand that general questions or setup help may be better suited for our [💬 Discord community](https://discord.gg/67Tw9ZeMSB).
 
 ---
 

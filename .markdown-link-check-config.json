@@ -1,0 +1,14 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^mailto:core@"
+    },
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^../../issues$"
+    }
+  ]
+  
+}
