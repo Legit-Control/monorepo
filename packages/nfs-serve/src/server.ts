@@ -169,15 +169,21 @@ export const createNfs3Server = (handler: {
   symlink: SymlinkHandler;
   write: WriteHandler;
 }) => {
-  return net.createServer(
+  // Track all active connections
+  const connections = new Set<net.Socket>();
+
+  const server = net.createServer(
     {
       allowHalfOpen: true, // Ensure sockets are fully closed
     },
-    (socket) => {
+    socket => {
       let buffer = Buffer.alloc(0);
       let fragmentAccumulator: Buffer[] = [];
 
-      console.log("Client connected");
+      console.log('Client connected');
+
+      // Add socket to connections set
+      connections.add(socket);
 
       // Handle data from the client
       const taskQueue: (() => Promise<void>)[] = [];
@@ -185,9 +191,6 @@ export const createNfs3Server = (handler: {
 
       const processQueue = async () => {
         if (isProcessingQueue) {
-          console.log("----------------------------------------");
-          console.log("Already processing queue");
-          console.log("----------------------------------------");
           return;
         }
         isProcessingQueue = true;
@@ -234,36 +237,68 @@ export const createNfs3Server = (handler: {
       });
 
       // Handle client disconnect
-      socket.on("end", () => {
-        console.log("Client disconnected");
+      socket.on('end', () => {
+        console.log('Client disconnected');
       });
 
       // Handle error events
-      socket.on("error", (err) => {
-        console.error("Socket error:", err);
+      socket.on('error', err => {
+        console.error('Socket error:', err);
       });
 
       // Handle timeout events
-      socket.on("timeout", () => {
-        console.log("Socket timeout - closing connection");
+      socket.on('timeout', () => {
+        console.log('Socket timeout - closing connection');
         socket.end();
       });
 
       // Handle close events
-      socket.on("close", (hadError) => {
-        console.log(`Socket closed ${hadError ? "with" : "without"} error`);
+      socket.on('close', hadError => {
+        console.log(`Socket closed ${hadError ? 'with' : 'without'} error`);
+        // Remove socket from connections set
+        connections.delete(socket);
       });
-    },
+
+      // Handle error events
+      socket.on('error', err => {
+        console.error('Socket error:', err);
+        // Remove socket from connections set on error
+        connections.delete(socket);
+      });
+    }
   );
+
+  // Add custom closeAllConnections method since it might not be available in all Node.js builds
+  if (!(server as any).closeAllConnections) {
+    (server as any).closeAllConnections = () => {
+      console.log(`Closing ${connections.size} active connections`);
+      for (const socket of connections) {
+        try {
+          socket.destroy();
+        } catch (error) {
+          console.error('Error destroying socket:', error);
+        }
+      }
+      connections.clear();
+    };
+  }
+
+  // let enrichedServer = server as net.Server & {
+  //   closeAllConnections: () => void;
+  // };
+
+  return server as typeof server & {
+    closeAllConnections: () => void;
+  };;
 };
 
 // Handle portmap program requests
 function handlePortmapRequest(
   socket: net.Socket,
   xid: number,
-  data: Buffer,
+  data: Buffer
 ): void {
-  console.log("Handling portmap request");
+  console.log('Handling portmap request');
 
   try {
     // Try to extract procedure
