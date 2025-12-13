@@ -1,0 +1,27 @@
+{
+  "name": "legit-mount",
+  "version": "1.0.0",
+  "description": "CLI tool to mount legit repositories",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "legit-mount": "./bin/legit-mount.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "mount",
+    "legit"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.4.1",
+  "dependencies": {
+    "@legit-sdk/core": "workspace:*",
+    "@legit-sdk/nfs-serve": "workspace:*",
+    "memfs": "^4.51.1",
+    "commander": "^12.1.0"
+  }
+}
