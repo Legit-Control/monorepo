@@ -84,7 +84,7 @@
     "start": "nps",
     "format": "nps format",
     "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && nps build",
-    "test": "nps test",
+    "test:iso-git": "nps test",
     "publish-website": "nps website",
     "prepublishOnly": "nps prepublish",
     "semantic-release": "semantic-release",
