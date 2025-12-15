@@ -1,0 +1,190 @@
+---
+title: Sync API
+description: Synchronize with remote repositories using automatic pull, merge, and push operations with conflict resolution.
+---
+
+import { Callout } from 'nextra/components'
+
+# Sync API
+
+The `legitFs.sync` object provides synchronization with remote repositories.
+
+<Callout type="error">
+  🧪 **Experimental** - Expect frequent changes
+</Callout>
+
+## Methods
+
+### `start(): void`
+
+Starts the synchronization service. The service will periodically pull changes from the remote and push local changes.
+
+**Example**:
+
+```typescript
+legitFs.sync.start();
+```
+
+**Note**: The sync service runs periodically (every 1 second) and performs:
+1. Pull: Fetches changes from the remote
+2. Merge: Automatically merges remote changes with local changes
+3. Push: Pushes local branches that are ahead of the remote
+
+### `stop(): void`
+
+Stops the synchronization service.
+
+**Example**:
+
+```typescript
+legitFs.sync.stop();
+```
+
+### `isRunning(): boolean`
+
+Checks if the synchronization service is currently running.
+
+**Returns**: `boolean` - `true` if running, `false` otherwise
+
+**Example**:
+
+```typescript
+if (legitFs.sync.isRunning()) {
+  console.log('Sync is active');
+} else {
+  console.log('Sync is stopped');
+}
+```
+
+### `loadBranch(branch: string): Promise<void>`
+
+Loads a branch from the remote repository.
+
+**Parameters**:
+
+- **branch** (string): Branch name to load
+
+**Throws**: `Error` if no access token is available for the branch
+
+**Example**:
+
+```typescript
+await legitFs.sync.loadBranch('feature-branch');
+```
+
+**Note**: This method:
+1. Fetches the branch from the remote
+2. Resolves the remote commit SHA
+3. Updates the local branch reference to point to the remote commit
+
+### `sequentialPush(branchesToPush: string[]): Promise<void>`
+
+Pushes branches to the remote repository sequentially (one after another).
+
+**Parameters**:
+
+- **branchesToPush** (string[]): Array of branch names to push
+
+**Note**: This method queues pushes to ensure they happen sequentially, even if called multiple times.
+
+**Example**:
+
+```typescript
+await legitFs.sync.sequentialPush(['main', 'feature-branch']);
+```
+
+**Note**: Local users (type 'local') cannot push. The method will return without doing anything if the user is local.
+
+## Sync Behavior
+
+The sync service, when started, performs the following operations periodically (every 1 second):
+
+1. **Pull**: Fetches changes from the remote
+   - Fetches all branches from the remote
+   - Compares local and remote branch states
+   - Identifies branches that need to be updated
+
+2. **Merge**: Automatically merges remote changes with local changes
+   - If both local and remote have changed, creates a merge commit
+   - Uses a merge driver that prefers remote changes (theirs) over local changes
+   - Handles fast-forward merges when only remote has changed
+
+3. **Push**: Pushes local branches that are ahead of the remote
+   - Only pushes branches that are ahead of the remote
+   - Skips anonymous branches
+   - Uses access tokens for authentication
+
+## Automatic Sync
+
+The sync service only starts automatically if a `publicKey` is provided to `openLegitFs()`. Otherwise, you need to manually call `sync.start()`.
+
+**Example**:
+
+```typescript
+// Sync starts automatically if publicKey is provided
+const legitFs = await openLegitFs({
+  storageFs: nodeFs,
+  gitRoot: '/path/to/repo',
+  publicKey: 'your-public-key', // Sync will start automatically
+});
+
+// Or start manually
+const legitFs = await openLegitFs({
+  storageFs: nodeFs,
+  gitRoot: '/path/to/repo',
+});
+legitFs.sync.start();
+```
+
+## Merge Strategy
+
+The sync service uses an automatic merge strategy:
+
+- **Fast-forward**: If only the remote has changed, the local branch is updated to match the remote
+- **Merge commit**: If both local and remote have changed, a merge commit is created
+- **Merge driver**: The merge driver prefers remote changes (theirs) when there are conflicts
+
+**Note**: The current merge strategy is basic and may need customization for complex scenarios.
+
+## Error Handling
+
+The sync service handles errors gracefully:
+
+- Network errors are logged but don't stop the sync service
+- Merge conflicts are resolved automatically using the merge driver
+- Missing branches are skipped
+
+## Complete Example
+
+```typescript
+// Open LegitFS with sync enabled
+const legitFs = await openLegitFs({
+  storageFs: nodeFs,
+  gitRoot: '/path/to/repo',
+  publicKey: 'your-public-key', // Enables automatic sync
+});
+
+// Or start sync manually
+legitFs.sync.start();
+
+// Check if sync is running
+if (legitFs.sync.isRunning()) {
+  console.log('Sync is active');
+}
+
+// Load a branch from remote
+await legitFs.sync.loadBranch('feature-branch');
+
+// Push branches sequentially
+await legitFs.sync.sequentialPush(['main', 'feature-branch']);
+
+// Stop sync when done
+legitFs.sync.stop();
+```
+
+## See Also
+
+- [Authentication](/docs/api/auth) - User authentication (required for sync)
+- [openLegitFs](/docs/api/openLegitFs) - Creating a LegitFs instance
+- [LegitFs Instance](/docs/api/legitFs-instance) - Instance properties and methods
+

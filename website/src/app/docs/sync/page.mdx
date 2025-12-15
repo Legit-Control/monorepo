@@ -1,0 +1,119 @@
+---
+title: Sync - Legit FS API Reference
+description: Complete reference for sync in Legit FS—how to sync branches with remotes, push and pull changes, and collaborate across devices.
+---
+
+import { Callout } from 'nextra/components'
+
+# Sync
+
+<Callout type="error">
+  🧪 **Experimental** - Expect frequent changes
+</Callout>
+
+Sync in Legit FS allows you to synchronize your local branches with remote repositories. This enables collaboration, backup, and working across multiple devices. Sync operations use Git remotes under the hood, making it compatible with any Git server.
+
+
+## Overview
+
+Sync in Legit FS works through Git remotes. You can push branches to a remote, pull branches from a remote, and keep your local repository in sync with others. The sync service handles authentication, conflict resolution, and efficient transfer of commits.
+
+## Getting Started with Sync
+
+### Initialize with Sync
+
+When initializing Legit FS, you can configure sync by providing a `serverUrl` and `publicKey`:
+
+```typescript
+
+const legitFs = await openLegitFs({
+  storageFs: fs,
+  gitRoot: '/',
+  serverUrl: 'https://hub.legitcontrol.com/',
+  publicKey: 'your-public-key-here'
+})
+
+// Sync service is automatically started if publicKey is provided
+```
+
+### Start Sync Service
+
+Start the sync service manually:
+
+```typescript
+// Start sync service
+legitFs.sync.start()
+
+console.log('Sync service started')
+```
+
+## Share Current Branch
+
+Share your current branch by pushing it to the remote. If you're on an anonymous branch, it will be renamed to your user ID.
+
+### Basic Share
+
+```typescript
+// Sign in first (required for sharing)
+await legitFs.auth.signInAnonymously()
+
+// Share the current branch
+const branchName = await legitFs.shareCurrentBranch()
+console.log(`Branch shared: ${branchName}`)
+```
+
+## Push Branches
+
+Push one or more branches to the remote:
+
+### Push Single Branch
+
+```typescript
+// Push a specific branch
+await legitFs.sync.sequentialPush(['main'])
+
+console.log('Branch pushed successfully')
+```
+
+### Push Multiple Branches
+
+```typescript
+// Push multiple branches
+const branches = ['main', 'feature-xyz', 'experiment']
+await legitFs.sync.sequentialPush(branches)
+
+console.log(`Pushed ${branches.length} branches`)
+```
+
+## Load Branches from Remote
+
+Load a branch from the remote if it doesn't exist locally:
+
+### Load Branch
+
+```typescript
+// Load a branch from remote
+await legitFs.sync.loadBranch('remote-branch-name')
+
+console.log('Branch loaded from remote')
+```
+
+### Load Branch Before Switching
+//TODO ist das wirklich so, dass es von Remote geladen wird, wenn es die nicht gibt locally und kann ich damit auch neue Branches erstellner, wenn es die weder Local noch remote gibt?
+
+The `setCurrentBranch()` function automatically loads the branch if it doesn't exist:
+
+```typescript
+// This will load the branch from remote if it doesn't exist locally
+await legitFs.setCurrentBranch('remote-branch-name')
+
+console.log('Branch loaded and switched to')
+```
+
+
+
+## Related Documentation
+
+- [Auth](/docs/auth) - Learn how to authenticate for sync
+- [Branches](/docs/branching) - Understand how branches work with sync
+- [Commits](/docs/commits) - Learn how commits are synced

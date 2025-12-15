@@ -1,0 +1,120 @@
+---
+title: Persistence - Understanding Data Storage in Legit FS
+description: Learn about persistence options in Legit FS, including memfs, sync, OPFS, and database storage options for your versioned filesystem.
+---
+
+import { Callout } from 'nextra/components'
+
+# Persistence
+
+## TLDR
+
+Legit FS supports different persistence backends for storing your versioned filesystem:
+
+- **memfs** - In-memory storage (changes are lost on page refresh/restart)
+- **sync** - Remote persistence via Git remotes (available now)
+- **OPFS** - Origin Private File System (coming soon)
+- **Third Database** - Custom database storage (coming soon)
+
+## Overview
+
+Persistence determines where and how your Legit FS data is stored. The choice of persistence backend affects data durability, performance, and where your data lives (local memory, browser storage, or remote servers).
+
+## memfs - In-Memory Storage
+
+When using `openLegitFsWithMemoryFs()`, all changes are stored in memory only. This means:
+
+<Callout type="warning">
+  **All changes are lost** when you refresh the page, close the browser tab, or restart your application. memfs is ideal for temporary data, testing, or when you're using sync to persist data remotely.
+</Callout>
+
+### When to Use memfs
+
+- **Development and testing** - Quick iteration without setting up storage
+- **Temporary data** - Data that doesn't need to persist
+- **With sync enabled** - When you're using remote sync to persist data
+
+### Example
+
+```typescript
+import { openLegitFsWithMemoryFs } from '@legit-sdk/core'
+
+// All data stored in memory - lost on refresh
+const legitFs = await openLegitFsWithMemoryFs()
+
+await legitFs.promises.writeFile('/notes.txt', 'Hello World')
+// Data exists in memory, but will be lost when the page refreshes
+```
+
+## Sync - Remote Persistence
+
+Sync provides remote persistence by synchronizing your local Legit FS instance with a Git remote server. This enables:
+
+- **Data durability** - Your data persists on remote servers
+- **Cross-device access** - Access your data from multiple devices
+- **Collaboration** - Share branches with others
+- **Backup** - Automatic backup of your versioned filesystem
+
+<Callout>
+  Sync works with any Git-compatible server, making it compatible with GitHub, GitLab, Bitbucket, or custom Git servers.
+</Callout>
+
+### Using Sync with memfs
+
+You can combine memfs with sync to get the best of both worlds:
+
+```typescript
+import { openLegitFsWithMemoryFs } from '@legit-sdk/core'
+
+const legitFs = await openLegitFsWithMemoryFs({
+  serverUrl: 'https://hub.legitcontrol.com/',
+  publicKey: 'your-public-key-here'
+})
+
+// Data is in memory, but synced to remote for persistence
+await legitFs.promises.writeFile('/notes.txt', 'Hello World')
+await legitFs.shareCurrentBranch() // Sync to remote
+```
+
+For complete documentation on sync, see the [Sync guide](/docs/sync).
+
+## OPFS - Origin Private File System
+
+<Callout type="info">
+  **Coming Soon** - OPFS (Origin Private File System) support is in development. This will provide persistent browser storage that survives page refreshes without requiring remote sync.
+</Callout>
+
+OPFS is a browser API that provides a filesystem-like storage interface. When available, it will allow Legit FS to:
+
+- Persist data locally in the browser
+- Survive page refreshes and browser restarts
+- Work offline without requiring remote sync
+- Provide better performance than IndexedDB for file operations
+
+## Third Database - Custom Database Storage
+
+<Callout type="info">
+  **Coming Soon** - Support for custom database backends is planned. This will allow you to use your preferred database (PostgreSQL, MongoDB, etc.) as the storage backend for Legit FS.
+</Callout>
+
+Custom database storage will enable:
+
+- **Enterprise integration** - Use your existing database infrastructure
+- **Custom storage logic** - Implement your own persistence strategies
+- **Scalability** - Leverage database features like replication and sharding
+- **Compliance** - Store data according to your organization's requirements
+
+## Choosing the Right Persistence Option
+
+| Option | Durability | Performance | Use Case |
+|--------|-----------|-------------|----------|
+| **memfs** | ❌ Lost on refresh | ⚡ Fastest | Development, testing, temporary data |
+| **sync** | ✅ Persistent | 🚀 Fast | Production apps, collaboration, cross-device |
+| **OPFS** | ✅ Persistent | ⚡ Fast | Browser apps, offline-first |
+| **Database** | ✅ Persistent | 🚀 Fast | Enterprise, custom requirements |
+
+## Related Documentation
+
+- [Sync](/docs/sync) - Complete guide to remote synchronization
+- [Auth](/docs/auth) - Authentication required for sync
+- [Quickstart](/docs/quickstart) - Get started with Legit FS

@@ -1,0 +1,290 @@
+---
+title: Auth - Legit FS API Reference
+description: Complete reference for authentication in Legit FS—how to sign in, manage users, handle access tokens, and secure your operations.
+---
+
+import { Callout } from 'nextra/components'
+
+# Auth
+
+<Callout type="error">
+  🧪 **Experimental** - Expect frequent changes
+</Callout>
+
+Authentication in Legit FS allows you to identify users, manage access tokens, and control permissions for branches. The auth system supports anonymous authentication and access token management for fine-grained access control.
+
+## Overview
+
+Legit FS provides a session manager through `legitFs.auth` that handles user authentication and access token management. You can sign in anonymously, get current user information, and manage access tokens for branch-level permissions.
+
+## Getting Started
+
+The auth API is available on the Legit FS instance:
+
+```typescript
+// Access auth methods
+const user = await legitFs.auth.getUser()
+```
+
+## Sign In Anonymously
+
+Sign in as an anonymous user. This generates a random UUID for the user ID and updates the user metadata.
+
+```typescript
+// Sign in anonymously
+await legitFs.auth.signInAnonymously()
+
+// Get user info after signing in
+const user = await legitFs.auth.getUser()
+console.log(user.type) // 'anonymous'
+console.log(user.id) // Random UUID
+console.log(user.email) // anonymous-sha1-{uuid}-@legitcontrol.com
+```
+
+**Note**: After signing in anonymously, the user type changes from `'local'` to `'anonymous'`, and a random UUID is generated for the user ID. The email format is `anonymous-sha1-{uuid}-@legitcontrol.com`.
+
+### Check if Already Signed In
+
+```typescript
+async function ensureSignedIn(legitFs: LegitFs): Promise<void> {
+  const user = await legitFs.auth.getUser()
+  
+  if (user.type === 'local') {
+    console.log('Not signed in, signing in anonymously...')
+    await legitFs.auth.signInAnonymously()
+  } else {
+    console.log('Already signed in as:', user.id)
+  }
+}
+
+// Usage
+await ensureSignedIn(legitFs)
+```
+
+## Get Current User
+
+Get information about the currently authenticated user.
+
+```typescript
+// Get current user
+const user = await legitFs.auth.getUser()
+
+console.log('User ID:', user.id)
+console.log('User type:', user.type)
+console.log('User name:', user.name)
+console.log('User email:', user.email)
+```
+
+### User Object Structure
+
+```typescript
+interface LegitUser {
+  type: string // 'local' | 'anonymous' (currently implemented)
+  id: string
+  name: string
+  email: string
+}
+```
+
+**User Types:**
+- `'local'`: Default user type when `openLegitFs()` is called without authentication. Local users cannot push to remote repositories.
+- `'anonymous'`: Users who have called `signInAnonymously()`. Anonymous users have a randomly generated UUID as their `id` and can push to remote repositories if they have access tokens.
+
+### Require Authentication
+
+Ensure user is authenticated before proceeding:
+
+```typescript
+async function requireAuth(legitFs: LegitFs): Promise<LegitUser> {
+  const user = await legitFs.auth.getUser()
+  
+  if (user.type === 'local') {
+    throw new Error('Authentication required. Please sign in first.')
+  }
+  
+  return user
+}
+
+// Usage
+try {
+  const user = await requireAuth(legitFs)
+  console.log('Authenticated as:', user.id)
+  // Proceed with authenticated operations
+} catch (error) {
+  console.error('Not authenticated:', error.message)
+}
+```
+
+## Access Tokens
+
+Access tokens provide fine-grained permissions for branches. You can add tokens and check maximum permissions for specific branches.
+
+### Add Access Token
+
+Add an access token for authentication. Tokens are stored in the Git configuration and associated with the current user ID.
+
+```typescript
+// Add access token
+await legitFs.auth.addAccessToken('your-access-token-here')
+
+console.log('Access token added')
+```
+
+### Get Maximum Access Token for Branch
+
+Get the access token with maximum permissions for a specific branch. If no access tokens are stored, this method may return the `publicKey` provided to `openLegitFs()` if available.
+
+```typescript
+// Get max access token for a branch
+const maxToken = await legitFs.auth.getMaxAccessTokenForBranch('main')
+
+if (maxToken) {
+  console.log('Access token available:', maxToken)
+} else {
+  console.log('No access token found for branch')
+}
+```
+
+**Note**: If no access tokens are stored, this method may return the `publicKey` provided to `openLegitFs()` if available.
+
+### Check Branch Access
+
+Check if you have access to a branch:
+
+```typescript
+async function checkBranchAccess(
+  legitFs: LegitFs,
+  branchId: string
+): Promise<boolean> {
+  const token = await legitFs.auth.getMaxAccessTokenForBranch(branchId)
+  return token !== undefined
+}
+
+// Usage
+const hasAccess = await checkBranchAccess(legitFs, 'main')
+if (hasAccess) {
+  console.log('Has access to branch')
+} else {
+  console.log('No access to branch')
+}
+```
+
+## Error Handling
+
+### Handle Auth Errors
+
+```typescript
+async function safeSignIn(legitFs: LegitFs): Promise<{
+  success: boolean
+  user?: LegitUser
+  error?: string
+}> {
+  try {
+    await legitFs.auth.signInAnonymously()
+    const user = await legitFs.auth.getUser()
+    return { success: true, user }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
+// Usage
+const result = await safeSignIn(legitFs)
+if (result.success) {
+  console.log('Signed in as:', result.user!.id)
+} else {
+  console.error('Sign in failed:', result.error)
+}
+```
+
+## Security Best Practices
+
+### Token Management
+
+Store tokens securely and don't expose them:
+
+```typescript
+// ❌ Don't hardcode tokens
+// await legitFs.auth.addAccessToken('hardcoded-token')
+
+// ✅ Get token from secure source
+async function addTokenSecurely(legitFs: LegitFs): Promise<void> {
+  // Get token from environment variable, secure storage, etc.
+  const token = process.env.LEGIT_ACCESS_TOKEN
+  
+  if (!token) {
+    throw new Error('Access token not found in environment')
+  }
+  
+  await legitFs.auth.addAccessToken(token)
+}
+```
+
+### Check Permissions Before Operations
+
+```typescript
+async function safeBranchOperation(
+  legitFs: LegitFs,
+  branchId: string,
+  operation: () => Promise<void>
+): Promise<void> {
+  // Check if authenticated
+  const user = await legitFs.auth.getUser()
+  if (user.type === 'local') {
+    throw new Error('Authentication required')
+  }
+
+  // Check branch access
+  const token = await legitFs.auth.getMaxAccessTokenForBranch(branchId)
+  if (!token) {
+    throw new Error(`No access to branch: ${branchId}`)
+  }
+
+  // Perform operation
+  await operation()
+}
+```
+
+## Use Cases
+
+### Anonymous Development
+
+Sign in anonymously for local development:
+
+```typescript
+// Sign in anonymously for local work
+await legitFs.auth.signInAnonymously()
+const user = await legitFs.auth.getUser()
+console.log('Working as:', user.id)
+```
+
+### Branch Access Control
+
+Check permissions before accessing branches:
+
+```typescript
+async function accessBranch(
+  legitFs: LegitFs,
+  branchId: string
+): Promise<void> {
+  // Check authentication
+  const user = await legitFs.auth.getUser()
+  if (user.type === 'local') {
+    await legitFs.auth.signInAnonymously()
+  }
+
+  // Check branch access
+  const token = await legitFs.auth.getMaxAccessTokenForBranch(branchId)
+  if (!token) {
+    throw new Error(`No access to branch: ${branchId}`)
+  }
+
+  // Access branch
+  await legitFs.setCurrentBranch(branchId)
+}
+```
+
+## Related Documentation
+
+- [Sync](/docs/sync) - Learn how authentication is used for sync operations
+- [Branching](/docs/branching) - Understand how auth affects branch access

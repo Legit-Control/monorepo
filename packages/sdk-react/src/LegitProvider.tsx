@@ -1,30 +1,38 @@
 // LegitProvider.tsx
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-  useRef,
-} from 'react';
-import { openLegitFsWithMemoryFs } from '@legit-sdk/core';
+import type { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
+
+// Type-only import to avoid loading the module during SSR
+type OpenLegitFsWithMemoryFs =
+  (typeof import('@legit-sdk/core'))['openLegitFsWithMemoryFs'];
 
 export interface LegitContextValue {
-  legitFs: Awaited<ReturnType<typeof openLegitFsWithMemoryFs>> | null;
+  legitFs: Awaited<ReturnType<OpenLegitFsWithMemoryFs>> | null;
   loading: boolean;
   head: string | null;
   rollback: (commitHash: string) => Promise<void>;
   error?: Error;
 }
 
-const LegitContext = createContext<LegitContextValue>({
-  legitFs: null,
-  loading: true,
-  head: null,
-  rollback: async () => {},
-});
+// Ensure React is available before creating context
+// This prevents SSR issues where React might be null during module evaluation
+const createLegitContext = () => {
+  if (typeof createContext === 'undefined' || !createContext) {
+    throw new Error(
+      'React createContext is not available. Make sure React is properly installed.'
+    );
+  }
+  return createContext<LegitContextValue>({
+    legitFs: null,
+    loading: true,
+    head: null,
+    rollback: async () => {},
+  });
+};
+
+const LegitContext = createLegitContext();
 
 export const useLegitContext = () => useContext(LegitContext);
 
@@ -52,7 +60,7 @@ export const LegitProvider = ({
 }: LegitProviderProps) => {
   const [isFirstRender, setIsFirstRender] = useState(true);
   const [legitFs, setLegitFs] = useState<Awaited<
-    ReturnType<typeof openLegitFsWithMemoryFs>
+    ReturnType<OpenLegitFsWithMemoryFs>
   > | null>(null);
 
   const headRef = useRef<string | null>(null);
@@ -62,8 +70,16 @@ export const LegitProvider = ({
   useEffect(() => {
     if (!isFirstRender) return;
 
+    // SSR safety: only initialize in browser
+    if (typeof window === 'undefined') {
+      setIsFirstRender(false);
+      return;
+    }
+
     const init = async () => {
       try {
+        // Lazy-load the module only in browser to avoid SSR issues with browser-fs-access
+        const { openLegitFsWithMemoryFs } = await import('@legit-sdk/core');
         const _legitFs = await openLegitFsWithMemoryFs({
           gitRoot: config.gitRoot,
           serverUrl: config.serverUrl,
@@ -91,6 +107,9 @@ export const LegitProvider = ({
   useEffect(() => {
     if (!legitFs) return;
 
+    // SSR safety: only run in browser
+    if (typeof window === 'undefined') return;
+
     (window as any).legitFs = legitFs;
 
     const pollHead = setInterval(async () => {
@@ -116,6 +135,9 @@ export const LegitProvider = ({
 
   // TODO: enable rollback for operations as well
   const rollback = async (commitHash: string) => {
+    // SSR safety: no-op in SSR
+    if (typeof window === 'undefined') return;
+
     if (!legitFs) {
       console.error('No legitFs instance available');
       return;

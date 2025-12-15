@@ -1,0 +1,319 @@
+---
+title: Quickstart with Legit SDK - Installation & First Steps
+description: Learn how to install and set up Legit SDK, create your first versioned filesystem, and understand basic file operations with automatic versioning and history tracking.
+---
+
+import { Tabs, Callout } from 'nextra/components'
+
+# Quickstart with Legit SDK
+
+This guide will help you create your first Legit-backed project and understand the basics of versioned file operations.
+
+<br/>
+
+<Tabs items={['Next.js', 'React', 'Vanilla JS', 'Vue', 'Svelte']}>
+  <Tabs.Tab>
+   ### Starter Command
+   ```bash 
+   npx @legit-sdk/create-next-starter my-app
+   ```
+   > You can install a Legit x Next.js Starter with this command
+
+   <br/>
+   ### Manual Guide
+   #### 1. Install the SDK
+   ```bash
+   npm i @legit-sdk/react
+   ```
+  
+   #### 2. Add the `LegitProvider` to your app
+
+   The provider sets up the Legit environment for all nested components. Since SSR frameworks use server components by default, make sure to create a client component wrapper.
+
+   ```tsx
+   // app/LegitProviderComponent.tsx (Next.js, app router)
+   'use client';
+   
+   import { ReactNode } from 'react';
+   import { LegitProvider } from '@legit-sdk/react';
+   
+   export default function LegitProviderComponent(props: { children: ReactNode}): ReactNode {
+      return <LegitProvider>
+         { props.children }
+      </LegitProvider>
+   }
+   ```
+
+   Then, use it in your app layout:
+   ```tsx
+   // app/layout.tsx (Next.js, app router)
+   import React from 'react';
+   import LegitProviderComponent from './LegitProviderComponent';
+
+   export default function RootLayout({ children }: { children: React.ReactNode }) {
+      return (
+         <html lang="en">
+            <body>
+               <LegitProviderComponent>
+                  {children}
+               </LegitProviderComponent>
+            </body>
+         </html>
+      )
+   }
+   ```
+
+   #### 3. Use the `useLegitFile` hook
+   The hook gives you access to:
+   - **data** → current text of a file
+   - **setData(value)** → commit new changes
+   - **history** → array of past commits
+
+   <Callout type="warning">
+    The hook must be used inside a `client` component wrapped by `LegitProvider`. Add `'use client'` (Next.js) to the desired component.
+   </Callout>
+
+   ```tsx
+   // app/page.tsx
+   'use client';
+   
+   import React, { useState, useEffect } from 'react';
+   import { useLegitFile } from '@legit-sdk/react';
+
+   const FILE_PATH = '/notes.txt';
+   const INITIAL_TEXT = 'Hello from Legit 👋';
+
+   export default function Editor() {
+   const { data, setData, history, loading, error } = useLegitFile(FILE_PATH, { initialData: INITIAL_TEXT });
+   const [text, setText] = useState<string | undefined>(undefined);
+
+   // Initialize with text from LegitFs
+   useEffect(() => {
+      if (!text) {
+         // eslint-disable-next-line react-hooks/set-state-in-effect
+         setText(data || undefined);
+      }
+   }, [loading, data, text, loading]);
+
+   if (loading) return <div>Loading Legit...</div>;
+   if (error) return <div>Error: {error.message}</div>;
+
+   return (
+      <div style={{ padding: 20 }}>
+         <h2>📝 Legit Editor</h2>
+         <p>
+            {loading ? 'Loading...' : 'Loaded'}
+         </p>
+         <input
+            className="border border-gray-300 rounded-md p-2"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => text && setData(text)}
+         />
+         <pre>{JSON.stringify(history, null, 2)}</pre>
+      </div>
+   );
+   }
+   ```
+
+   ### Next steps:
+
+   - [React Wrapper](/docs/react-wrapper) — Full documentation for the React wrapper
+   - [React Wrapper API Reference](/docs/react-wrapper/api) — Full documentation for the React wrapper API
+   - [Legit SDK Examples](/showcase) — Explore Legit SDK Starters and Examples
+   - [Filesystem API Reference](/docs/api) — See all available paths in the file system
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+   ### Starter Command
+   ```bash 
+   npx @legit-sdk/create-react-vite-starter my-app
+   ```
+   > You can install a Legit x React+Vite Starter with this command
+
+   <br/>
+   ### Manual Guide
+
+   #### 1. Install the SDK for React
+   ```bash
+   npm i @legit-sdk/react
+   ```
+
+   #### 2. Add the `LegitProvider` to your app
+
+   The provider sets up the Legit environment for all nested components.
+
+   ```tsx
+   // main.tsx
+   import { StrictMode } from 'react'
+   import { createRoot } from 'react-dom/client'
+   import './index.css'
+   import App from './App.tsx'
+   import { LegitProvider } from '@legit-sdk/react'
+
+   createRoot(document.getElementById('root')!).render(
+   <StrictMode>
+      <LegitProvider>
+         <App />
+      </LegitProvider>
+   </StrictMode>,
+   )
+   ```
+
+   #### 3. Use the `useLegitFile` hook
+   The hook gives you access to:
+   - **data** → current text of a file
+   - **setData(value)** → commit new changes
+   - **history** → array of past commits
+
+   <Callout type="warning">
+    The hook must be used inside a component wrapped by LegitProvider.
+   </Callout>
+
+   ```tsx
+   // App.tsx
+   import { useEffect, useState } from 'react'
+   import { useLegitFile } from '@legit-sdk/react';
+
+   const FILE_PATH = '/notes.txt';
+   const INITIAL_TEXT = 'Hello from Legit 👋';
+
+   function App() {
+   const { data, setData, history, loading, error } = useLegitFile(FILE_PATH, { initialData: INITIAL_TEXT });
+   const [text, setText] = useState<string | undefined>(undefined);
+      
+   // Initialize with text from LegitFs
+   useEffect(() => {
+      if (!text) {
+         // eslint-disable-next-line react-hooks/set-state-in-effect
+         setText(data || undefined);
+      }
+   }, [loading, data, text, loading]);
+   
+   if (loading) return <div>Loading Legit...</div>;
+   if (error) return <div>Error: {error.message}</div>;
+
+   return (
+      <div style={{ padding: 20 }}>
+         <h2>📝 Legit Editor</h2>
+         <p>
+            {loading ? 'Loading...' : 'Loaded'}
+         </p>
+         <input
+            className="border border-gray-300 rounded-md p-2"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => text && setData(text)}
+         />
+         <pre>{JSON.stringify(history, null, 2)}</pre>
+      </div>
+   );
+   }
+
+   export default App
+   ```
+
+   ### Next steps:
+
+   - [React Wrapper](/docs/react-wrapper) — Full documentation for the React wrapper
+   - [React Wrapper API Reference](/docs/react-wrapper/api) — Full documentation for the React wrapper API
+   - [Legit SDK Examples](/showcase) — Explore Legit SDK Starters and Examples
+   - [Filesystem API Reference](/docs/api) — See all available paths in the file system
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+   ### 1. Install the SDK
+   ```bash
+   npm i @legit-sdk/core
+   ```
+
+   <Callout type="warning">
+      For server-side applications, you should use the `@legit-sdk/core/server` export of the package otherwise it will be polyfilled and not work as expected.
+   </Callout>
+
+   > This package provides everything you need: creating a Legit FS instance, reading/writing files, and accessing version history.
+
+   ### 2. Minimal Example
+
+   ```typescript
+   import { openLegitFsWithMemoryFs } from '@legit-sdk/core'
+
+   async function main() {
+      // create a Legit FS instance backed by memfs
+      const legitFs = await openLegitFsWithMemoryFs()
+
+      // write a versioned file
+      await legitFs.promises.writeFile('/hello.txt', 'Hello world')
+
+      // read the current file state
+      const data = await legitFs.promises.readFile('/hello.txt', 'utf8')
+      console.log(data) // → "Hello world"
+
+      // inspect commit history (stored in .legit)
+      const history = await legitFs.promises.readFile('/.legit/branches/main/.legit/history', 'utf8')
+      console.log(history)
+   }
+
+   main()
+   ```
+
+   **Notes:**
+   - `legitFs` behaves like `fs`, but all writes are **versioned automatically**.
+   - You can read any previous state from the `.legit` folder.
+   - Swapping `fs` in `legitFs` requires no other code changes.
+
+### How Legit FS Stores Data
+
+Legit FS keeps track of all writes in a `.legit` folder:
+
+   ```bash
+   /
+   ├─ document.txt                   # checked-out file (working copy)
+   └─ .legit/
+      ├─ branches/                   # available branches
+      │  └─ main/                    
+      │     ├─ document.txt          
+      │     └─ .legit/
+      │        ├─ head               # current HEAD content
+      │        ├─ history            # branch history
+      │        ├─ operation          
+      │        └─ operationHistory
+      └─ commits/
+         └─ ab/                      # first 2 chars of SHA
+            └─ cdef1234567890.../    # remaining 38 chars of SHA
+               └─ document.txt       # snapshot of the file in that commit
+   ```
+   Because it follows the **same interface as Node's** `fs`:
+   - You can run it **in-memory**, on **disk**, or with any other **storage adapter**.
+   - You can access version history and snapshots without extra setup.
+
+   ### Next steps:
+
+   - [Legit SDK Examples](/showcase) — Explore Legit SDK Starters and Examples
+   - [Filesystem API Reference](/docs/api) — See all available paths in the file system
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+  <Callout type="warning">
+   **Vue adapter coming soon!** We don't have a Vue adapter yet. Please use the **Vanilla JS** tab for now. You can follow or update the progress in this [issue](https://github.com/Legit-Control/monorepo/issues/36).
+  </Callout>
+</Tabs.Tab>
+
+   
+  <Tabs.Tab>
+  <Callout type="warning">
+   **Svelte adapter coming soon!** We don't have a Svelte adapter yet. Please use the **Vanilla JS** tab for now. You can follow or update the progress in this [issue](https://github.com/Legit-Control/monorepo/issues/37).
+  </Callout>
+</Tabs.Tab>
+   
+</Tabs>
+
+## Environment Compatibility
+
+Legit SDK works in many environments:
+- **Operating Systems**: macOS, Linux, Windows
+- **Languages:** Node.js, Python, Java (more coming)
+- **Containers / Sandboxed Environments**: Docker, serverless, cloud VMs
+
+It works everywhere because it operates on a **filesystem abstraction**. Any environment that supports standard filesystem operations can run it.
+In this getting started you can choose between **SSR**, **React**, **Vanilla JS**, **Vue**, or **Svelte**.

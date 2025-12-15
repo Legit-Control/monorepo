@@ -1,0 +1,146 @@
+---
+title: Authentication API
+description: Manage user authentication, sign in anonymously, and handle access tokens for branch operations in LegitFS.
+---
+
+import { Callout } from "nextra/components"
+
+# Authentication API
+
+The `legitFs.auth` object provides authentication and user management.
+
+<Callout type="error">
+  🧪 **Experimental** - Expect frequent changes
+</Callout>
+
+## Methods
+
+### `getUser(): Promise<LegitUser>`
+
+Gets the current user information.
+
+**Returns**: `Promise<LegitUser>` - User object:
+
+```typescript
+{
+  type: string; // 'local' | 'anonymous' | other types
+  id: string; // User ID
+  name: string; // User name
+  email: string; // User email
+}
+```
+
+**Example**:
+
+```typescript
+const user = await legitFs.auth.getUser();
+console.log(user.type); // 'local' | 'anonymous' | ...
+console.log(user.name); // User name
+console.log(user.email); // User email
+console.log(user.id); // User ID
+```
+
+### `signInAnonymously(): Promise<void>`
+
+Signs in as an anonymous user. This generates a random UUID for the user ID and updates the user metadata.
+
+**Example**:
+
+```typescript
+await legitFs.auth.signInAnonymously();
+const user = await legitFs.auth.getUser();
+console.log(user.type); // 'anonymous'
+console.log(user.id); // Random UUID
+console.log(user.email); // anonymous-sha1-{uuid}-@legitcontrol.com
+```
+
+**Note**: After signing in anonymously, the user type changes from `'local'` to `'anonymous'`, and a random UUID is generated for the user ID.
+
+### `getMaxAccessTokenForBranch(branchId: string): Promise<string | undefined>`
+
+Gets the access token with maximum permissions for a branch.
+
+**Parameters**:
+
+- **branchId** (string): Branch ID
+
+**Returns**: `Promise<string | undefined>` - Access token, or `undefined` if no token is available
+
+**Example**:
+
+```typescript
+const token = await legitFs.auth.getMaxAccessTokenForBranch('main');
+if (token) {
+  console.log('Access token available');
+} else {
+  console.log('No access token for this branch');
+}
+```
+
+**Note**: If no access tokens are stored, this method may return the `publicKey` provided to `openLegitFs()` if available.
+
+### `addAccessToken(token: string): Promise<void>`
+
+Adds an access token to the user's token store.
+
+**Parameters**:
+
+- **token** (string): Access token to add
+
+**Example**:
+
+```typescript
+await legitFs.auth.addAccessToken('your-access-token');
+```
+
+**Note**: Tokens are stored in the Git configuration and associated with the current user ID.
+
+## User Types
+
+### Local User
+
+The default user type when `openLegitFs()` is called without authentication. Local users:
+
+- Have `type: 'local'`
+- Have `id: 'local'`
+- Cannot push to remote repositories
+- Cannot use sync features that require authentication
+
+### Anonymous User
+
+Users who have called `signInAnonymously()`. Anonymous users:
+
+- Have `type: 'anonymous'`
+- Have a randomly generated UUID as their `id`
+- Can push to remote repositories if they have access tokens
+- Can use sync features
+
+## Complete Example
+
+```typescript
+// Get current user (initially local)
+let user = await legitFs.auth.getUser();
+console.log(user.type); // 'local'
+
+// Sign in anonymously
+await legitFs.auth.signInAnonymously();
+user = await legitFs.auth.getUser();
+console.log(user.type); // 'anonymous'
+console.log(user.id); // Random UUID
+
+// Add an access token
+await legitFs.auth.addAccessToken('your-access-token');
+
+// Get access token for a branch
+const token = await legitFs.auth.getMaxAccessTokenForBranch('main');
+if (token) {
+  console.log('Can access branch');
+}
+```
+
+## See Also
+
+- [openLegitFs](/docs/api/openLegitFs) - Creating a LegitFs instance
+- [Sync](/docs/api/sync) - Synchronization API (requires authentication)
+- [LegitFs Instance](/docs/api/legitFs-instance) - Instance properties and methods
+

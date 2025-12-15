@@ -1,0 +1,75 @@
+---
+title: Legit Developer Docs - Introduction & Getting Started
+description: Explore Legit — a Git-backed filesystem for AI collaboration. Learn core concepts, SDK basics, and navigate problem, idea, filesystem API, chat app, and UX.
+---
+
+import { Callout } from 'nextra/components'
+
+# Meet Legit SDK 
+
+Legit SDK is a Git-backed filesystem API that lets you build versioned, fail-safe applications with automatic commit history—no Git knowledge required.
+
+
+<Callout type="neutral">
+  🧪 **Legit SDK Alpha Docs** 
+  <br/>We'd love your feedback as we refine the SDK — join the discussion on [Discord](https://discord.gg/34K4t5K9Ra).
+</Callout>
+
+
+## How Legit Works with the Filesystem API
+
+**Everything is based on the filesystem API.** If you know how to read and write files, you already know how to use Legit SDK.
+
+The core operations are simple:
+- **Read files** - `readFile()` to access current or historical versions
+- **Write files** - `writeFile()` to create or update files (automatically creates commits)
+- **Create directories** - `mkdir()` to set up branches and organize files
+
+That's it. No special Git commands, no complex APIs. Just the filesystem operations you already know.
+
+```typescript
+// Read a file
+const content = await legitFs.promises.readFile('/.legit/branches/main/document.txt', 'utf8')
+
+// Write a file (automatically creates a commit)
+await legitFs.promises.writeFile('/.legit/branches/main/document.txt', 'Hello World', 'utf8')
+
+// Create a directory (e.g., a new branch)
+await legitFs.promises.mkdir('/.legit/branches/feature-xyz')
+```
+
+**New to filesystem APIs?** The concepts are universal—if you've worked with files in any language, you'll feel at home. The filesystem API is the same interface you learned in your first programming courses.
+
+Need a refresher on working with files? Check out [W3Schools: Node.js File System](https://www.w3schools.com/nodejs/nodejs_filesystem.asp) or similar beginner resources to get started.
+
+## Why Legit SDK?
+
+Legit SDK is built around three core ideas: **fail-safe** by design, **effortlessly simple** to use, and **100% Git compatible**.
+
+**Fail-safe** means giving your users the same superpowers you know from Git:
+- Roll back to any previous state
+- Branch off to run experiments with AI safely
+- Merge changes back when you're happy with the result
+
+**Runs everywhere.** Use Legit SDK as an API in the browser, Node.js, or mount it as a folder on your machine. That means instant compatibility with the stack of your choice — Python, Java, Node.js… you name it — from day one.
+
+**100% Git compatible.** Legit SDK creates standard Git repositories under the hood. That means the entire Git ecosystem works with your Legit projects from day one.<br/>
+GitHub, GitLab, CI/CD pipelines, Git GUIs, and all your existing Git tools. You can even open a Legit repository with standard Git commands if you need to. No lock-in, no proprietary formats—just Git.
+
+
+
+## Next Steps
+
+- [**Quickstart** — Get up and running in minutes](/docs/quickstart)
+- [**API Reference** — Complete filesystem API documentation](/docs/api)
+- [**Examples** — See Legit SDK in action](/docs/examples) 
+
+## Learn More
+
+Explore the concepts and ideas behind Legit SDK:
+
+- [**The Problem** — Why do we build this?](/docs/concepts/problem)
+- [**The Idea** — Why Git's core principles are the missing foundation for AI](/docs/concepts/idea)
+- [**The Filesystem API** — How files become the universal, versioned interface](/docs/concepts/filesystem-api)
+- [**The Chat App** — A real example: AI writes, users stay in control](/docs/concepts/chat-app)
+- [**Flipping the Model** — Bringing local-first, Git-powered sync to the browser](/docs/concepts/user-experience)

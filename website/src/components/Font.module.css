@@ -1,0 +1,77 @@
+.font-h1 {
+  font-size: 54px;
+  font-weight: bold;
+  line-height: 1.2;
+  font-family: Aspekta;
+  font-style: normal;
+}
+
+.font-h2 {
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1.3;
+  font-family: Aspekta;
+  font-style: normal;
+}
+
+.font-h3 {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.3;
+  font-family: Aspekta;
+  font-style: normal;
+}
+
+.font-h4 {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.4;
+  font-family: Aspekta;
+  font-style: normal;
+}
+
+.font-p {
+  font-size: 16px;
+  font-weight: normal;
+  line-height: 1.5;
+  font-family: Aspekta;
+  font-style: normal;
+}
+
+.font-ps {
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.5;
+  font-family: Aspekta;
+  font-style: normal;
+}
+
+.font-mono {
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.5;
+  font-family: "GeistMono";
+  font-style: normal;
+}
+
+.font-monoSmall {
+  font-size: 8px;
+  font-weight: normal;
+  line-height: 1.5;
+  font-family: "GeistMono";
+  font-style: normal;
+}
+
+@media (max-width: 768px) {
+  .font-h1 { font-size: 48px; }
+  .font-h2 { font-size: 32px; }
+  .font-h3 { font-size: 22px; }
+}
+
+@media (max-width: 480px) {
+  .font-h1 { font-size: 32px; }
+  .font-h2 { font-size: 28px; }
+  .font-h3 { font-size: 20px; }
+}
+
+

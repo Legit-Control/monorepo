@@ -6,7 +6,8 @@ import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Browser build config - bundles everything with polyfills
+// Single bundle config - works in both browser and Next.js SSR
+// Components check for window and stub in SSR
 const browserBuildConfig = {
   entryPoints: ['src/index.ts'],
   bundle: true,
@@ -21,93 +22,30 @@ const browserBuildConfig = {
     global: 'globalThis',
     'process.env.NODE_ENV': '"production"',
   },
-  external: ['react', 'react-dom'],
+  external: ['react', 'react-dom', 'react/jsx-runtime', '@legit-sdk/core'],
   // ✔ Node core modules replaced with browser shims
+  // ✔ @legit-sdk/core is external - loaded dynamically only in browser
+  // ✔ React and jsx-runtime are external for Next.js compatibility
   plugins: [nodeModulesPolyfillPlugin()],
   banner: {
-    js: `// legit-sdk browser bundle\n`,
+    js: `// @legit-sdk/react - works in browser and Next.js SSR\n`,
   },
 };
 
-// Server build config - bundled for Node.js, excludes browser code
-const serverBuildConfig = {
-  entryPoints: ['src/index.ts'],
-  bundle: true,
-  platform: 'node',
-  target: 'es2020',
-  format: 'esm',
-  outfile: 'dist/server.js',
-  sourcemap: false,
-  minify: true,
-  keepNames: true,
-  define: {
-    global: 'globalThis',
-    'process.env.NODE_ENV': '"production"',
-  },
-  alias: {
-    '@legit-sdk/core': '@legit-sdk/core/server', // CSR maps to client
-  },
-  // Exclude Node.js built-ins, browser-specific packages, and dependencies
-  // that don't work well when bundled (memfs, isomorphic-git, etc.)
-  external: [
-    // Node.js built-ins
-    'fs',
-    'path',
-    'buffer',
-    'stream',
-    'events',
-    'util',
-    'url',
-    'http',
-    'https',
-    'querystring',
-    'crypto',
-    'os',
-    'process',
-    // Browser-specific
-    'browser-fs-access',
-    // Dependencies that shouldn't be bundled for Node.js
-    'memfs',
-    'isomorphic-git',
-    'ignore',
-    'react',
-    'react-dom',
-  ],
-  banner: {
-    js: `// legit-sdk server bundle (Node.js)\n`,
-  },
-};
 async function build() {
-  console.log('Building legit-sdk...');
+  console.log('Building @legit-sdk/react...');
 
-  // Build browser bundle
-  console.log('  → Building browser bundle...');
+  // Build single bundle (works in both browser and Next.js SSR)
+  // Components check for window and stub in SSR
+  console.log('  → Building bundle...');
   await esbuild.build(browserBuildConfig);
-  console.log('    ✔ Browser bundle complete');
+  console.log('    ✔ Bundle complete');
 
-  // Build server bundle
-  console.log('  → Building server bundle...');
-  await esbuild.build(serverBuildConfig);
-  console.log('    ✔ Server bundle complete');
-
-  // Copy server declaration file from TypeScript output to root
-  // TypeScript outputs index-server.d.ts, we need to copy it to server.d.ts
-  const serverDeclPath = path.join(__dirname, 'dist', 'index.d.ts');
-  const serverDeclDest = path.join(__dirname, 'dist', 'server.d.ts');
-  if (existsSync(serverDeclPath)) {
-    const declContent = readFileSync(serverDeclPath, 'utf-8');
-    writeFileSync(serverDeclDest, declContent, 'utf-8');
-    console.log('    ✔ Server declaration file copied');
-  } else {
-    console.warn(
-      `    ⚠ Server declaration file not found at ${serverDeclPath}`
-    );
-  }
-  console.log('✔ All builds complete');
+  console.log('✔ Build complete');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   build();
 }
 
-export { build, browserBuildConfig, serverBuildConfig };
+export { build, browserBuildConfig };

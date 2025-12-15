@@ -1,0 +1,188 @@
+@import "tailwindcss";
+@font-face {
+    font-family: "Aspekta";
+    src: url("/fonts/Aspekta/Aspekta-500.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Aspekta";
+    src: url("/fonts/Aspekta/Aspekta-600.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Aspekta";
+    src: url("/fonts/Aspekta/Aspekta-700.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GeistMono";
+    src: url("/fonts/GeistMono/GeistMono-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --background: #ffffff;
+    --foreground: #171717;
+    --primary: #FF611A;
+}
+
+html {
+    background: #ffffff !important;
+    color-scheme: light;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-primary: var(--primary);
+    --font-sans: Aspekta, sans-serif;
+}
+
+
+/* Force light mode: remove dark overrides */
+
+body {
+    background: var(--background);
+    color: var(--foreground) !important;
+    font-family: var(--font-sans, Aspekta, sans-serif);
+    letter-spacing: 0.01em;
+}
+
+body:has(.nextra-sidebar) {
+    background: #FAFAFA !important;
+}
+
+.nextra-navbar-blur {
+    border-bottom: 1px solid transparent !important;
+    background: none !important;
+    transition: all 0.3s ease-in-out !important;
+}
+
+.nextra-navbar-scrolled {
+    background: #FAFAFA !important;
+    border-bottom: 1px solid #E5E5E5 !important;
+}
+
+
+/* Active navbar item color */
+
+.nextra-navbar a[aria-current="true"],
+.nextra-navbar a[aria-current="page"] {
+    color: var(--primary) !important;
+}
+
+.nextra-sidebar ul {
+    gap: 0.1rem;
+}
+
+.nextra-sidebar-footer {
+    display: none;
+}
+
+article {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+
+/*
+  Wormhole dot animation
+  - Horizontal travel across container width and back
+  - Squash (wider/shorter) when "fast", round when turning/slow
+  - Customize with CSS variables:
+      --dot-size: size of the circle (default 2rem)
+      --worm-duration: full back+forth duration (default 6s)
+*/
+
+.orbit-dot {
+    --dot-size: 2rem;
+    --worm-duration: 4s;
+    width: var(--dot-size);
+    height: var(--dot-size);
+    left: 0px;
+    top: 42.5%;
+    z-index: 10;
+    border-radius: 9999px;
+    animation: orbit-worm var(--worm-duration) infinite both;
+    will-change: transform;
+    animation-timing-function: cubic-bezier(0.6, 0, 0.4, 1);
+    @media (max-width: 768px) {
+        --dot-size: 1.5rem;
+    }
+}
+
+.secondary-orbit-dot {
+    --dot-size: 2rem;
+    --worm-duration: 4s;
+    width: var(--dot-size);
+    height: var(--dot-size);
+    left: 0px;
+    top: 42.5%;
+    z-index: 10;
+    border-radius: 9999px;
+    animation: orbit-worm var(--worm-duration) infinite both;
+    will-change: transform;
+    animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1);
+    opacity: 0.3;
+    @media (max-width: 768px) {
+        --dot-size: 1.5rem;
+    }
+}
+
+.tertiary-orbit-dot {
+    --dot-size: 2rem;
+    --worm-duration: 4s;
+    width: var(--dot-size);
+    height: var(--dot-size);
+    left: 0px;
+    top: 42.5%;
+    z-index: 10;
+    border-radius: 9999px;
+    animation: orbit-worm var(--worm-duration) infinite both;
+    will-change: transform;
+    animation-timing-function: cubic-bezier(0.9, 0, 0.1, 1);
+    opacity: 0.1;
+    @media (max-width: 768px) {
+        --dot-size: 1.5rem;
+    }
+}
+
+@keyframes orbit-worm {
+    20% {
+        left: 0px;
+        transform: scaleX(1) scaleY(1);
+    }
+    30% {
+        transform: scaleX(5) scaleY(0.15);
+    }
+    40% {
+        left: calc((100% - var(--dot-size)));
+        transform: scaleX(1) scaleY(1);
+    }
+    60% {
+        left: calc((100% - var(--dot-size)));
+        transform: scaleX(1) scaleY(1);
+    }
+    70% {
+        transform: scaleX(5) scaleY(0.15);
+    }
+    80% {
+        left: 0px;
+        transform: scaleX(1) scaleY(1);
+    }
+}
+
+.nextra-banner {
+    background-color: var(--primary);
+}

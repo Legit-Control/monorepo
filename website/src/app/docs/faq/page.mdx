@@ -1,0 +1,31 @@
+---
+title: Legit FAQ - Git-Backed Filesystem, Versioning vs Databases, Use Cases
+description: Answers to common questions about Legit—what it is, why Git over linear history, how it helps developers, and where it fits for AI-driven apps.
+---
+import { Accordion, AccordionItem } from './accordion';
+
+# FAQ
+<br/>
+<Accordion>
+    <AccordionItem question="What is Legit?" answer="Legit is an infrastructure layer that provides a <b>filesystem interface</b> on top of <b>Git storage</b> to handle <b>versioning</b>, <b>branching</b>, and <b>syncing</b> automatically.<br/>Every file change becomes a <b>commit</b>. Every branch isolates an <b>experiment</b>. Every commit is <b>inspectable</b> and <b>reversible</b>.<br/>It’s designed for developers building AI- or agent-driven applications that read and write data automatically, where <b>provenance</b>, <b>reversibility</b>, and <b>human oversight</b> become critical." />
+    <AccordionItem question="Why not just use Postgres transactions or Google Docs-style history?" answer="Existing systems track history within a single domain. But in real-world AI workflows, data flows across multiple tools and services: HR, finance, legal, operations, etc. 
+    <br/>
+    When an accounting agent pulls an HR record, you need to know exactly which version it accessed. That requires a control layer beneath all those systems not just inside one of them." />
+    <AccordionItem question="Don’t databases already have versioning and rollback?" answer="They do, but only on a linear timeline. Once multiple processes (human or AI) act in parallel, you need branching and coordination the same primitives that make Git powerful. 
+    <br/>
+    Martin Kleppmann’s talk <a href='https://www.youtube.com/watch?v=5ZjhNTM8XU8' target='_blank' rel='noopener noreferrer'><b>(link)</b></a> on transactions explains this gap perfectly: traditional versioning handles one timeline, Git handles many." />
+    <AccordionItem question="Why not build custom version control into the app itself?" answer="You could. But it’s expensive and brittle. Teams that build their own “history” or “savepoint” logic often end up maintaining outdated, proprietary systems no one fully understands.
+    <br/>
+    Legit abstracts that complexity away, giving you version control, sync, and rollback as infrastructure, not product logic." />
+    <AccordionItem question="What does Legit actually do for developers?" answer="Legit acts as a <b>versioned storage backend</b>. Instead of manually implementing change tracking, rollback, or audit trails, your app just <b>reads and writes files</b>: <code>await legitFs.writeFile('workflow.json', newWorkflow);</code> Every change becomes a <b>commit</b> with <b>metadata</b>, <b>history</b>, and <b>diff</b> — automatically. Apps like n8n or Notion-style editors could plug in Legit to handle <b>autosave</b>, <b>rollback</b>, and <b>branching</b> without reinventing it themselves." />
+    <AccordionItem question="Who are the users?" answer="Developers building AI-integrated, write-enabled applications: 
+    <br/><br/>
+    <ul>
+        <li>- Platforms like n8n, Replit, or Notion.</li>
+        <li>- Internal tools where agents read and modify data.</li>
+        <li>- Enterprise or regulated environments where auditability and control are required.</li>
+    </ul>
+    <br/>
+    Legit makes it easy to build apps where humans and AI co-edit safely." />
+    <AccordionItem question="Why now?" answer="Versioning and collaboration have always been problems — but they were tolerable when humans coordinated manually.<br/><b>Agents changed that.</b> They write faster, in parallel, and without the same context or trust.<br/>Once AI starts modifying data at scale, linear history breaks down, and a <b>Git-style control layer</b> becomes essential — just as it did in software 15 years ago." />
+</Accordion>

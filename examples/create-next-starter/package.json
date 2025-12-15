@@ -1,0 +1,66 @@
+{
+  "name": "@legit-sdk/create-next-starter",
+  "version": "0.1.4",
+  "description": "A starter template for Next.js with Legit SDK integration for local-first document editing and version control",
+  "type": "module",
+  "bin": {
+    "create-next-starter": "bin/cli.js"
+  },
+  "files": [
+    "app",
+    "public",
+    "bin",
+    "*.ts",
+    "*.tsx",
+    "*.js",
+    "*.mjs",
+    "*.json",
+    "*.css",
+    "README.md",
+    ".gitignore"
+  ],
+  "keywords": [
+    "nextjs",
+    "next",
+    "starter",
+    "template",
+    "legit-sdk",
+    "local-first",
+    "version-control"
+  ],
+  "author": "Legit Control",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/legitcontrol/monorepo.git",
+    "directory": "examples/create-next-starter"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@legit-sdk/react": "^0.2.15",
+    "diff-match-patch-ts": "^0.6.0",
+    "next": "16.0.7",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "sonner": "^2.0.7",
+    "timeago.js": "^4.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

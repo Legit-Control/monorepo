@@ -1,5 +1,48 @@
 # @legit-sdk/react
 
+## 0.2.15
+
+### Patch Changes
+
+- Resolved big parts of complexity by reducing the export to one bundle that is pure client side.
+
+## 0.2.14
+
+### Patch Changes
+
+- test
+
+## 0.2.13
+
+### Patch Changes
+
+- Make core external
+
+## 0.2.12
+
+### Patch Changes
+
+- lazy load core sdk in react package
+
+## 0.2.11
+
+### Patch Changes
+
+- try reducing complexity
+
+## 0.2.10
+
+### Patch Changes
+
+- Test build output
+
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [7e9e64f]
+  - @legit-sdk/core@0.2.4
+
 ## 0.2.8
 
 ### Patch Changes
