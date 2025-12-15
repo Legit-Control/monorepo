@@ -513,19 +513,60 @@ describe('openLegitFs', () => {
     expect(afterCommits2).toBe(initialCommits);
   });
 
-  it('should list files in .legit folder and verify branches folder exists', async () => {
+  it('should list files in .legit folder and verify branches and commits folder exists', async () => {
     const legitFolder = await legitfs.promises.readdir(`${repoPath}/.legit`);
     expect(legitFolder).toContain('branches');
+    expect(legitFolder).toContain('commits');
 
     const branchesFolderStats = await legitfs.promises.stat(
       `${repoPath}/.legit/branches`
     );
     expect(branchesFolderStats.isDirectory()).toBe(true);
 
+    const commitsFolderStats = await legitfs.promises.stat(
+      `${repoPath}/.legit/commits`
+    );
+    expect(commitsFolderStats.isDirectory()).toBe(true);
+
     const branchesFolder = await legitfs.promises.readdir(
       `${repoPath}/.legit/branches`
     );
     expect(branchesFolder).toContain('main');
+  });
+
+  it('should allow to create a new branch by calling mkdir with .legit/branches/${branchname}', async () => {
+    const newBranchPath = `${repoPath}/.legit/branches/feature-branch`;
+
+    // Verify branch doesn't exist yet
+    const branchesBefore = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches`
+    );
+    expect(branchesBefore).not.toContain('feature-branch');
+
+    // Create new branch
+    await legitfs.promises.mkdir(newBranchPath);
+
+    // Create new branch
+    await expect(
+      legitfs.promises.mkdir(newBranchPath),
+      'creating a branch that already exists should throw'
+    ).rejects.toThrow();
+
+    // Verify branch exists
+    const branchesAfter = await legitfs.promises.readdir(
+      `${repoPath}/.legit/branches`
+    );
+    expect(branchesAfter).toContain('feature-branch');
+
+    // Verify it's a directory
+    const stats = await legitfs.promises.stat(newBranchPath);
+    expect(stats.isDirectory()).toBe(true);
+
+    // Verify we can write files to the new branch
+    const testFilePath = `${newBranchPath}/test.txt`;
+    await legitfs.promises.writeFile(testFilePath, 'content in new branch');
+    const content = await legitfs.promises.readFile(testFilePath, 'utf-8');
+    expect(content).toBe('content in new branch');
   });
 
   it('should list branches with withFileTypes and verify they are directories', async () => {

@@ -198,7 +198,6 @@ export async function openLegitFs({
 
   const userSpaceFs = new CompositeFs({
     name: 'git',
-    parentFs: undefined,
     storageFs: storageFs,
     gitRoot: gitRoot,
     defaultBranch: anonymousBranch,

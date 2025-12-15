@@ -30,8 +30,6 @@ function getGitCacheFromFs(fs: any): any {
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
 
-
-
 /**
  * # How to present an empyt folder in git
  *
@@ -699,8 +697,17 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       // throw new Error('branchName should be in pathParams');
     }
 
+    let branchCommit = await tryResolveRef(
+      args.nodeFs,
+      args.gitRoot,
+      args.pathParams.branchName
+    );
+
     if (args.pathParams.filePath === undefined) {
-      throw new Error('filePath should be in pathParams');
+      args.pathParams.filePath = '/';
+      if (branchCommit !== undefined) {
+        throw new Error('Folder exists');
+      }
     }
 
     try {
@@ -717,12 +724,6 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
     if (args.pathParams && typeof args.pathParams.filePath === 'string') {
       args.pathParams.filePath = args.pathParams.filePath.replace(/\/+$/, '');
     }
-
-    let branchCommit = await tryResolveRef(
-      args.nodeFs,
-      args.gitRoot,
-      args.pathParams.branchName
-    );
 
     if (!branchCommit) {
       // Get the current branch/HEAD to use as base for new branch
