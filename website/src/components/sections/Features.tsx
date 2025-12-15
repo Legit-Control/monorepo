@@ -11,9 +11,9 @@ import SmallGrid from '../SmallGrid';
 const data = {
   title: (
     <>
-      <span className="text-primary">Version Control </span>infrastructure for
-      <br />
-      AI-native applications
+    Infrastructure for
+    
+     <span className="text-primary"> AI-native applications</span>
     </>
   ),
   description: (
