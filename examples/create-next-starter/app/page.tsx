@@ -4,7 +4,6 @@ import { useLegitFile, useLegitContext } from '@legit-sdk/react';
 import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useEffect, useState, useCallback, memo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Toaster, toast } from 'sonner';
