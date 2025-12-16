@@ -58,6 +58,7 @@ const DemoComponent = () => {
   const [mainHistory, setMainHistory] = useState<HistoryItem[]>([]);
   const [agentHistory, setAgentHistory] = useState<HistoryItem[]>([]);
   const [currentBranch, setCurrentBranch] = useState<string>('anonymous');
+  const [outstandingChanges, setOutstandingChanges] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,9 +68,7 @@ const DemoComponent = () => {
       if (!legitFs || typeof legitFs.getCurrentBranch !== 'function') return;
       try {
         const branch = await legitFs.getCurrentBranch();
-        console.log('branch', branch);
         if (isMounted && branch && branch !== currentBranch) {
-          console.log('setting current branch', branch);
           setCurrentBranch(branch);
         }
       } catch {
@@ -89,6 +88,20 @@ const DemoComponent = () => {
     // Depend on legitFs only, not currentBranch (or else poll will run only once if that changes)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [legitFs, currentBranch]);
+
+  useEffect(() => {
+    if (
+      content !== data &&
+      !loading &&
+      content.length > 0 &&
+      data &&
+      data.length > 0
+    ) {
+      setOutstandingChanges(true);
+    } else {
+      setOutstandingChanges(false);
+    }
+  }, [content, data, loading, content.length, data?.length]);
 
   useEffect(() => {
     const loadMainHistory = async () => {
@@ -183,6 +196,21 @@ const DemoComponent = () => {
     );
   };
 
+  const getmappedHistoryMessages = (
+    history: HistoryItem[],
+    mapping: { position: number; message: string }[]
+  ) => {
+    return history.map((commit, index) => {
+      const reversedIndex = history.length - 1 - index;
+      const mappingItem: { position: number; message: string } | undefined =
+        mapping.find(m => m.position === reversedIndex);
+      return {
+        ...commit,
+        message: mappingItem?.message || commit.message,
+      };
+    });
+  };
+
   return (
     <div className="grid grid-cols-20">
       <div className="group col-span-13 border border-zinc-400 focus-within:border-black shadow-[8px_8px_0_0_rgba(135,135,135,0.5)]">
@@ -218,10 +246,11 @@ const DemoComponent = () => {
               </div>
             )}
             <button
-              className="flex items-center gap-2 bg-white px-2 py-1 cursor-pointer hover:bg-zinc-100 transition-all duration-100"
+              className={`flex items-center gap-2 bg-white px-2 py-1 transition-all duration-100 ${outstandingChanges ? 'bg-primary! hover:bg-primary/80! text-white! cursor-pointer' : ''}`}
               onClick={handleSave}
+              disabled={!outstandingChanges}
             >
-              Save
+              {outstandingChanges ? 'Save' : 'Saved'}
             </button>
 
             <div className="w-px h-6 bg-zinc-200" />
@@ -254,14 +283,22 @@ const DemoComponent = () => {
           <AsciiHistoryGraph
             branches={[
               {
-                entries: mainHistory,
+                entries: getmappedHistoryMessages(mainHistory, [
+                  { position: 1, message: 'Notes Machine Learning' },
+                ]),
                 className: 'text-zinc-500 border-zinc-500',
               },
               {
-                entries:
+                entries: getmappedHistoryMessages(
                   agentHistory && agentHistory.length > 2
                     ? agentHistory.slice(0, -2)
                     : [],
+                  [
+                    { position: 0, message: '🤖 Add paragraphs' },
+                    { position: 1, message: '🤖 Improve voice' },
+                    { position: 2, message: '🤖 Add summary' },
+                  ]
+                ),
                 className: 'text-primary border-primary',
               },
             ]}

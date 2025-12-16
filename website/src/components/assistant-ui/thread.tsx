@@ -13,11 +13,13 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from '@assistant-ui/react';
+import { SparklesIcon } from '@heroicons/react/24/outline';
 import {
   ArrowDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   PencilIcon,
+  SparkleIcon,
 } from 'lucide-react';
 import type { FC } from 'react';
 
@@ -69,8 +71,13 @@ const ThreadScrollToBottom: FC = () => {
 
 const ThreadWelcome: FC = () => {
   return (
-    <div className="aui-thread-welcome-root mx-auto my-auto flex max-w-(--thread-max-width) grow flex-col font-mono text-sm text-zinc-400 text-center py-2">
-      Run sandbox session
+    <div className="aui-thread-welcome-root h-full w-full flex flex-col items-center justify-center">
+      <p className="text-zinc-500 text-sm font-mono pt-3">
+        Run sandbox session
+      </p>
+      <div className="flex-1 flex items-center justify-center">
+        <SparklesIcon className="w-10 h-10 text-zinc-300" />
+      </div>
     </div>
   );
 };

@@ -43,8 +43,12 @@ const BlogControls: FC = () => {
       const newBranchPath = `/.legit/branches/agent-branch`;
       await legitFs.promises.mkdir(newBranchPath);
     } catch (error) {
-      console.error('Error creating agent branch', error);
-      throw error;
+      if (error instanceof Error && error.message.includes('Folder exists')) {
+        await legitFs.setCurrentBranch('agent-branch');
+      } else {
+        console.error('Error creating agent branch', error);
+        throw error;
+      }
     }
   };
 
@@ -56,6 +60,39 @@ const BlogControls: FC = () => {
       content: [{ type: 'text', text }],
       startRun: true,
     });
+  };
+
+  const reset = async () => {
+    if (!legitFs) return;
+    try {
+      const mainHistory = JSON.parse(
+        await legitFs.promises.readFile(
+          `/.legit/branches/anonymous/.legit/history`,
+          'utf8'
+        )
+      );
+      const agentHistory = JSON.parse(
+        await legitFs.promises.readFile(
+          `/.legit/branches/agent-branch/.legit/history`,
+          'utf8'
+        )
+      );
+      await legitFs.promises.writeFile(
+        `/.legit/branches/anonymous/.legit/head`,
+        mainHistory[mainHistory.length - 2].oid,
+        'utf8'
+      );
+      await legitFs.promises.writeFile(
+        `/.legit/branches/agent-branch/.legit/head`,
+        agentHistory[agentHistory.length - 1].oid,
+        'utf8'
+      );
+      await legitFs.setCurrentBranch('anonymous');
+      api.thread().reset();
+    } catch (error) {
+      console.error('Error resetting agent branch', error);
+      throw error;
+    }
   };
 
   // Hide controls while a response is streaming
@@ -78,17 +115,17 @@ const BlogControls: FC = () => {
             className="flex-1 rounded-none cursor-pointer"
             size="default"
             variant="secondary"
-            disabled={true}
+            onClick={() => reset()}
           >
-            Continue
+            Reset
           </Button>
-          <Button
+          {/* <Button
             className="flex-1 rounded-none cursor-pointer"
             size="default"
             onClick={() => console.log('apply')}
           >
             Apply
-          </Button>
+          </Button> */}
         </div>
       )}
     </div>
