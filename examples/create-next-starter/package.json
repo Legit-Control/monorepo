@@ -42,7 +42,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@legit-sdk/react": "^0.2.15",
+    "@legit-sdk/react": "workspace:*",
     "diff-match-patch-ts": "^0.6.0",
     "next": "16.0.7",
     "react": "19.2.0",
