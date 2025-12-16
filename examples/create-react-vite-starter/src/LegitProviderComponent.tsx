@@ -4,10 +4,10 @@ import { LegitProvider } from '@legit-sdk/react';
 
 const config: LegitConfig = {
   gitRoot: '/',
-  // Vite only exposes env vars prefixed with VITE_.
-  // Create a local `.env` file by copying `env.example` (do not commit secrets).
   serverUrl: import.meta.env.LEGIT_SERVER_URL,
   publicKey: import.meta.env.LEGIT_PUBLIC_KEY,
+  // Create a local `.env` file by copying `env.example` (do not commit secrets).
+
 };
 
 export default function LegitProviderComponent({
