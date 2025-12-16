@@ -72,9 +72,7 @@ const ThreadScrollToBottom: FC = () => {
 const ThreadWelcome: FC = () => {
   return (
     <div className="aui-thread-welcome-root h-full w-full flex flex-col items-center justify-center">
-      <p className="text-zinc-500 text-sm font-mono pt-3">
-        Run sandbox session
-      </p>
+      <p className="text-zinc-500 text-sm font-mono pt-3">AI Assistant</p>
       <div className="flex-1 flex items-center justify-center">
         <SparklesIcon className="w-10 h-10 text-zinc-300" />
       </div>

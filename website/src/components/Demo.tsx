@@ -212,7 +212,7 @@ const DemoComponent = () => {
   };
 
   return (
-    <div className="grid grid-cols-20">
+    <div className="grid grid-cols-1 lg:grid-cols-20">
       <div className="group col-span-13 border border-zinc-400 focus-within:border-black shadow-[8px_8px_0_0_rgba(135,135,135,0.5)]">
         <div className="h-[34px] flex items-center px-4 bg-zinc-100">
           <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ const DemoComponent = () => {
             Text Editor
           </div>
         </div>
-        <div className="w-full h-[56px] flex items-center justify-between px-2 gap-2">
+        <div className="w-full h-[56px] flex items-center justify-between px-2 gap-2 overflow-x-scroll">
           <div className="flex items-center gap-2">
             {agentHistory.length > 2 && (
               <div className="flex items-center bg-zinc-100 p-1 rounded-full">
@@ -232,7 +232,7 @@ const DemoComponent = () => {
                   return (
                     <button
                       key={branch.internal}
-                      className={`rounded-full px-4 py-1 cursor-pointer hover:bg-white/50 transition-all duration-100 
+                      className={`rounded-full px-4 py-1 cursor-pointer hover:bg-white/50 transition-all duration-100 w-max
                     ${currentBranch === branch.internal && 'bg-black! text-white'}
                   `}
                       onClick={() => {
@@ -262,20 +262,20 @@ const DemoComponent = () => {
             </div>
           </div>
         </div>
-        <div className="flex h-[360px]">
-          <div className="-mb-1 flex-1 h-full">
+        <div className="flex flex-col lg:flex-row h-[500px] lg:h-[360px] pl-0 lg:pl-4">
+          <div className="-mb-1 flex-1 h-full hover:bg-zinc-50 transition-all duration-100">
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              className="w-full h-full pl-8 pr-4 py-6 text-zinc-800 text-[16px] resize-none outline-none"
+              className="w-full h-full pl-4 lg:pl-8 pr-4 py-6 text-zinc-800 text-[16px] resize-none outline-none"
             />
           </div>
-          <div className="w-[300px] h-full p-4 pt-0">
+          <div className="w-full lg:w-[300px] flex-1 max-h-[250px] lg:max-h-none lg:h-full px-4 pb-4 pt-4 lg:pt-0">
             <DemoChat />
           </div>
         </div>
       </div>
-      <div className="col-span-7 border border-zinc-400 border-l-0 my-auto h-[400px] overflow-y-scroll">
+      <div className="col-span-7 border border-zinc-400 lg:border-l-0 my-auto lg:h-[400px] lg:overflow-y-scroll pt-4 lg:pt-0 mx-4 lg:mx-0">
         <div className="h-[34px] flex items-center px-4 font-mono text-zinc-600 text-sm">
           Legit state
         </div>
