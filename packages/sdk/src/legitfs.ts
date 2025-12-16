@@ -71,7 +71,7 @@ export async function openLegitFs({
     name: 'Local User',
     email: 'local@legitcontrol.com',
   },
-  serverUrl = 'https://sync.legitcontrol.com',
+  serverUrl = 'https://hub.legitcontrol.com',
   publicKey,
   claudeHandler,
 }: {

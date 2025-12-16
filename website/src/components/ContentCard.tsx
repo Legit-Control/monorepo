@@ -23,12 +23,12 @@ export function ContentCard({
   
   const cardContent = (
     <>
-      <div className="relative h-48 w-full overflow-hidden rounded-t-2xl">
+      <div className="relative h-48 w-full overflow-hidden rounded-t-2xl bg-zinc-50">
         <Image
           src={image}
           alt={title}
           fill
-          className="object-cover p-1"
+          className="object-contain p-3"
           sizes="(min-width: 768px) 33vw, 100vw"
         />
       </div>

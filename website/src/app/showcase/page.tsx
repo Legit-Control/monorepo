@@ -31,6 +31,15 @@ const showcasePage = () => {
       author: 'Legit Team',
     },
     {
+      href: 'https://legit-react-example-sync-phcl.vercel.app/',
+      title: 'Legit React Sync example',
+      description:
+        'Example of Legit React with sync functionality.',
+      image: '/showcase/LegitReactSync.png',
+      date: 'Nov. 2025',
+      author: 'Legit Team',
+    },
+    {
       href: 'https://replit.com/@jannes-blobel/Legit-x-Plate-Template',
       title: 'Replit x Legit x Plate Template',
       description:
@@ -38,6 +47,15 @@ const showcasePage = () => {
       image: '/showcase/LegitPlateReplit.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
+    },
+    {
+      href: 'https://github.com/Legit-Control/webMCP-exploration',
+      title: 'Legit x WebMCP exploration',
+      description:
+        'Example of Legit with WebMCP integration.',
+      image: '/showcase/LegitxWebMCP.png',
+      date: 'Nov. 2025',
+      author: 'Legit Team + Alex Nahas',
     },
     {
       href: 'https://discord.gg/34K4t5K9Ra',
