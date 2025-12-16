@@ -12,6 +12,7 @@ import AsciiHistoryGraph, { HistoryItem } from './AsciiHistoryGraph';
 import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import DemoChat from './DemoChat';
+import Font from './Font';
 
 const INITIAL_TEXT = `# Blog post (notes)
 
@@ -212,101 +213,109 @@ const DemoComponent = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-20">
-      <div className="group col-span-13 border border-zinc-400 focus-within:border-black shadow-[8px_8px_0_0_rgba(135,135,135,0.5)]">
-        <div className="h-[34px] flex items-center px-4 bg-zinc-100">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 bg-primary" />
-            <div className="w-2.5 h-2.5 bg-zinc-200" />
-            <div className="w-2.5 h-2.5 bg-zinc-200" />
+    <div>
+      <div className="grid grid-cols-1 lg:grid-cols-20">
+        <div className="group col-span-13 border border-zinc-400 focus-within:border-black shadow-[8px_8px_0_0_rgba(135,135,135,0.5)]">
+          <div className="h-[34px] flex items-center px-4 bg-zinc-100">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-primary" />
+              <div className="w-2.5 h-2.5 bg-zinc-200" />
+              <div className="w-2.5 h-2.5 bg-zinc-200" />
+            </div>
+            <div className="flex items-center gap-2 flex-1 px-4 font-mono text-zinc-500 text-sm ml-1">
+              Text Editor
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-1 px-4 font-mono text-zinc-500 text-sm ml-1">
-            Text Editor
-          </div>
-        </div>
-        <div className="w-full h-[56px] flex items-center justify-between px-2 gap-2 overflow-x-scroll">
-          <div className="flex items-center gap-2">
-            {agentHistory.length > 2 && (
-              <div className="flex items-center bg-zinc-100 p-1 rounded-full">
-                {branches.map(branch => {
-                  return (
-                    <button
-                      key={branch.internal}
-                      className={`rounded-full px-4 py-1 cursor-pointer hover:bg-white/50 transition-all duration-100 w-max
+          <div className="w-full h-[56px] flex items-center justify-between px-2 gap-2 overflow-x-scroll">
+            <div className="flex items-center gap-2">
+              {agentHistory.length > 2 && (
+                <div className="flex items-center bg-zinc-100 p-1 rounded-full">
+                  {branches.map(branch => {
+                    return (
+                      <button
+                        key={branch.internal}
+                        className={`rounded-full px-4 py-1 cursor-pointer hover:bg-white/50 transition-all duration-100 w-max
                     ${currentBranch === branch.internal && 'bg-black! text-white'}
                   `}
-                      onClick={() => {
-                        legitFs?.setCurrentBranch(branch.internal);
-                      }}
-                    >
-                      {branch.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <button
-              className={`flex items-center gap-2 bg-white px-2 py-1 transition-all duration-100 ${outstandingChanges ? 'bg-primary! hover:bg-primary/80! text-white! cursor-pointer' : ''}`}
-              onClick={handleSave}
-              disabled={!outstandingChanges}
-            >
-              {outstandingChanges ? 'Save' : 'Saved'}
-            </button>
+                        onClick={() => {
+                          legitFs?.setCurrentBranch(branch.internal);
+                        }}
+                      >
+                        {branch.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <button
+                className={`flex items-center gap-2 bg-white px-2 py-1 transition-all duration-100 ${outstandingChanges ? 'bg-primary! hover:bg-primary/80! text-white! cursor-pointer' : ''}`}
+                onClick={handleSave}
+                disabled={!outstandingChanges}
+              >
+                {outstandingChanges ? 'Save' : 'Saved'}
+              </button>
 
-            <div className="w-px h-6 bg-zinc-200" />
-            <div className="flex items-center gap-4 text-zinc-400">
-              <BoldIcon className="w-4 h-4" />
-              <ItalicIcon className="w-4 h-4" />
-              <UnderlineIcon className="w-4 h-4" />
-              <StrikethroughIcon className="w-4 h-4" />
+              <div className="w-px h-6 bg-zinc-200" />
+              <div className="flex items-center gap-4 text-zinc-400">
+                <BoldIcon className="w-4 h-4" />
+                <ItalicIcon className="w-4 h-4" />
+                <UnderlineIcon className="w-4 h-4" />
+                <StrikethroughIcon className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col lg:flex-row h-[500px] lg:h-[360px] pl-0 lg:pl-4">
+            <div className="-mb-1 flex-1 h-full hover:bg-zinc-50 transition-all duration-100">
+              <textarea
+                value={content}
+                onChange={e => setContent(e.target.value)}
+                className="w-full h-full pl-4 lg:pl-8 pr-4 py-6 text-zinc-800 text-[16px] resize-none outline-none"
+              />
+            </div>
+            <div className="w-full lg:w-[300px] flex-1 max-h-[250px] lg:max-h-none lg:h-full px-4 pb-4 pt-4 lg:pt-0">
+              <DemoChat />
             </div>
           </div>
         </div>
-        <div className="flex flex-col lg:flex-row h-[500px] lg:h-[360px] pl-0 lg:pl-4">
-          <div className="-mb-1 flex-1 h-full hover:bg-zinc-50 transition-all duration-100">
-            <textarea
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              className="w-full h-full pl-4 lg:pl-8 pr-4 py-6 text-zinc-800 text-[16px] resize-none outline-none"
+        <div className="col-span-7 border border-zinc-400 lg:border-l-0 my-auto lg:h-[400px] lg:overflow-y-scroll pt-4 lg:pt-0 mx-4 lg:mx-0">
+          <div className="h-[34px] flex items-center px-4 font-mono text-zinc-600 text-sm">
+            Legit state
+          </div>
+          <div className="px-4 py-2">
+            <AsciiHistoryGraph
+              branches={[
+                {
+                  entries: getmappedHistoryMessages(mainHistory, [
+                    { position: 1, message: 'Notes Machine Learning' },
+                  ]),
+                  className: 'text-zinc-500 border-zinc-500',
+                },
+                {
+                  entries: getmappedHistoryMessages(
+                    agentHistory && agentHistory.length > 2
+                      ? agentHistory.slice(0, -2)
+                      : [],
+                    [
+                      { position: 0, message: '🤖 Add paragraphs' },
+                      { position: 1, message: '🤖 Improve voice' },
+                      { position: 2, message: '🤖 Add summary' },
+                    ]
+                  ),
+                  className: 'text-primary border-primary',
+                },
+              ]}
+              onCommitClick={getDiff}
+              collapsibleContent={loadedCommit}
             />
           </div>
-          <div className="w-full lg:w-[300px] flex-1 max-h-[250px] lg:max-h-none lg:h-full px-4 pb-4 pt-4 lg:pt-0">
-            <DemoChat />
-          </div>
         </div>
       </div>
-      <div className="col-span-7 border border-zinc-400 lg:border-l-0 my-auto lg:h-[400px] lg:overflow-y-scroll pt-4 lg:pt-0 mx-4 lg:mx-0">
-        <div className="h-[34px] flex items-center px-4 font-mono text-zinc-600 text-sm">
-          Legit state
-        </div>
-        <div className="px-4 py-2">
-          <AsciiHistoryGraph
-            branches={[
-              {
-                entries: getmappedHistoryMessages(mainHistory, [
-                  { position: 1, message: 'Notes Machine Learning' },
-                ]),
-                className: 'text-zinc-500 border-zinc-500',
-              },
-              {
-                entries: getmappedHistoryMessages(
-                  agentHistory && agentHistory.length > 2
-                    ? agentHistory.slice(0, -2)
-                    : [],
-                  [
-                    { position: 0, message: '🤖 Add paragraphs' },
-                    { position: 1, message: '🤖 Improve voice' },
-                    { position: 2, message: '🤖 Add summary' },
-                  ]
-                ),
-                className: 'text-primary border-primary',
-              },
-            ]}
-            onCommitClick={getDiff}
-            collapsibleContent={loadedCommit}
-          />
-        </div>
-      </div>
+      <Font
+        type="p"
+        className="text-center text-zinc-500 w-full col-span-20 pt-6"
+      >
+        This is an AI-powered editor. Legit runs underneath.
+      </Font>
     </div>
   );
 };
