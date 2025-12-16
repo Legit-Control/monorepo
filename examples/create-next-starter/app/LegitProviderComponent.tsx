@@ -7,8 +7,8 @@ const serverUrl = process.env.NEXT_PUBLIC_LEGIT_SERVER_URL;
 const publicKey = process.env.NEXT_PUBLIC_LEGIT_PUBLIC_KEY;
 
 if (!serverUrl || !publicKey) {
-  throw new Error(
-    'Missing Legit env vars. Set NEXT_PUBLIC_LEGIT_SERVER_URL and NEXT_PUBLIC_LEGIT_PUBLIC_KEY.',
+  console.error(
+    'Missing Legit env vars. Set NEXT_PUBLIC_LEGIT_SERVER_URL and NEXT_PUBLIC_LEGIT_PUBLIC_KEY. Read more at https://www.legitcontrol.com/docs/sync.'
   );
 }
 
