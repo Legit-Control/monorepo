@@ -840,8 +840,8 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0(react@19.1.0)
       '@legit-sdk/react':
-        specifier: ^0.2.15
-        version: 0.2.15(react@19.1.0)
+        specifier: workspace:*
+        version: link:../packages/sdk-react
       '@radix-ui/react-avatar':
         specifier: ^1.1.10
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -13788,11 +13788,6 @@ snapshots:
       isomorphic-git: 1.34.0
       memfs: 4.51.1
       typescript: 5.9.3
-
-  '@legit-sdk/react@0.2.15(react@19.1.0)':
-    dependencies:
-      '@legit-sdk/core': 0.2.4
-      react: 19.1.0
 
   '@legit-sdk/react@0.2.15(react@19.2.0)':
     dependencies:

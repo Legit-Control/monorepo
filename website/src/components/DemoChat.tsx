@@ -40,11 +40,8 @@ const BlogControls: FC = () => {
   const createAgentBranch = async () => {
     if (!legitFs) return;
     try {
-      const agentBranchName = `agent-branch`;
-      await legitFs.promises.writeFile(
-        `/.legit/branches/${agentBranchName}`,
-        'utf-8'
-      );
+      const newBranchPath = `/.legit/branches/agent-branch`;
+      await legitFs.promises.mkdir(newBranchPath);
     } catch (error) {
       console.error('Error creating agent branch', error);
       throw error;
@@ -52,7 +49,7 @@ const BlogControls: FC = () => {
   };
 
   const sendUserMessage = async (text: string) => {
-    //await createAgentBranch();
+    await createAgentBranch();
 
     api.thread().append({
       role: 'user',
@@ -68,7 +65,7 @@ const BlogControls: FC = () => {
     <div className="px-3 py-3 flex justify-end gap-2">
       {isEmpty ? (
         <Button
-          className="w-full rounded-none cursor-pointer"
+          className="w-full rounded-none cursor-pointer text-md"
           size="default"
           onClick={() => sendUserMessage('Finish my blog post')}
         >

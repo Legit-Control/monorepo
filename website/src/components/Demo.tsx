@@ -35,25 +35,99 @@ examples:
 trained on lots of internet text  
 learn structure + relationships`;
 
+const branches = [
+  {
+    name: 'main',
+    internal: 'anonymous',
+  },
+  {
+    name: 'agent-draft',
+    internal: 'agent-branch',
+  },
+];
+
 const DemoComponent = () => {
-  const { data, setData, loading, history, getPastState } = useLegitFile(
-    '/blogpost.md',
-    {
+  const { data, setData, loading, history, getPastState, legitFs } =
+    useLegitFile('/blogpost.md', {
       initialData: INITIAL_TEXT,
-    }
-  );
+    });
   const { rollback, head } = useLegitContext();
   const [content, setContent] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
   const [loadedCommit, setLoadedCommit] = useState<ReactNode | null>(null);
+  const [mainHistory, setMainHistory] = useState<HistoryItem[]>([]);
+  const [agentHistory, setAgentHistory] = useState<HistoryItem[]>([]);
+  const [currentBranch, setCurrentBranch] = useState<string>('anonymous');
+
+  useEffect(() => {
+    let isMounted = true;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const pollCurrentBranch = async () => {
+      if (!legitFs || typeof legitFs.getCurrentBranch !== 'function') return;
+      try {
+        const branch = await legitFs.getCurrentBranch();
+        console.log('branch', branch);
+        if (isMounted && branch && branch !== currentBranch) {
+          console.log('setting current branch', branch);
+          setCurrentBranch(branch);
+        }
+      } catch {
+        // optional: setCurrentBranch('anonymous');
+      }
+    };
+
+    if (legitFs && typeof legitFs.getCurrentBranch === 'function') {
+      pollCurrentBranch(); // Initial call
+      intervalId = setInterval(pollCurrentBranch, 100); // Poll every 100 ms
+    }
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+    // Depend on legitFs only, not currentBranch (or else poll will run only once if that changes)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legitFs, currentBranch]);
+
+  useEffect(() => {
+    const loadMainHistory = async () => {
+      if (!legitFs || loading) return;
+      try {
+        const mainHistory = await legitFs.promises.readFile(
+          '/.legit/branches/anonymous/.legit/history',
+          'utf8'
+        );
+        setMainHistory(JSON.parse(mainHistory));
+      } catch {
+        setMainHistory([]);
+      }
+    };
+    void loadMainHistory();
+
+    const loadAgentHistory = async () => {
+      if (!legitFs || loading) return;
+      try {
+        const agentHistory = await legitFs.promises.readFile(
+          '/.legit/branches/agent-branch/.legit/history',
+          'utf8'
+        );
+        setAgentHistory(JSON.parse(agentHistory));
+      } catch {
+        setAgentHistory([]);
+      }
+    };
+    void loadAgentHistory();
+  }, [loading, legitFs]);
 
   const dmp = new DiffMatchPatch();
 
   useEffect(() => {
     if (!isInitialized && loading && data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContent(INITIAL_TEXT);
     }
-  }, [setData, loading, isInitialized, data, content]);
+  }, [loading, isInitialized, data]);
 
   useEffect(() => {
     const save = async () => {
@@ -63,10 +137,11 @@ const DemoComponent = () => {
     if (history.length === 0) {
       save();
     }
-  }, [content, history]);
+  }, [content, history, setData]);
 
   useEffect(() => {
     if (data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContent(data ?? '');
     }
   }, [data]);
@@ -86,7 +161,7 @@ const DemoComponent = () => {
     dmp.diff_cleanupSemantic(diff);
 
     setLoadedCommit(
-      <div className="flex flex-col gap-3 border border-zinc-200 p-2">
+      <div className="flex flex-col gap-3 border border-zinc-200 p-2 w-full overflow-x-auto max-h-[200px] overflow-y-scroll">
         <div className="flex items-center justify-between">
           <div className="text-xs">
             {format(commit.author.timestamp * 1000)}
@@ -121,20 +196,41 @@ const DemoComponent = () => {
             Text Editor
           </div>
         </div>
-        <div className="w-full h-[40px] flex items-center px-2 gap-2">
-          <button
-            className="flex items-center gap-2 bg-white px-2 py-1 cursor-pointer hover:bg-zinc-100 transition-all duration-100"
-            onClick={handleSave}
-          >
-            Save
-          </button>
+        <div className="w-full h-[56px] flex items-center justify-between px-2 gap-2">
+          <div className="flex items-center gap-2">
+            {agentHistory.length > 2 && (
+              <div className="flex items-center bg-zinc-100 p-1 rounded-full">
+                {branches.map(branch => {
+                  return (
+                    <button
+                      key={branch.internal}
+                      className={`rounded-full px-4 py-1 cursor-pointer hover:bg-white/50 transition-all duration-100 
+                    ${currentBranch === branch.internal && 'bg-black! text-white'}
+                  `}
+                      onClick={() => {
+                        legitFs?.setCurrentBranch(branch.internal);
+                      }}
+                    >
+                      {branch.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              className="flex items-center gap-2 bg-white px-2 py-1 cursor-pointer hover:bg-zinc-100 transition-all duration-100"
+              onClick={handleSave}
+            >
+              Save
+            </button>
 
-          <div className="w-px h-6 bg-zinc-200" />
-          <div className="flex items-center gap-4 text-zinc-400">
-            <BoldIcon className="w-4 h-4" />
-            <ItalicIcon className="w-4 h-4" />
-            <UnderlineIcon className="w-4 h-4" />
-            <StrikethroughIcon className="w-4 h-4" />
+            <div className="w-px h-6 bg-zinc-200" />
+            <div className="flex items-center gap-4 text-zinc-400">
+              <BoldIcon className="w-4 h-4" />
+              <ItalicIcon className="w-4 h-4" />
+              <UnderlineIcon className="w-4 h-4" />
+              <StrikethroughIcon className="w-4 h-4" />
+            </div>
           </div>
         </div>
         <div className="flex h-[360px]">
@@ -142,7 +238,7 @@ const DemoComponent = () => {
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              className="w-full h-full pl-12 pr-4 py-10 text-zinc-800 text-[16px] resize-none outline-none"
+              className="w-full h-full pl-8 pr-4 py-6 text-zinc-800 text-[16px] resize-none outline-none"
             />
           </div>
           <div className="w-[300px] h-full p-4 pt-0">
@@ -150,7 +246,7 @@ const DemoComponent = () => {
           </div>
         </div>
       </div>
-      <div className="col-span-7 border border-zinc-400 border-l-0 my-4">
+      <div className="col-span-7 border border-zinc-400 border-l-0 my-auto h-[400px] overflow-y-scroll">
         <div className="h-[34px] flex items-center px-4 font-mono text-zinc-600 text-sm">
           Legit state
         </div>
@@ -158,8 +254,15 @@ const DemoComponent = () => {
           <AsciiHistoryGraph
             branches={[
               {
-                entries: history,
-                className: 'text-primary',
+                entries: mainHistory,
+                className: 'text-zinc-500 border-zinc-500',
+              },
+              {
+                entries:
+                  agentHistory && agentHistory.length > 2
+                    ? agentHistory.slice(0, -2)
+                    : [],
+                className: 'text-primary border-primary',
               },
             ]}
             onCommitClick={getDiff}

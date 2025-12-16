@@ -1,8 +1,4 @@
-import {
-  ComposerAddAttachment,
-  ComposerAttachments,
-  UserMessageAttachments,
-} from '@/components/assistant-ui/attachment';
+import { UserMessageAttachments } from '@/components/assistant-ui/attachment';
 import { MarkdownText } from '@/components/assistant-ui/markdown-text';
 import { ToolFallback } from '@/components/assistant-ui/tool-fallback';
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button';
@@ -19,15 +15,9 @@ import {
 } from '@assistant-ui/react';
 import {
   ArrowDownIcon,
-  ArrowUpIcon,
-  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CopyIcon,
-  DownloadIcon,
   PencilIcon,
-  RefreshCwIcon,
-  SquareIcon,
 } from 'lucide-react';
 import type { FC } from 'react';
 
@@ -111,38 +101,6 @@ const AssistantMessage: FC = () => {
         <MessageError />
       </div>
     </MessagePrimitive.Root>
-  );
-};
-
-const AssistantActionBar: FC = () => {
-  return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      autohideFloat="single-branch"
-      className="aui-assistant-action-bar-root -ml-1 col-start-3 row-start-2 flex gap-1 text-muted-foreground data-floating:absolute data-floating:rounded-md data-floating:border data-floating:bg-background data-floating:p-1 data-floating:shadow-sm"
-    >
-      <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
-          <AssistantIf condition={({ message }) => message.isCopied}>
-            <CheckIcon />
-          </AssistantIf>
-          <AssistantIf condition={({ message }) => !message.isCopied}>
-            <CopyIcon />
-          </AssistantIf>
-        </TooltipIconButton>
-      </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.ExportMarkdown asChild>
-        <TooltipIconButton tooltip="Export as Markdown">
-          <DownloadIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.ExportMarkdown>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
-    </ActionBarPrimitive.Root>
   );
 };
 

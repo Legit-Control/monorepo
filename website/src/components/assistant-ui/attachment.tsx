@@ -1,61 +1,62 @@
-"use client";
+'use client';
 
-import { PropsWithChildren, useEffect, useState, type FC } from "react";
-import Image from "next/image";
-import { XIcon, PlusIcon, FileText } from "lucide-react";
+import {
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+  type FC,
+} from 'react';
+import Image from 'next/image';
+import { XIcon, PlusIcon, FileText } from 'lucide-react';
 import {
   AttachmentPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
   useAssistantState,
   useAssistantApi,
-} from "@assistant-ui/react";
-import { useShallow } from "zustand/shallow";
+} from '@assistant-ui/react';
+import { useShallow } from 'zustand/shallow';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button';
+import { cn } from '@/lib/utils';
 
 const useFileSrc = (file: File | undefined) => {
-  const [src, setSrc] = useState<string | undefined>(undefined);
+  const objectUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : undefined),
+    [file]
+  );
 
   useEffect(() => {
-    if (!file) {
-      setSrc(undefined);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    setSrc(objectUrl);
-
+    if (!objectUrl) return;
     return () => {
       URL.revokeObjectURL(objectUrl);
     };
-  }, [file]);
+  }, [objectUrl]);
 
-  return src;
+  return objectUrl;
 };
 
 const useAttachmentSrc = () => {
   const { file, src } = useAssistantState(
     useShallow(({ attachment }): { file?: File; src?: string } => {
-      if (attachment.type !== "image") return {};
+      if (attachment.type !== 'image') return {};
       if (attachment.file) return { file: attachment.file };
-      const src = attachment.content?.filter((c) => c.type === "image")[0]
-        ?.image;
+      const src = attachment.content?.filter(c => c.type === 'image')[0]?.image;
       if (!src) return {};
       return { src };
-    }),
+    })
   );
 
   return useFileSrc(file) ?? src;
@@ -75,8 +76,8 @@ const AttachmentPreview: FC<AttachmentPreviewProps> = ({ src }) => {
       height={1}
       className={
         isLoaded
-          ? "aui-attachment-preview-image-loaded block h-auto max-h-[80vh] w-auto max-w-full object-contain"
-          : "aui-attachment-preview-image-loading hidden"
+          ? 'aui-attachment-preview-image-loaded block h-auto max-h-[80vh] w-auto max-w-full object-contain'
+          : 'aui-attachment-preview-image-loading hidden'
       }
       onLoadingComplete={() => setIsLoaded(true)}
       priority={false}
@@ -111,7 +112,7 @@ const AttachmentPreviewDialog: FC<PropsWithChildren> = ({ children }) => {
 
 const AttachmentThumb: FC = () => {
   const isImage = useAssistantState(
-    ({ attachment }) => attachment.type === "image",
+    ({ attachment }) => attachment.type === 'image'
   );
   const src = useAttachmentSrc();
 
@@ -131,20 +132,20 @@ const AttachmentThumb: FC = () => {
 
 const AttachmentUI: FC = () => {
   const api = useAssistantApi();
-  const isComposer = api.attachment.source === "composer";
+  const isComposer = api.attachment.source === 'composer';
 
   const isImage = useAssistantState(
-    ({ attachment }) => attachment.type === "image",
+    ({ attachment }) => attachment.type === 'image'
   );
   const typeLabel = useAssistantState(({ attachment }) => {
     const type = attachment.type;
     switch (type) {
-      case "image":
-        return "Image";
-      case "document":
-        return "Document";
-      case "file":
-        return "File";
+      case 'image':
+        return 'Image';
+      case 'document':
+        return 'Document';
+      case 'file':
+        return 'File';
       default:
         const _exhaustiveCheck: never = type;
         throw new Error(`Unknown attachment type: ${_exhaustiveCheck}`);
@@ -155,18 +156,18 @@ const AttachmentUI: FC = () => {
     <Tooltip>
       <AttachmentPrimitive.Root
         className={cn(
-          "aui-attachment-root relative",
+          'aui-attachment-root relative',
           isImage &&
-            "aui-attachment-root-composer only:[&>#attachment-tile]:size-24",
+            'aui-attachment-root-composer only:[&>#attachment-tile]:size-24'
         )}
       >
         <AttachmentPreviewDialog>
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "aui-attachment-tile size-14 cursor-pointer overflow-hidden rounded-[14px] border bg-muted transition-opacity hover:opacity-75",
+                'aui-attachment-tile size-14 cursor-pointer overflow-hidden rounded-[14px] border bg-muted transition-opacity hover:opacity-75',
                 isComposer &&
-                  "aui-attachment-tile-composer border-foreground/20",
+                  'aui-attachment-tile-composer border-foreground/20'
               )}
               role="button"
               id="attachment-tile"
