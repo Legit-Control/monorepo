@@ -3,7 +3,7 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch, setCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
-import { getTargetBranch } from './getTargetBranch.js';
+import { getReferenceBranch } from './getReferenceBranch.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 
 export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
@@ -62,7 +62,7 @@ export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
 
     const ref = await tryResolveRef(nodeFs, gitRoot, newBranchName);
     if (!ref) {
-      const sourceBranch = await getTargetBranch(gitRoot, nodeFs);
+      const sourceBranch = await getReferenceBranch(gitRoot, nodeFs);
 
       const sourceBranchRef = await tryResolveRef(
         nodeFs,

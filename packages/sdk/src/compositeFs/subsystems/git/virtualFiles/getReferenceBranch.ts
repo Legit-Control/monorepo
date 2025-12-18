@@ -3,7 +3,7 @@ import {
   decodeBranchNameFromVfs,
   encodeBranchNameForVfs,
 } from './operations/nameEncoding.js';
-export async function getTargetBranch(
+export async function getReferenceBranch(
   gitRoot: string,
   nodeFs: any // The actual node fs for git operations
 ): Promise<string> {
@@ -11,7 +11,7 @@ export async function getTargetBranch(
     const targetBranch = await git.getConfig({
       fs: nodeFs,
       dir: gitRoot,
-      path: 'user.legit-target-branch',
+      path: 'user.legit-reference-branch',
     });
 
     if (targetBranch) {
@@ -33,7 +33,7 @@ export async function getTargetBranch(
     return 'main';
   }
 }
-export async function setTargetBranch(
+export async function setReferenceBranch(
   gitRoot: string,
   nodeFs: any,
   branchName: string
@@ -41,7 +41,7 @@ export async function setTargetBranch(
   await git.setConfig({
     fs: nodeFs,
     dir: gitRoot,
-    path: 'user.legit-target-branch',
+    path: 'user.legit-reference-branch',
     value: decodeBranchNameFromVfs(branchName),
   });
 }

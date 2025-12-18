@@ -46,15 +46,15 @@ const settingsContent = JSON.stringify(
  *  - start legit box
  *  - open the legit version of the repo folder
  *  - create a feature branch (to work on a feature / or main if you have the nuts)
- *  - set the feature branch as the target branch by writing to .legit/target-branch
- *     -> TODO implement "target-branch"
- *  - set current branch to "claude.[target-branch]" by writing to .legit/current-branch
- *     -> this will take the target branch tip to start the branch
- *        -> TODO implement the logic to branch of from target branch
+ *  - set the feature branch as the reference branch by writing to .legit/reference-branch
+ *     -> TODO implement "reference-branch"
+ *  - set current branch to "claude.[reference-branch]" by writing to .legit/current-branch
+ *     -> this will take the reference branch tip to start the branch
+ *        -> TODO implement the logic to branch of from reference branch
  *     -> this will give the agent the place to write
- *  - NOTE: for now you can have only one session per target-branch
- *  - write hash from head to .legit/apply-changes - this should update the tree in target branch with the changes from head
- *    -> and will create a new commit on the current-branch pointing to head and to the target branch commit
+ *  - NOTE: for now you can have only one session per reference-branch
+ *  - write hash from head to .legit/apply-changes - this should update the tree in reference branch with the changes from head
+ *    -> and will create a new commit on the current-branch pointing to head and to the reference branch commit
  */
 export const claudeVirtualSessionFileVirtualFile: VirtualFileDefinition = {
   type: 'claudeVirtualSessionFileVirtualFile',

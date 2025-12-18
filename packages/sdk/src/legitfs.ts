@@ -28,7 +28,7 @@ import {
   FsOperationLogger,
 } from './compositeFs/utils/fs-operation-logger.js';
 import { gitApplyCurrentChangesToVirtualFile } from './compositeFs/subsystems/git/virtualFiles/gitApplyCurrentChangesToVirtualFile.js';
-import { gitTargetBranchVirtualFile } from './compositeFs/subsystems/git/virtualFiles/gitTargetBranchVirtualFile.js';
+import { gitReferenceBranchVirtualFile } from './compositeFs/subsystems/git/virtualFiles/gitReferenceBranchVirtualFile.js';
 
 function getGitCache(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -74,6 +74,7 @@ export async function openLegitFs({
   serverUrl = 'https://sync.legitcontrol.com',
   publicKey,
   claudeHandler,
+  ephemaralGitConfig = false,
 }: {
   storageFs: typeof nodeFs;
   gitRoot: string;
@@ -83,6 +84,7 @@ export async function openLegitFs({
   serverUrl?: string;
   publicKey?: string;
   claudeHandler?: boolean;
+  ephemaralGitConfig?: boolean;
 }) {
   let repoExists = await storageFs.promises
     .readdir(gitRoot + '/.git')
@@ -167,38 +169,45 @@ export async function openLegitFs({
   // it propagates operations to the real filesystem (storageFs)
   // it allows the child copmositeFs to define file behavior while tunneling through to the real fs
   // this is used to be able to read and write within the .git folder while hiding it from the user
-  // const rootFs = new CompositeFs({
-  //   name: 'root',
-  //   // the root CompositeFs has no parent - it doesn't propagate up
-  //   parentFs: undefined,
-  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //   storageFs,
-  //   gitRoot,
-  // });
+  const gitStorageFs = new CompositeFs({
+    name: 'root',
+    // the root CompositeFs has no parent - it doesn't propagate up
 
-  // // Initialize gitCache
-  // rootFs.gitCache = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    storageFs,
+    gitRoot,
+  });
 
-  // const rootEphemeralFs = new EphemeralSubFs({
-  //   name: 'root-ephemeral',
-  //   parentFs: rootFs,
-  //   gitRoot,
-  //   ephemeralPatterns: [],
-  // });
+  // Initialize gitCache
+  gitStorageFs.gitCache = {};
 
-  // const rootHiddenFs = new HiddenFileSubFs({
-  //   name: 'root-hidden',
-  //   parentFs: rootFs,
-  //   gitRoot,
-  //   hiddenFiles: [],
-  // });
+  const rootEphemeralFs = new EphemeralSubFs({
+    name: 'root-ephemeral',
+    parentFs: gitStorageFs,
+    gitRoot,
+    ephemeralPatterns: ephemaralGitConfig ? ['**/.git/config'] : [],
+  });
 
-  // rootFs.setHiddenFilesSubFs(rootHiddenFs);
-  // rootFs.setEphemeralFilesSubFs(rootEphemeralFs);
+  const rootHiddenFs = new HiddenFileSubFs({
+    name: 'root-hidden',
+    parentFs: gitStorageFs,
+    gitRoot,
+    hiddenFiles: [],
+  });
+
+  gitStorageFs.setHiddenFilesSubFs(rootHiddenFs);
+  gitStorageFs.setEphemeralFilesSubFs(rootEphemeralFs);
+
+  if (ephemaralGitConfig) {
+    const config = await storageFs.promises.readFile(gitRoot + '/.git/config', {
+      encoding: 'utf-8',
+    });
+    await gitStorageFs.writeFile(gitRoot + '/.git/config', config, 'utf-8');
+  }
 
   const userSpaceFs = new CompositeFs({
     name: 'git',
-    storageFs: storageFs,
+    storageFs: gitStorageFs as any,
     gitRoot: gitRoot,
     defaultBranch: anonymousBranch,
   });
@@ -213,8 +222,8 @@ export async function openLegitFs({
       operationHistory: gitBranchOperationsVirtualFile,
       history: gitBranchHistory,
       currentBranch: gitCurrentBranchVirtualFile,
-      'target-branch': gitTargetBranchVirtualFile,
-      'apply-changes': gitApplyCurrentChangesToVirtualFile,
+      'reference-branch': gitReferenceBranchVirtualFile,
+      'apply-changes': gitApplyCurrentChangesToVirtualFile,tar
       branches: {
         '.': gitBranchesListVirtualFile,
         '[branchName]': {
@@ -266,7 +275,7 @@ export async function openLegitFs({
     name: 'git-subfs',
     parentFs: userSpaceFs,
     gitRoot: gitRoot,
-    gitStorageFs: storageFs,
+    gitStorageFs: gitStorageFs,
     routerConfig,
   });
 
@@ -278,31 +287,33 @@ export async function openLegitFs({
     hiddenFiles,
   });
 
+  const ephemeralPatterns: string[] = [
+    '**/._*',
+    '**/.DS_Store',
+    '**/.AppleDouble/',
+    '**/.AppleDB',
+    '**/.AppleDesktop',
+    '**/.Spotlight-V100',
+    '**/.TemporaryItems',
+    '**/.Trashes',
+    '**/.fseventsd',
+    '**/.VolumeIcon.icns',
+    '**/.ql_disablethumbnails',
+    // libre office creates a lock file
+    '**/.~lock.*',
+    // libre office creates a temp file
+    '**/lu[0-9a-zA-Z]*.tmp',
+    // legit uses a tmp file as well
+    '**/.metaentries.json.tmp',
+    '**/**.tmp.**',
+    '**/**.sb-**',
+  ];
+
   const gitFsEphemeralFs = new EphemeralSubFs({
     name: 'git-ephemeral-subfs',
     parentFs: userSpaceFs,
     gitRoot,
-    ephemeralPatterns: [
-      '**/._*',
-      '**/.DS_Store',
-      '**/.AppleDouble/',
-      '**/.AppleDB',
-      '**/.AppleDesktop',
-      '**/.Spotlight-V100',
-      '**/.TemporaryItems',
-      '**/.Trashes',
-      '**/.fseventsd',
-      '**/.VolumeIcon.icns',
-      '**/.ql_disablethumbnails',
-      // libre office creates a lock file
-      '**/.~lock.*',
-      // libre office creates a temp file
-      '**/lu[0-9a-zA-Z]*.tmp',
-      // legit uses a tmp file as well
-      '**/.metaentries.json.tmp',
-      '**/**.tmp.**',
-      '**/**.sb-**',
-    ],
+    ephemeralPatterns,
   });
 
   // Add legitFs to compositFs
@@ -310,7 +321,10 @@ export async function openLegitFs({
   userSpaceFs.setHiddenFilesSubFs(gitFsHiddenFs);
   userSpaceFs.setEphemeralFilesSubFs(gitFsEphemeralFs);
 
-  const tokenStore = createGitConfigTokenStore({ storageFs, gitRoot });
+  const tokenStore = createGitConfigTokenStore({
+    storageFs: gitStorageFs as any,
+    gitRoot,
+  });
   const sessionManager = createSessionManager(tokenStore, publicKey);
 
   let syncService = createLegitSyncService({
@@ -328,6 +342,7 @@ export async function openLegitFs({
   const legitfs = Object.assign(userSpaceFs, {
     auth: sessionManager,
     sync: syncService,
+    _storageFs: gitStorageFs,
 
     setLogger(logger: FsOperationLogger | undefined) {
       userSpaceFs.setLoggger(logger);

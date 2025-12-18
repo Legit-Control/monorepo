@@ -694,7 +694,7 @@ export const createAsyncNfsHandler = (args: {
           const entryPath = path.join(dirPath, name);
           try {
             const entryStats = await asyncFs.stat(entryPath);
-            console.log(entryStats);
+
             const entryHandle = fileHandleManager.getFileHandle(
               handle,
               entryPath,

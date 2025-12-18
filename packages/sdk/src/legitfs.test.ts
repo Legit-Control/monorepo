@@ -60,6 +60,7 @@ describe('openLegitFs', () => {
       gitRoot: repoPath,
       anonymousBranch: 'main',
       showKeepFiles: true,
+      ephemaralGitConfig: true,
     });
   });
 
@@ -108,6 +109,49 @@ describe('openLegitFs', () => {
     await legitfs.promises.writeFile(newFilePath, 'Content after');
     const contentAfter = await legitfs.promises.readFile(newFilePath, 'utf-8');
     expect(contentAfter).toBe('Content after');
+  });
+
+  it('should have indepndent users if ephemeral git config is enabled', async () => {
+    const currentBranchPath = `${repoPath}/.legit/currentBranch`;
+    const currentBranchPath2 = `${repoPath}/.legit/currentBranch`;
+
+    const config = await secondLegitfs._storageFs.promises.readFile(
+      `${repoPath}/.git/config`,
+      'utf-8'
+    );
+
+    // Write to first legitfs instance
+    await legitfs.promises.writeFile(currentBranchPath, 'branch-from-first');
+    const firstRead = await legitfs.promises.readFile(
+      currentBranchPath,
+      'utf-8'
+    );
+    expect(firstRead).toBe('branch-from-first');
+
+    // Write to second legitfs instance
+    await secondLegitfs.promises.writeFile(
+      currentBranchPath2,
+      'branch-from-second'
+    );
+    const secondRead = await secondLegitfs.promises.readFile(
+      currentBranchPath2,
+      'utf-8'
+    );
+    expect(secondRead).toBe('branch-from-second');
+
+    // Verify they don't interfere - first instance should still see its own value
+    const firstReadAgain = await legitfs.promises.readFile(
+      currentBranchPath,
+      'utf-8'
+    );
+    expect(firstReadAgain).toBe('branch-from-first');
+
+    // Verify second instance still sees its own value
+    const secondReadAgain = await secondLegitfs.promises.readFile(
+      currentBranchPath2,
+      'utf-8'
+    );
+    expect(secondReadAgain).toBe('branch-from-second');
   });
 
   it('should add and remove keep file when adding/removing files and folders', async () => {
@@ -595,7 +639,7 @@ describe('openLegitFs', () => {
   it('should create operation commits with correct parentage and messages', async () => {
     const textFilePath = `${repoPath}/.legit/branches/main/text.txt`;
     const operationFilePath = `${repoPath}/.legit/branches/main/.legit/operation`;
-    const operationBranch = `refs/heads/${'legit/__main-operation'}`;
+    const operationBranch = `refs/heads/${'main-operation'}`;
 
     // 1. Create text.txt in main branch
     await legitfs.promises.writeFile(textFilePath, 'hello world');
@@ -614,7 +658,7 @@ describe('openLegitFs', () => {
 
     const branches = await isogit.listBranches({ fs: memfs, dir: repoPath });
     expect(branches).toContain('main');
-    expect(branches.some(b => b.endsWith('_main-operation'))).toBe(true);
+    expect(branches.some(b => b.endsWith('main-operation'))).toBe(true);
 
     // Get the first operation commit
     const opCommits1 = await isogit.log({
@@ -639,10 +683,10 @@ describe('openLegitFs', () => {
 
     // Get the second operation commit
     const opCommits2 = await isogit.log({
-      fs: memfs,
+      fs: legitfs._storageFs,
       dir: repoPath,
       ref: operationBranch,
-      depth: 2,
+      // depth: 3,
     });
     expect(opCommits2[0]?.commit.message.trim()).toBe('second operation');
     const opCommit2 = opCommits2[0]?.oid;
@@ -912,6 +956,81 @@ describe('openLegitFs', () => {
   it.todo('should read files from previous commit');
   it.todo('should list files from previous commit');
   it.todo('should handle branch creation and switching');
+});
+
+describe('branch - namespaces with dots', () => {
+  beforeEach(async () => {
+    await setupRepo();
+    legitfs = await openLegitFsWithMemoryFs();
+  });
+
+  it('should create and switch to a branch with dots in name via currentBranch', async () => {
+    const currentBranchPath = `/.legit/currentBranch`;
+    const branchName = 'claude.main';
+
+    // Set current branch to claude.main - this should create it
+    await legitfs.promises.writeFile(currentBranchPath, branchName);
+
+    // Verify branch was created
+    const branches = await legitfs.promises.readdir(`/.legit/branches`);
+    expect(branches).toContain(branchName);
+
+    // Verify we can write a file to the new branch
+    const testFilePath = `/.legit/branches/${branchName}/test.txt`;
+    await legitfs.promises.writeFile(testFilePath, 'content in claude.main');
+    const content = await legitfs.promises.readFile(testFilePath, 'utf-8');
+    expect(content).toBe('content in claude.main');
+
+    // Verify current branch is set correctly
+    const currentBranch = await legitfs.promises.readFile(
+      currentBranchPath,
+      'utf-8'
+    );
+    expect(currentBranch.trim()).toBe(branchName);
+
+    // Test operation file on the new branch
+    const operationFilePath = `/.legit/branches/${branchName}/.legit/operation`;
+    await legitfs.promises.writeFile(
+      operationFilePath,
+      'first operation on claude.main'
+    );
+
+    // Read operation file to get commit sha
+    const operationContent = await legitfs.promises.readFile(
+      operationFilePath,
+      'utf-8'
+    );
+    expect(operationContent.trim()).toMatch(/^[0-9a-f]{40}$/);
+
+    // Verify operation branch was created
+    const allBranches = await isogit.listBranches({
+      fs: legitfs._storageFs,
+      dir: '/',
+    });
+    expect(allBranches.some(b => b.includes('claude/main-operation'))).toBe(
+      true
+    );
+
+    // Write second operation
+    await legitfs.promises.writeFile(
+      operationFilePath,
+      'second operation on claude.main'
+    );
+    const secondOperationContent = await legitfs.promises.readFile(
+      operationFilePath,
+      'utf-8'
+    );
+    expect(secondOperationContent.trim()).toMatch(/^[0-9a-f]{40}$/);
+    expect(secondOperationContent.trim()).not.toBe(operationContent.trim());
+
+    const allBranchesAfter = await isogit.listBranches({
+      fs: legitfs._storageFs,
+      dir: '/',
+    });
+    expect(
+      allBranchesAfter.some(b => b.includes('claude/main-operation'))
+    ).toBe(true);
+  });
 });
 
 describe('readDir', () => {

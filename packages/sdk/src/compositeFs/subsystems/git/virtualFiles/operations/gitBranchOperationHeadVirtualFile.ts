@@ -6,6 +6,7 @@ import {
 } from './resolveOperationBranchName.js';
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch } from '../getCurrentBranch.js';
+import { tryResolveRef } from '../utils.js';
 
 export const gitBranchOperationHeadVirtualFile: VirtualFileDefinition = {
   type: 'gitBranchOperationHeadVirtualFile',
@@ -177,18 +178,18 @@ export const gitBranchOperationHeadVirtualFile: VirtualFileDefinition = {
       pathParams.branchName
     );
 
-    const operationBranchRef = await git.resolveRef({
-      fs: nodeFs,
-      dir: gitRoot,
-      ref: `refs/heads/${operationBranchName}`,
-    });
-
     // TODO think about an empty file to remove the branch again?
     if (!operationBranchName) {
       throw new Error(
         `Operation branch name could not be resolved for branch ${pathParams.branchName}`
       );
     }
+
+    const operationBranchRef = await tryResolveRef(
+      nodeFs,
+      gitRoot,
+      operationBranchName
+    );
 
     const requestedOperationBranchHead = content.toString().trim();
     let newOperationBranchHead: string | undefined = undefined;
