@@ -223,7 +223,7 @@ export async function openLegitFs({
       history: gitBranchHistory,
       currentBranch: gitCurrentBranchVirtualFile,
       'reference-branch': gitReferenceBranchVirtualFile,
-      'apply-changes': gitApplyCurrentChangesToVirtualFile,tar
+      'apply-changes': gitApplyCurrentChangesToVirtualFile,
       branches: {
         '.': gitBranchesListVirtualFile,
         '[branchName]': {

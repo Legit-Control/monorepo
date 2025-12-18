@@ -309,23 +309,12 @@ async function main() {
       // Mount the NFS share
       await mountNfsShare(options.mountPath, parseInt(options.port));
 
-      // TODO use nodefs to read current branch from mount path at /.legit/currentBranch
-      // TODO use nodefs to  set target branch to current branch by writing to /.legit/target-branch
-      // TODO set current branch to claude.${currentBranch}
       // Run the command in the mounted directory
       console.log('spawn subprocess ...');
       await spawnSubProcess(options.mountPath, options.spawn);
 
       // After successful completion, prompt for commit message
       console.log('\nMount process completed. Ready to commit changes.');
-      const commitMessage = await promptForCommitMessage();
-
-      if (commitMessage.trim()) {
-        console.log(`\nCommit message: "${commitMessage}"`);
-        console.log('TODO: Implement actual git commit logic');
-      } else {
-        console.log('\nNo commit message provided. Skipping commit.');
-      }
 
       // Unmount the NFS share
       await unmountNfsShare(options.mountPath);
