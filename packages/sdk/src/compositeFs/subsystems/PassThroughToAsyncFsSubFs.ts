@@ -36,29 +36,25 @@ export class PassThroughToAsyncFsSubFs
   implements CompositeSubFs
 {
   private openFh = new Map<number, nodeFs.promises.FileHandle>();
-  
 
   private targetFs: typeof nodeFs;
 
   constructor({
     name,
     parentFs,
-    gitRoot,
+
     passThroughFs,
   }: {
     name: string;
     parentFs: CompositeFs;
     passThroughFs: typeof nodeFs;
-    gitRoot: string;
   }) {
     super({
       name,
       parentFs,
-      gitRoot,
     });
 
     this.compositFs = parentFs;
-    this.gitRoot = gitRoot;
 
     this.targetFs = passThroughFs;
   }

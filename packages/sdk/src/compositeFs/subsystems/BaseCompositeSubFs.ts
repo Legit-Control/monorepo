@@ -24,9 +24,6 @@ import * as nodeFs from 'node:fs';
 import CompositFsFileHandle from '../CompositeFsFileHandle.js';
 import { CompositeSubFs, CompositeSubFsDir } from '../CompositeSubFs.js';
 import { CompositeFs } from '../CompositeFs.js';
-import { CompositeFsDir } from '../CompositeFsDir.js';
-import { Abortable } from 'node:events';
-import type { ObjectEncodingOptions } from 'node:fs';
 
 export abstract class BaseCompositeSubFs implements CompositeSubFs {
   protected toStr(p: any): string {
@@ -38,21 +35,12 @@ export abstract class BaseCompositeSubFs implements CompositeSubFs {
   }
 
   protected compositFs: CompositeFs;
-  protected gitRoot: string;
+
   name: string;
 
-  constructor({
-    name,
-    parentFs,
-    gitRoot,
-  }: {
-    name: string;
-    parentFs: CompositeFs;
-    gitRoot: string;
-  }) {
+  constructor({ name, parentFs }: { name: string; parentFs: CompositeFs }) {
     this.name = name;
     this.compositFs = parentFs;
-    this.gitRoot = gitRoot;
   }
 
   abstract responsible(filePath: string): Promise<boolean>;

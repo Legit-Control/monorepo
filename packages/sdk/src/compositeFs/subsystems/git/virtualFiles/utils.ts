@@ -1,8 +1,4 @@
-import git, {
-  FsClient,
-  TreeEntry,
-  TreeObject,
-} from 'isomorphic-git';
+import git, { FsClient, TreeEntry, TreeObject } from 'isomorphic-git';
 import { VirtualFileArgs } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 
@@ -13,13 +9,13 @@ import { IDirent } from 'memfs/lib/node/types/misc.js';
 
 function getGitCacheFromArgs(args: VirtualFileArgs): any {
   // Access gitCache through the userSpaceFs hierarchy
-  if (args.userSpaceFs && args.userSpaceFs.gitCache !== undefined) {
-    return args.userSpaceFs.gitCache;
-  }
-  // If it has a parent, traverse up to find the gitCache
-  if (args.userSpaceFs && args.userSpaceFs.parentFs) {
-    return getGitCacheFromFs(args.userSpaceFs.parentFs);
-  }
+  // if (args.userSpaceFs && args.userSpaceFs.gitCache !== undefined) {
+  //   return args.userSpaceFs.gitCache;
+  // }
+  // // If it has a parent, traverse up to find the gitCache
+  // if (args.userSpaceFs && args.userSpaceFs.parentFs) {
+  //   return getGitCacheFromFs(args.userSpaceFs.parentFs);
+  // }
   // Default to empty object if no cache found
   return {};
 }

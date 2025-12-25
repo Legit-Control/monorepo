@@ -16,18 +16,16 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
   constructor({
     name,
     parentFs,
-    gitRoot,
     hiddenFiles,
   }: {
     name: string;
     parentFs: CompositeFs;
-    gitRoot: string;
+
     hiddenFiles: string[];
   }) {
     super({
       name,
       parentFs,
-      gitRoot,
     });
     this.ig = ignore();
     this.ig.add(hiddenFiles);

@@ -172,24 +172,19 @@ export async function openLegitFs({
   // this is used to be able to read and write within the .git folder while hiding it from the user
   const gitStorageFs = new CompositeFs({
     name: 'root',
-    // the root CompositeFs has no parent - it doesn't propagate up
-    gitRoot,
   });
-
-  // Initialize gitCache
-  gitStorageFs.gitCache = {};
 
   const rootEphemeralFs = new EphemeralSubFs({
     name: 'root-ephemeral',
     parentFs: gitStorageFs,
-    gitRoot,
+
     ephemeralPatterns: ephemaralGitConfig ? ['**/.git/config'] : [],
   });
 
   const rootHiddenFs = new HiddenFileSubFs({
     name: 'root-hidden',
     parentFs: gitStorageFs,
-    gitRoot,
+
     hiddenFiles: [],
   });
 
@@ -197,7 +192,6 @@ export async function openLegitFs({
     name: 'root-passthrough',
     parentFs: gitStorageFs,
     passThroughFs: storageFs,
-    gitRoot: gitRoot,
   });
 
   gitStorageFs.setHiddenFilesSubFs(rootHiddenFs);
@@ -213,10 +207,7 @@ export async function openLegitFs({
 
   const userSpaceFs = new CompositeFs({
     name: 'git',
-    gitRoot: gitRoot,
-    defaultBranch: anonymousBranch,
   });
-  userSpaceFs.gitCache = {};
 
   const routerConfig = {
     '.legit': {
@@ -288,7 +279,7 @@ export async function openLegitFs({
   const gitFsHiddenFs = new HiddenFileSubFs({
     name: 'git-hidden-subfs',
     parentFs: userSpaceFs,
-    gitRoot,
+
     hiddenFiles,
   });
 
@@ -317,7 +308,7 @@ export async function openLegitFs({
   const gitFsEphemeralFs = new EphemeralSubFs({
     name: 'git-ephemeral-subfs',
     parentFs: userSpaceFs,
-    gitRoot,
+
     ephemeralPatterns,
   });
 

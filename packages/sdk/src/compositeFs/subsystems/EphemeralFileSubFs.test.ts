@@ -17,7 +17,7 @@ describe('EphemeralFileSubFs', () => {
     ephemeralSubFs = new EphemeralSubFs({
       name: 'ephemeral-subfs',
       parentFs,
-      gitRoot: '/test',
+
       ephemeralPatterns: [
         '**/ephemeral_everywhere',
         'temp/**', // any file under temp/
@@ -440,7 +440,7 @@ describe('EphemeralFileSubFs', () => {
       const newEphemeralSubFs = new EphemeralSubFs({
         name: 'new-ephemeral-subfs',
         parentFs,
-        gitRoot: '/test',
+
         ephemeralPatterns: ['temp/**'],
       });
 

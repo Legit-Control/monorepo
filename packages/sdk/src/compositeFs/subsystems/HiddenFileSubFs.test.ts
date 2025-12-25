@@ -16,7 +16,6 @@ describe('createHiddenFileSubFs', () => {
   ];
   const fs = new HiddenFileSubFs({
     name: 'hidden-files-subfs',
-    gitRoot: 'not needed',
     parentFs: {} as any,
     hiddenFiles,
   });

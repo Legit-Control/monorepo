@@ -33,23 +33,13 @@ export class PassThroughSubFs extends BaseCompositeSubFs {
 
   private targetFs: CompositeFs;
 
-  constructor({
-    name,
-    parentFs,
-    gitRoot,
-  }: {
-    name: string;
-    parentFs: CompositeFs;
-    gitRoot: string;
-  }) {
+  constructor({ name, parentFs }: { name: string; parentFs: CompositeFs }) {
     super({
       name,
       parentFs,
-      gitRoot,
     });
 
     this.compositFs = parentFs;
-    this.gitRoot = gitRoot;
 
     if (this.compositFs.parentFs === undefined) {
       throw new Error('PassThroughSubFs not allowed in root fs');

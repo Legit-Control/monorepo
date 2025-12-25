@@ -71,12 +71,12 @@ const noAdditionalFiles = {
 
 /**
  * Git-backed CompositeSubFs implementation.
- * 
- * 
- * docx file 
+ *
+ *
+ * docx file
  *  - we unpack the docx and store xml files as blobs in git
  * mpeg file
- *  - we chunk the file and sstsore chunks as blobs in git 
+ *  - we chunk the file and sstsore chunks as blobs in git
  **/
 export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
   private static readonly LEGIT_DIR = '.legit';
@@ -120,6 +120,8 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     return { name, email, date, timezoneOffset };
   }
 
+  protected gitRoot: string;
+
   constructor({
     name,
     parentFs,
@@ -133,7 +135,7 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
     gitRoot: string;
     routerConfig: LegitRouteFolder;
   }) {
-    super({ name, parentFs, gitRoot });
+    super({ name, parentFs });
 
     this.pathRouter = new LegitPathRouter(routerConfig);
 
