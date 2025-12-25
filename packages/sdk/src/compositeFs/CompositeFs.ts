@@ -13,7 +13,8 @@ import { FsOperationLogger } from './utils/fs-operation-logger.js';
 /**
  *
  * The CompositFs handles distribution of file operations to its sub filesystems and keeps track of open file handles.
- * open returns a CompositFsFileHandle that wraps the real filehandle from the responsible SubFs and allows
+ * 
+ * open() returns a CompositFsFileHandle that wraps the real filehandle from the responsible SubFs and allows
  * to forward operations
  *
  * Each SubFs determines if it is responsible for a given path. The Composite fs probes each subsystem for responsibility.
@@ -168,7 +169,6 @@ export class CompositeFs {
       parentFs: this,
     });
     return;
-    
   }
 
   setLoggger(logger: FsOperationLogger | undefined) {
@@ -221,7 +221,16 @@ export class CompositeFs {
   }
 
   /**
-   * helper function that takes a filePath and returns the fs that is responsible Sub filesystem for it
+   * Helper function that takes a filePath and returns the sub fs that is responsible for it.
+   * 
+   * Order is: 
+   * hidden -> if hidden no more questions - hide it! 
+   * 
+   * ephemeral -> file is marked as ephemeral *.DS_STORE and lock files - ignore if versioned at some point - always handle it as ephemeral
+   * versioned -> 
+   * nonVersioned -> files 
+   * 
+   * other subFs in order of addition -> passThrough
    * @param filePath
    * @returns
    */
@@ -273,6 +282,95 @@ export class CompositeFs {
     return fsToUse.access(filePath, mode);
   }
 
+  async stat(
+    path: nodeFs.PathLike,
+    opts?: { bigint?: false }
+  ): Promise<nodeFs.Stats>;
+  async stat(
+    path: nodeFs.PathLike,
+    opts: { bigint: true }
+  ): Promise<nodeFs.BigIntStats>;
+  async stat(
+    path: nodeFs.PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats>;
+  async stat(
+    path: nodeFs.PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats> {
+    const pathStr = path.toString();
+
+    const fsToUse = await this.getResponsibleFs(path);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: pathStr,
+      operation: 'stat',
+      operationArgs: { opts },
+    });
+    return fsToUse.stat(path);
+  }
+
+  async lstat(
+    path: nodeFs.PathLike,
+    opts?: { bigint?: false }
+  ): Promise<nodeFs.Stats>;
+  async lstat(
+    path: nodeFs.PathLike,
+    opts: { bigint: true }
+  ): Promise<nodeFs.BigIntStats>;
+  async lstat(
+    path: nodeFs.PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats>;
+  async lstat(
+    path: nodeFs.PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<IStats<number> | IStats<bigint>> {
+    const fsToUse = await this.getResponsibleFs(path);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: path.toString(),
+      operation: 'lstat',
+      operationArgs: { opts },
+    });
+    return fsToUse.lstat(path, opts);
+  }
+
+  async unlink(filePath: nodeFs.PathLike) {
+    const fsToUse = await this.getResponsibleFs(filePath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: filePath.toString(),
+      operation: 'unlink',
+      operationArgs: {},
+    });
+
+    // TODO shouldn't this also remove all open filehandles for this path?
+    return fsToUse.unlink(filePath);
+  }
+
+  async mkdir(dirPath: string, options?: any) {
+    const fsToUse = await this.getResponsibleFs(dirPath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: dirPath.toString(),
+      operation: 'mkdir',
+      operationArgs: { options },
+    });
+    return fsToUse.mkdir(dirPath, options);
+  }
+
+  async rmdir(dirPath: nodeFs.PathLike, options?: nodeFs.RmDirOptions) {
+    const fsToUse = await this.getResponsibleFs(dirPath);
+    await this.logOperation?.({
+      fsName: fsToUse.name,
+      path: dirPath.toString(),
+      operation: 'rmdir',
+      operationArgs: { dirPath, options },
+    });
+    return fsToUse.rmdir(dirPath, options);
+  }
+
   async opendir(
     dirPath: nodeFs.PathLike,
     options?: nodeFs.OpenDirOptions
@@ -296,17 +394,6 @@ export class CompositeFs {
 
     // Create and return a CompositeFsDir instance
     return new CompositeFsDir(this, dirPathStr);
-  }
-
-  async mkdir(dirPath: string, options?: any) {
-    const fsToUse = await this.getResponsibleFs(dirPath);
-    await this.logOperation?.({
-      fsName: fsToUse.name,
-      path: dirPath.toString(),
-      operation: 'mkdir',
-      operationArgs: { options },
-    });
-    return fsToUse.mkdir(dirPath, options);
   }
 
   /**
@@ -428,60 +515,6 @@ export class CompositeFs {
     }
   }
 
-  async stat(
-    path: nodeFs.PathLike,
-    opts?: { bigint?: false }
-  ): Promise<nodeFs.Stats>;
-  async stat(
-    path: nodeFs.PathLike,
-    opts: { bigint: true }
-  ): Promise<nodeFs.BigIntStats>;
-  async stat(
-    path: nodeFs.PathLike,
-    opts?: { bigint?: boolean }
-  ): Promise<nodeFs.Stats | nodeFs.BigIntStats>;
-  async stat(
-    path: nodeFs.PathLike,
-    opts?: { bigint?: boolean }
-  ): Promise<nodeFs.Stats | nodeFs.BigIntStats> {
-    const pathStr = path.toString();
-
-    const fsToUse = await this.getResponsibleFs(path);
-    await this.logOperation?.({
-      fsName: fsToUse.name,
-      path: pathStr,
-      operation: 'stat',
-      operationArgs: { opts },
-    });
-    return fsToUse.stat(path);
-  }
-
-  async lstat(
-    path: nodeFs.PathLike,
-    opts?: { bigint?: false }
-  ): Promise<nodeFs.Stats>;
-  async lstat(
-    path: nodeFs.PathLike,
-    opts: { bigint: true }
-  ): Promise<nodeFs.BigIntStats>;
-  async lstat(
-    path: nodeFs.PathLike,
-    opts?: { bigint?: boolean }
-  ): Promise<nodeFs.Stats | nodeFs.BigIntStats>;
-  async lstat(
-    path: nodeFs.PathLike,
-    opts?: { bigint?: boolean }
-  ): Promise<IStats<number> | IStats<bigint>> {
-    const fsToUse = await this.getResponsibleFs(path);
-    await this.logOperation?.({
-      fsName: fsToUse.name,
-      path: path.toString(),
-      operation: 'lstat',
-      operationArgs: { opts },
-    });
-    return fsToUse.lstat(path, opts);
-  }
-
   async link(existingPath: nodeFs.PathLike, newPath: nodeFs.PathLike) {
     throw new Error('not implemented');
   }
@@ -491,17 +524,6 @@ export class CompositeFs {
     options?: nodeFs.ObjectEncodingOptions | BufferEncoding | null
   ) {
     throw new Error('not implemented');
-  }
-
-  async unlink(filePath: nodeFs.PathLike) {
-    const fsToUse = await this.getResponsibleFs(filePath);
-    await this.logOperation?.({
-      fsName: fsToUse.name,
-      path: filePath.toString(),
-      operation: 'unlink',
-      operationArgs: {},
-    });
-    return fsToUse.unlink(filePath);
   }
 
   async rename(oldPath: nodeFs.PathLike, newPath: nodeFs.PathLike) {
@@ -560,17 +582,6 @@ export class CompositeFs {
       }
       throw error;
     }
-  }
-
-  async rmdir(dirPath: nodeFs.PathLike, options?: nodeFs.RmDirOptions) {
-    const fsToUse = await this.getResponsibleFs(dirPath);
-    await this.logOperation?.({
-      fsName: fsToUse.name,
-      path: dirPath.toString(),
-      operation: 'rmdir',
-      operationArgs: { dirPath, options },
-    });
-    return fsToUse.rmdir(dirPath, options);
   }
 
   async symlink(
