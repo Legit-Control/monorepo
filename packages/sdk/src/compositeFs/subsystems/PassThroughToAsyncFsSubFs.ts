@@ -36,7 +36,7 @@ export class PassThroughToAsyncFsSubFs
   implements CompositeSubFs
 {
   private openFh = new Map<number, nodeFs.promises.FileHandle>();
-  private memFs = createFsFromVolume(new Volume());
+  
 
   private targetFs: typeof nodeFs;
 

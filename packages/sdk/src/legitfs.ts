@@ -29,6 +29,7 @@ import {
 } from './compositeFs/utils/fs-operation-logger.js';
 import { gitApplyCurrentChangesToVirtualFile } from './compositeFs/subsystems/git/virtualFiles/gitApplyCurrentChangesToVirtualFile.js';
 import { gitReferenceBranchVirtualFile } from './compositeFs/subsystems/git/virtualFiles/gitReferenceBranchVirtualFile.js';
+import { PassThroughToAsyncFsSubFs } from './compositeFs/subsystems/PassThroughToAsyncFsSubFs.js';
 
 function getGitCache(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -172,9 +173,6 @@ export async function openLegitFs({
   const gitStorageFs = new CompositeFs({
     name: 'root',
     // the root CompositeFs has no parent - it doesn't propagate up
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    storageFs,
     gitRoot,
   });
 
@@ -195,8 +193,16 @@ export async function openLegitFs({
     hiddenFiles: [],
   });
 
+  const rootPassThroughFileSystem = new PassThroughToAsyncFsSubFs({
+    name: 'root-passthrough',
+    parentFs: gitStorageFs,
+    passThroughFs: storageFs,
+    gitRoot: gitRoot,
+  });
+
   gitStorageFs.setHiddenFilesSubFs(rootHiddenFs);
   gitStorageFs.setEphemeralFilesSubFs(rootEphemeralFs);
+  gitStorageFs.addSubFs(rootPassThroughFileSystem);
 
   if (ephemaralGitConfig) {
     const config = await storageFs.promises.readFile(gitRoot + '/.git/config', {
@@ -207,7 +213,6 @@ export async function openLegitFs({
 
   const userSpaceFs = new CompositeFs({
     name: 'git',
-    storageFs: gitStorageFs as any,
     gitRoot: gitRoot,
     defaultBranch: anonymousBranch,
   });

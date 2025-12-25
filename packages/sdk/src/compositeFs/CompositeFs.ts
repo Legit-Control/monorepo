@@ -1,12 +1,9 @@
 import * as nodeFs from 'node:fs';
 
 import * as path from 'path';
-// import { ManagedFileDefinition } from "./filetypes/managedFiles/ManagedFileDefinition.js";
 import CompositFsFileHandle from './CompositeFsFileHandle.js';
 import { CompositeSubFs } from './CompositeSubFs.js';
 import { CompositeFsDir } from './CompositeFsDir.js';
-import { PassThroughSubFs } from './subsystems/PassThroughSubFs.js';
-import { PassThroughToAsyncFsSubFs } from './subsystems/PassThroughToAsyncFsSubFs.js';
 import { IStats } from 'memfs/lib/node/types/misc.js';
 import { FsOperationLogger } from './utils/fs-operation-logger.js';
 
@@ -104,13 +101,13 @@ export class CompositeFs {
     ) => Promise<void>;
     getFilehandle: (fd: number) => CompositFsFileHandle | undefined;
   };
-  gitRoot: string;
   ephemeralFilesFileSystem: CompositeSubFs | undefined;
   hiddenFilesFileSystem: CompositeSubFs | undefined;
-  passThroughFileSystem: CompositeSubFs;
   subFilesystems: CompositeSubFs[] = [];
   parentFs: CompositeFs | undefined;
   name: string;
+  
+  gitRoot: string;
   defaultBranch: string;
   gitCache: any;
 
@@ -130,12 +127,10 @@ export class CompositeFs {
 
   constructor({
     name,
-    storageFs,
     gitRoot,
     defaultBranch = 'main',
   }: {
     name: string;
-    storageFs: typeof nodeFs;
     gitRoot: string;
     defaultBranch?: string;
   }) {
@@ -162,12 +157,6 @@ export class CompositeFs {
       getFilehandle: this.getFilehandle.bind(this),
     } as any;
 
-    this.passThroughFileSystem = new PassThroughToAsyncFsSubFs({
-      name: name + '-passthrough',
-      passThroughFs: storageFs,
-      gitRoot: gitRoot,
-      parentFs: this,
-    });
     return;
   }
 
@@ -268,7 +257,7 @@ export class CompositeFs {
       }
     }
 
-    return this.passThroughFileSystem;
+    throw new Error('No sub filesystem responsible for ' + filePath);
   }
 
   async access(filePath: string, mode?: number) {
@@ -424,28 +413,6 @@ export class CompositeFs {
         ) {
           fileNames.add(fileName);
         }
-      }
-    }
-
-    try {
-      const passthroughEntries = await this.passThroughFileSystem.readdir(
-        dirPath,
-        options
-      );
-
-      for (const fileName of passthroughEntries) {
-        // only add non ephemeral Files here
-        if (
-          !(await this.ephemeralFilesFileSystem?.responsible(
-            (dirPath == '/' ? '' : dirPath) + '/' + fileName
-          ))
-        ) {
-          fileNames.add(fileName);
-        }
-      }
-    } catch (err) {
-      if ((err as unknown as any).code !== 'ENOENT') {
-        throw new Error('error reading ephemeral fs: ' + err);
       }
     }
 
