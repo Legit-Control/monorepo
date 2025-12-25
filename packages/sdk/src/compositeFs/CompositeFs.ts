@@ -106,10 +106,6 @@ export class CompositeFs {
   subFilesystems: CompositeSubFs[] = [];
   parentFs: CompositeFs | undefined;
   name: string;
-  
-  gitRoot: string;
-  defaultBranch: string;
-  gitCache: any;
 
   pathToFileDescriptors: Map<
     /** path */
@@ -125,18 +121,8 @@ export class CompositeFs {
     return fds.length === 0 ? 1 : Math.max(...fds) + 1;
   }
 
-  constructor({
-    name,
-    gitRoot,
-    defaultBranch = 'main',
-  }: {
-    name: string;
-    gitRoot: string;
-    defaultBranch?: string;
-  }) {
+  constructor({ name }: { name: string }) {
     this.name = name;
-    this.gitRoot = gitRoot;
-    this.defaultBranch = defaultBranch;
 
     this.promises = {
       access: this.access.bind(this),
@@ -211,32 +197,19 @@ export class CompositeFs {
 
   /**
    * Helper function that takes a filePath and returns the sub fs that is responsible for it.
-   * 
-   * Order is: 
-   * hidden -> if hidden no more questions - hide it! 
-   * 
+   *
+   * Order is:
+   * hidden -> if hidden no more questions - hide it!
+   *
    * ephemeral -> file is marked as ephemeral *.DS_STORE and lock files - ignore if versioned at some point - always handle it as ephemeral
-   * versioned -> 
-   * nonVersioned -> files 
-   * 
+   * versioned ->
+   * nonVersioned -> files
+   *
    * other subFs in order of addition -> passThrough
    * @param filePath
    * @returns
    */
   private async getResponsibleFs(filePath: nodeFs.PathLike) {
-    if (
-      !filePath.toString().startsWith(this.gitRoot) &&
-      // TODO fix path for browserfs
-      this.gitRoot !== './'
-    ) {
-      throw new Error(
-        'tried to access a file (' +
-          filePath +
-          ') outside of the legit folder: ' +
-          this.gitRoot
-      );
-    }
-
     if (!this.hiddenFilesFileSystem) {
       throw new Error(this.name + ' intialize hidden fs first!');
     }
@@ -372,14 +345,6 @@ export class CompositeFs {
     });
     // Ensure the directory path is within gitRoot
     const dirPathStr = dirPath.toString();
-    if (!dirPathStr.startsWith(this.gitRoot)) {
-      throw new Error(
-        'tried to access a directory (' +
-          dirPathStr +
-          ') outside of the legit folder: ' +
-          this.gitRoot
-      );
-    }
 
     // Create and return a CompositeFsDir instance
     return new CompositeFsDir(this, dirPathStr);
