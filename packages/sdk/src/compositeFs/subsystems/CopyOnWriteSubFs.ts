@@ -39,6 +39,7 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
   private sourceFs: any; // The underlying source filesystem
   private copyToFs: any; // The filesystem where copies are stored
   private copyPath: string; // Path inside copyToFs to store copies
+  private sourceRootPath?: string; // Root path to strip for pattern matching
   private ig: ReturnType<typeof ignore>;
   patterns: string[];
 
@@ -48,6 +49,7 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
     sourceFs,
     copyToFs,
     copyToRootPath,
+    sourceRootPath,
     patterns,
   }: {
     name: string;
@@ -55,6 +57,7 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
     sourceFs: any;
     copyToFs: any;
     copyToRootPath: string;
+    sourceRootPath?: string;
     patterns: string[];
   }) {
     super({
@@ -67,6 +70,7 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
     this.copyToFs = copyToFs;
     this.copyPath = copyToRootPath;
     this.patterns = patterns;
+    this.sourceRootPath = sourceRootPath;
 
     this.ig = ignore();
     this.ig.add(patterns);
@@ -92,9 +96,23 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
 
   override async responsible(filePath: string): Promise<boolean> {
     const normalized = filePath.replace(/\\/g, '/');
-    let relative = normalized.startsWith('./')
-      ? normalized.slice(2)
-      : normalized;
+
+    // If sourceRootPath is provided, strip it from the path before pattern matching
+    let relative = normalized;
+    if (this.sourceRootPath) {
+      const rootNormalized = this.sourceRootPath.replace(/\\/g, '/');
+      // Remove the root path prefix if present
+      if (normalized.startsWith(rootNormalized + '/')) {
+        relative = normalized.slice(rootNormalized.length + 1);
+      } else if (normalized.startsWith(rootNormalized)) {
+        relative = normalized.slice(rootNormalized.length);
+      }
+    }
+
+    // Remove leading ./ or /
+    relative = relative.startsWith('./')
+      ? relative.slice(2)
+      : relative;
     relative = relative.startsWith('/') ? relative.slice(1) : relative;
 
     if (relative === '' || relative === '.') {

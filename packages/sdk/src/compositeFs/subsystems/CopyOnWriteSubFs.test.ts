@@ -67,6 +67,69 @@ describe('CopyOnWriteSubFs', () => {
       expect(await cowWithNegation.responsible('important.txt')).toBe(false);
     });
 
+    it('should handle sourceRootPath for pattern matching', async () => {
+      const cowWithRoot = new CopyOnWriteSubFs({
+        name: 'cow-with-root',
+        parentFs,
+        sourceFs,
+        copyToFs,
+        copyToRootPath: '/copies',
+        sourceRootPath: '/my-project',
+        patterns: ['node_modules/**', '*.log'],
+      });
+
+      // With sourceRootPath, patterns are matched relative to that root
+      expect(
+        await cowWithRoot.responsible('/my-project/node_modules/package.json')
+      ).toBe(true);
+      expect(
+        await cowWithRoot.responsible('/my-project/node_modules/.cache/file.txt')
+      ).toBe(true);
+      expect(await cowWithRoot.responsible('/my-project/debug.log')).toBe(
+        true
+      );
+
+      // Files outside sourceRootPath should still work
+      expect(await cowWithRoot.responsible('/other-project/node_modules/file.js')).toBe(false);
+
+      // Non-matching files
+      expect(await cowWithRoot.responsible('/my-project/src/code.js')).toBe(
+        false
+      );
+      expect(
+        await cowWithRoot.responsible('/my-project/package.json')
+      ).toBe(false);
+    });
+
+    it('should handle sourceRootPath with nested paths', async () => {
+      const cowWithRoot = new CopyOnWriteSubFs({
+        name: 'cow-with-nested',
+        parentFs,
+        sourceFs,
+        copyToFs,
+        copyToRootPath: '/copies',
+        sourceRootPath: '/repo',
+        patterns: ['build/**', 'dist/**', '.next/**'],
+      });
+
+      // Match patterns relative to sourceRootPath
+      expect(await cowWithRoot.responsible('/repo/build/index.js')).toBe(true);
+      expect(await cowWithRoot.responsible('/repo/dist/bundle.js')).toBe(true);
+      expect(
+        await cowWithRoot.responsible('/repo/.next/cache/assets.json')
+      ).toBe(true);
+
+      // Deeply nested files
+      expect(
+        await cowWithRoot.responsible('/repo/build/static/js/main.js')
+      ).toBe(true);
+
+      // Different project paths
+      expect(await cowWithRoot.responsible('/other/build/file.js')).toBe(
+        false
+      );
+    });
+
     it('should handle edge cases', async () => {
       expect(await copyOnWriteFs.responsible('')).toBe(false);
       expect(await copyOnWriteFs.responsible('.')).toBe(false);
