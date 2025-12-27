@@ -22,6 +22,7 @@ import type {
 import * as fsDisk from 'node:fs';
 import CompositFsFileHandle from './CompositeFsFileHandle.js';
 import { MakeDirectoryOptions, Mode } from 'node:fs';
+import { CompositeFs } from './CompositeFs.js';
 
 export type FileHandleDelegate = {
   name: string;
@@ -94,6 +95,8 @@ export type CompositeSubFs = Pick<
   | 'symlink'
 > & {
   name: string;
+
+  attach(compositFs: CompositeFs): void;
 
   readDirFiltering?(
     path: fsDisk.PathLike,

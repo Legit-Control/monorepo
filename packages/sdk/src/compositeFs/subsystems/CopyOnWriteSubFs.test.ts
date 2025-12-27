@@ -29,7 +29,6 @@ describe('CopyOnWriteSubFs', () => {
 
     copyOnWriteFs = new CopyOnWriteSubFs({
       name: 'copy-on-write-subfs',
-      parentFs,
       sourceFs,
       copyToFs,
       copyToRootPath: '/copies',
@@ -56,7 +55,6 @@ describe('CopyOnWriteSubFs', () => {
     it('should handle negation patterns', async () => {
       const cowWithNegation = new CopyOnWriteSubFs({
         name: 'cow-with-negation',
-        parentFs,
         sourceFs,
         copyToFs,
         copyToRootPath: '/copies',
@@ -70,7 +68,6 @@ describe('CopyOnWriteSubFs', () => {
     it('should handle sourceRootPath for pattern matching', async () => {
       const cowWithRoot = new CopyOnWriteSubFs({
         name: 'cow-with-root',
-        parentFs,
         sourceFs,
         copyToFs,
         copyToRootPath: '/copies',
@@ -83,28 +80,29 @@ describe('CopyOnWriteSubFs', () => {
         await cowWithRoot.responsible('/my-project/node_modules/package.json')
       ).toBe(true);
       expect(
-        await cowWithRoot.responsible('/my-project/node_modules/.cache/file.txt')
+        await cowWithRoot.responsible(
+          '/my-project/node_modules/.cache/file.txt'
+        )
       ).toBe(true);
-      expect(await cowWithRoot.responsible('/my-project/debug.log')).toBe(
-        true
-      );
+      expect(await cowWithRoot.responsible('/my-project/debug.log')).toBe(true);
 
       // Files outside sourceRootPath should still work
-      expect(await cowWithRoot.responsible('/other-project/node_modules/file.js')).toBe(false);
+      expect(
+        await cowWithRoot.responsible('/other-project/node_modules/file.js')
+      ).toBe(false);
 
       // Non-matching files
       expect(await cowWithRoot.responsible('/my-project/src/code.js')).toBe(
         false
       );
-      expect(
-        await cowWithRoot.responsible('/my-project/package.json')
-      ).toBe(false);
+      expect(await cowWithRoot.responsible('/my-project/package.json')).toBe(
+        false
+      );
     });
 
     it('should handle sourceRootPath with nested paths', async () => {
       const cowWithRoot = new CopyOnWriteSubFs({
         name: 'cow-with-nested',
-        parentFs,
         sourceFs,
         copyToFs,
         copyToRootPath: '/copies',
@@ -125,9 +123,7 @@ describe('CopyOnWriteSubFs', () => {
       ).toBe(true);
 
       // Different project paths
-      expect(await cowWithRoot.responsible('/other/build/file.js')).toBe(
-        false
-      );
+      expect(await cowWithRoot.responsible('/other/build/file.js')).toBe(false);
     });
 
     it('should handle edge cases', async () => {
@@ -307,7 +303,6 @@ describe('CopyOnWriteSubFs', () => {
         // We need to add directory to patterns or use pattern that matches files inside
         const cowWithDirPattern = new CopyOnWriteSubFs({
           name: 'cow-dir-pattern',
-          parentFs,
           sourceFs,
           copyToFs,
           copyToRootPath: '/copies',
@@ -322,7 +317,6 @@ describe('CopyOnWriteSubFs', () => {
       it('should merge entries from source and copy', async () => {
         const cowWithDirPattern = new CopyOnWriteSubFs({
           name: 'cow-dir-pattern',
-          parentFs,
           sourceFs,
           copyToFs,
           copyToRootPath: '/copies',

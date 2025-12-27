@@ -179,7 +179,7 @@ export async function openLegitFs({
 
   const rootCopyOnWriteFs = new CopyOnWriteSubFs({
     name: 'root-copy-on-write',
-    parentFs: gitStorageFs,
+
     sourceFs: storageFs,
     copyToFs: copyFs,
     copyToRootPath: '/copies',
@@ -260,7 +260,7 @@ export async function openLegitFs({
 
   const gitSubFs = new GitSubFs({
     name: 'git-subfs',
-    parentFs: userSpaceFs,
+
     gitRoot: gitRoot,
     gitStorageFs: gitStorageFs,
     routerConfig,
@@ -314,7 +314,7 @@ export async function openLegitFs({
 
   const gitFsCopyOnWriteFs = new CopyOnWriteSubFs({
     name: 'git-copy-on-write-subfs',
-    parentFs: userSpaceFs,
+
     sourceFs: gitStorageFs,
     copyToFs: userCopyFs,
     copyToRootPath: '/user-copies',

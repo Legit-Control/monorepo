@@ -34,13 +34,16 @@ export abstract class BaseCompositeSubFs implements CompositeSubFs {
     return String(p);
   }
 
-  protected compositFs: CompositeFs;
+  protected compositFs!: CompositeFs;
 
   name: string;
 
-  constructor({ name, parentFs }: { name: string; parentFs: CompositeFs }) {
+  constructor({ name }: { name: string }) {
     this.name = name;
-    this.compositFs = parentFs;
+  }
+
+  attach(compositFs: CompositeFs) {
+    this.compositFs = compositFs;
   }
 
   abstract responsible(filePath: string): Promise<boolean>;

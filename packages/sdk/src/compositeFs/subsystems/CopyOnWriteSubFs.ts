@@ -45,7 +45,6 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
 
   constructor({
     name,
-    parentFs,
     sourceFs,
     copyToFs,
     copyToRootPath,
@@ -53,7 +52,6 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
     patterns,
   }: {
     name: string;
-    parentFs: CompositeFs;
     sourceFs: any;
     copyToFs: any;
     copyToRootPath: string;
@@ -62,10 +60,9 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
   }) {
     super({
       name,
-      parentFs,
+      
     });
 
-    this.compositFs = parentFs;
     this.sourceFs = sourceFs;
     this.copyToFs = copyToFs;
     this.copyPath = copyToRootPath;

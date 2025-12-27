@@ -10,7 +10,6 @@ import {
   TFileHandleWriteResult,
   TTime,
 } from 'memfs/lib/node/types/misc.js';
-import { CompositeFs } from '../../CompositeFs.js';
 import {
   IStatOptions,
   IWriteFileOptions,
@@ -124,18 +123,16 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
   constructor({
     name,
-    parentFs,
     gitStorageFs,
     gitRoot,
     routerConfig,
   }: {
     name: string;
-    parentFs: CompositeFs;
     gitStorageFs: any;
     gitRoot: string;
     routerConfig: LegitRouteFolder;
   }) {
-    super({ name, parentFs });
+    super({ name });
 
     this.pathRouter = new LegitPathRouter(routerConfig);
 

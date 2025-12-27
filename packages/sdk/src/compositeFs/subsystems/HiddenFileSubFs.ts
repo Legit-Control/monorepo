@@ -25,7 +25,6 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
   }) {
     super({
       name,
-      parentFs,
     });
     this.ig = ignore();
     this.ig.add(hiddenFiles);

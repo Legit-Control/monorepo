@@ -184,6 +184,7 @@ export class CompositeFs {
 
   addSubFs(subFs: CompositeSubFs) {
     this.subFilesystems.push(subFs);
+    subFs.attach(this);
   }
 
   /**

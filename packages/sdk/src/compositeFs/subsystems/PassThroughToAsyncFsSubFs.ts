@@ -51,7 +51,6 @@ export class PassThroughToAsyncFsSubFs
   }) {
     super({
       name,
-      parentFs,
     });
 
     this.compositFs = parentFs;
