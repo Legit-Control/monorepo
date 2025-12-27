@@ -170,9 +170,6 @@ export async function openLegitFs({
   // it propagates operations to the real filesystem (storageFs)
   // it allows the child copmositeFs to define file behavior while tunneling through to the real fs
   // this is used to be able to read and write within the .git folder while hiding it from the user
-  const gitStorageFs = new CompositeFs({
-    name: 'root',
-  });
 
   // Create an in-memory filesystem for copy-on-write storage
   const copyFs = createFsFromVolume(new Volume());
@@ -189,17 +186,22 @@ export async function openLegitFs({
 
   const rootPassThroughFileSystem = new PassThroughToAsyncFsSubFs({
     name: 'root-passthrough',
-    parentFs: gitStorageFs,
     passThroughFs: storageFs,
   });
 
-  gitStorageFs.addSubFs(rootCopyOnWriteFs);
-  gitStorageFs.addSubFs(rootPassThroughFileSystem);
-
-  const userSpaceFs = new CompositeFs({
-    name: 'git',
+  const gitStorageFs = new CompositeFs({
+    name: 'root',
+    filterLayers: [rootCopyOnWriteFs],
+    routes: {
+      '.': rootPassThroughFileSystem,
+    },
   });
 
+  /**
+   * . -> folder handler
+   * 'name' -> file &| folder handler
+   *
+   */
   const routerConfig = {
     '.legit': {
       '.': legitVirtualFile,
@@ -260,7 +262,6 @@ export async function openLegitFs({
 
   const gitSubFs = new GitSubFs({
     name: 'git-subfs',
-
     gitRoot: gitRoot,
     gitStorageFs: gitStorageFs,
     routerConfig,
@@ -269,7 +270,7 @@ export async function openLegitFs({
   const hiddenFiles = showKeepFiles ? ['.git'] : ['.git', '.keep'];
   const gitFsHiddenFs = new HiddenFileSubFs({
     name: 'git-hidden-subfs',
-    parentFs: userSpaceFs,
+
     hiddenFiles,
   });
 
@@ -322,10 +323,13 @@ export async function openLegitFs({
     patterns: copyOnWritePatterns,
   });
 
-  // Add legitFs to compositFs
-  userSpaceFs.addSubFs(gitFsHiddenFs);
-  userSpaceFs.addSubFs(gitFsCopyOnWriteFs);
-  userSpaceFs.addSubFs(gitSubFs);
+  const userSpaceFs = new CompositeFs({
+    name: 'git',
+    filterLayers: [gitFsHiddenFs, gitFsCopyOnWriteFs],
+    routes: {
+      '.': gitSubFs,
+    },
+  });
 
   const tokenStore = createGitConfigTokenStore({
     storageFs: gitStorageFs as any,

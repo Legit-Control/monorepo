@@ -506,7 +506,7 @@ describe('openLegitFs', () => {
   it('should create operation commits with correct parentage and messages', async () => {
     const textFilePath = `${repoPath}/text.txt`;
     const operationFilePath = `${repoPath}/.legit/operation`;
-    const operationBranch = `refs/heads/${'legit/__main-operation'}`;
+    const operationBranch = `refs/heads/${'main-operation'}`;
 
     // 1. Create text.txt in main branch
     await legitfs.promises.writeFile(textFilePath, 'hello world');
@@ -525,7 +525,7 @@ describe('openLegitFs', () => {
 
     const branches = await isogit.listBranches({ fs: memfs, dir: repoPath });
     expect(branches).toContain('main');
-    expect(branches.some(b => b.endsWith('_main-operation'))).toBe(true);
+    expect(branches.some(b => b.endsWith('main-operation'))).toBe(true);
 
     // Get the first operation commit
     const opCommits1 = await isogit.log({

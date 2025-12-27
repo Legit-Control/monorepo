@@ -7,6 +7,14 @@ import { CompositeFsDir } from './CompositeFsDir.js';
 import { IStats } from 'memfs/lib/node/types/misc.js';
 import { FsOperationLogger } from './utils/fs-operation-logger.js';
 
+type FileSystem = any;
+
+export interface LegitRouteFolder {
+  [key: string]: LegitRouteDescriptor;
+}
+
+type LegitRouteDescriptor = CompositeSubFs | LegitRouteFolder;
+
 /**
  *
  * The CompositFs handles distribution of file operations to its sub filesystems and keeps track of open file handles.
@@ -102,7 +110,8 @@ export class CompositeFs {
     getFilehandle: (fd: number) => CompositFsFileHandle | undefined;
   };
 
-  subFilesystems: CompositeSubFs[] = [];
+  filterLayers: CompositeSubFs[] = [];
+  routes: LegitRouteDescriptor;
   parentFs: CompositeFs | undefined;
   name: string;
 
@@ -120,8 +129,23 @@ export class CompositeFs {
     return fds.length === 0 ? 1 : Math.max(...fds) + 1;
   }
 
-  constructor({ name }: { name: string }) {
+  constructor({
+    name,
+    filterLayers,
+    routes,
+  }: {
+    name: string;
+    filterLayers: CompositeSubFs[];
+    routes: LegitRouteDescriptor;
+  }) {
     this.name = name;
+
+    for (const subFs of filterLayers) {
+      this.filterLayers.push(subFs);
+      subFs.attach(this);
+    }
+
+    this.routes = routes;
 
     this.promises = {
       access: this.access.bind(this),
@@ -182,11 +206,6 @@ export class CompositeFs {
     return this.openFileHandles.get(fd);
   }
 
-  addSubFs(subFs: CompositeSubFs) {
-    this.subFilesystems.push(subFs);
-    subFs.attach(this);
-  }
-
   /**
    * Helper function that takes a filePath and returns the sub fs that is responsible for it.
    *
@@ -202,13 +221,16 @@ export class CompositeFs {
    * @returns
    */
   private async getResponsibleFs(filePath: nodeFs.PathLike) {
-    for (const fileSystem of this.subFilesystems) {
+    for (const fileSystem of this.filterLayers) {
       if (await fileSystem.responsible(filePath.toString())) {
         return fileSystem;
       }
     }
 
-    throw new Error('No sub filesystem responsible for ' + filePath);
+    const router = Object.values(this.routes)[0] as CompositeSubFs;
+    router.attach(this);
+
+    return router;
   }
 
   async access(filePath: string, mode?: number) {
@@ -342,11 +364,17 @@ export class CompositeFs {
       operation: 'readdir',
       operationArgs: { options },
     });
+
+    const router = Object.values(this.routes)[0] as CompositeSubFs;
+    router.attach(this);
+
+    let fileNames = new Set(await router.readdir(dirPath, options));
+
     // Create a Union of all files from the filesystems
     // NOTE - for the list of filenames only this is enought
     // -> for stats we need to skip files we already got from a previous subFs
-    let fileNames: Set<string> = new Set<string>();
-    for (const fileSystem of [...this.subFilesystems].reverse()) {
+
+    for (const fileSystem of [...this.filterLayers].reverse()) {
       if (fileSystem.readDirFiltering) {
         fileNames = new Set(
           await fileSystem.readDirFiltering(dirPath, Array.from(fileNames))

@@ -41,19 +41,15 @@ export class PassThroughToAsyncFsSubFs
 
   constructor({
     name,
-    parentFs,
 
     passThroughFs,
   }: {
     name: string;
-    parentFs: CompositeFs;
     passThroughFs: typeof nodeFs;
   }) {
     super({
       name,
     });
-
-    this.compositFs = parentFs;
 
     this.targetFs = passThroughFs;
   }

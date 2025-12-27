@@ -27,7 +27,7 @@ export class CompositeFsDir {
     let fileNames: Set<string> = new Set<string>();
 
     // Iterate through filesystems in reverse order (same as readdir)
-    for (const fileSystem of [...this.compositFs.subFilesystems].reverse()) {
+    for (const fileSystem of [...this.compositFs.filterLayers].reverse()) {
       if (fileSystem.readDirFiltering) {
         fileNames = new Set(
           await fileSystem.readDirFiltering(this.dirPath, Array.from(fileNames))

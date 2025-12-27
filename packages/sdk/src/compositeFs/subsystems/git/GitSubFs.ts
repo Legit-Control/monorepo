@@ -3,7 +3,7 @@ import { CompositeSubFs } from '../../CompositeSubFs.js';
 import CompositFsFileHandle from '../../CompositeFsFileHandle.js';
 import * as path from 'path';
 
-import { createFsFromVolume, IFs, memfs, Volume } from 'memfs';
+import { createFsFromVolume, IFs, Volume } from 'memfs';
 import {
   IStats,
   TFileHandleReadResult,
@@ -97,7 +97,7 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
   storageFs: any;
 
-  async getAuthor(): Promise<{
+  private async getAuthor(): Promise<{
     name: string;
     email: string;
     date: number;
@@ -143,7 +143,6 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
 
   async responsible(filePath: string): Promise<boolean> {
     return true;
-    // return true this.isLegitPath(filePath);
   }
 
   private getRouteHandler(filePath: string): MatchResult | undefined {
@@ -228,9 +227,6 @@ export class GitSubFs extends BaseCompositeSubFs implements CompositeSubFs {
         fileExistsInCache = true;
       }
     }
-
-    // fileFromFs
-    // this.memFs.promises.
 
     // assert flags / file existence state
     if ((fileFromGit || fileExistsInCache) && flags.includes('x')) {

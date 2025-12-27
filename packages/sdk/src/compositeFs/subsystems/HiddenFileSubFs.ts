@@ -15,11 +15,10 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
 
   constructor({
     name,
-    parentFs,
+
     hiddenFiles,
   }: {
     name: string;
-    parentFs: CompositeFs;
 
     hiddenFiles: string[];
   }) {
@@ -95,7 +94,8 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
     // go through all entries, attach the path to them, and check if it matches with the ignore pattern - if so remove them from the array
     const result: string[] = [];
     for (const entry of entries) {
-      const fullPath = this.toStr(path) + '/' + entry;
+      const fullPath =
+        this.toStr(path) !== '/' ? this.toStr(path) + '/' + entry : '/' + entry;
       const isIgnored = await this.responsible(fullPath);
       if (!isIgnored) {
         result.push(entry);
