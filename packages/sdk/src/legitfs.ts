@@ -193,7 +193,7 @@ export async function openLegitFs({
     name: 'root',
     filterLayers: [rootCopyOnWriteFs],
     routes: {
-      '.': rootPassThroughFileSystem,
+      '[[...relativePath]]': rootPassThroughFileSystem,
     },
   });
 
@@ -327,7 +327,7 @@ export async function openLegitFs({
     name: 'git',
     filterLayers: [gitFsHiddenFs, gitFsCopyOnWriteFs],
     routes: {
-      '.': gitSubFs,
+      '[[...relativePath]]': gitSubFs,
     },
   });
 

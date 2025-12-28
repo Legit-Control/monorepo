@@ -6,6 +6,7 @@ import { CompositeSubFs } from './CompositeSubFs.js';
 import { CompositeFsDir } from './CompositeFsDir.js';
 import { IStats } from 'memfs/lib/node/types/misc.js';
 import { FsOperationLogger } from './utils/fs-operation-logger.js';
+import { PathRouteDescription, PathRouter } from './PathRouter.js';
 
 type FileSystem = any;
 
@@ -111,7 +112,7 @@ export class CompositeFs {
   };
 
   filterLayers: CompositeSubFs[] = [];
-  routes: LegitRouteDescriptor;
+  router: PathRouter;
   parentFs: CompositeFs | undefined;
   name: string;
 
@@ -136,7 +137,7 @@ export class CompositeFs {
   }: {
     name: string;
     filterLayers: CompositeSubFs[];
-    routes: LegitRouteDescriptor;
+    routes: LegitRouteFolder;
   }) {
     this.name = name;
 
@@ -145,7 +146,7 @@ export class CompositeFs {
       subFs.attach(this);
     }
 
-    this.routes = routes;
+    this.router = new PathRouter(routes);
 
     this.promises = {
       access: this.access.bind(this),
@@ -227,10 +228,11 @@ export class CompositeFs {
       }
     }
 
-    const router = Object.values(this.routes)[0] as CompositeSubFs;
-    router.attach(this);
+    const handler = this.router.match(filePath.toString());
 
-    return router;
+    handler?.handler.attach(this);
+
+    return handler!.handler;
   }
 
   async access(filePath: string, mode?: number) {
@@ -365,10 +367,15 @@ export class CompositeFs {
       operationArgs: { options },
     });
 
-    const router = Object.values(this.routes)[0] as CompositeSubFs;
-    router.attach(this);
+    const handler = this.router.match(dirPath.toString());
 
-    let fileNames = new Set(await router.readdir(dirPath, options));
+    handler?.handler.attach(this);
+
+    let fileNames = new Set<string>();
+
+    if (handler?.handler) {
+      fileNames = new Set(await handler.handler.readdir(dirPath, options));
+    }
 
     // Create a Union of all files from the filesystems
     // NOTE - for the list of filenames only this is enought
