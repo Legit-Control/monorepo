@@ -16,15 +16,17 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
 
   constructor({
     name,
-
     hiddenFiles,
+    rootPath,
   }: {
     name: string;
 
     hiddenFiles: string[];
+    rootPath: string;
   }) {
     super({
       name,
+      rootPath,
     });
     this.ig = ignore();
     this.ig.add(hiddenFiles);
@@ -35,8 +37,8 @@ export class HiddenFileSubFs extends BaseCompositeSubFs {
 
     // If sourceRootPath is provided, strip it from the path before pattern matching
     let relative = normalized;
-    if (this.compositeFs.rootPath) {
-      const rootPath = this.compositeFs.rootPath;
+    if (this.rootPath) {
+      const rootPath = this.rootPath;
       // Remove the root path prefix if present
       if (normalized.startsWith(rootPath + '/')) {
         relative = normalized.slice(rootPath.length + 1);

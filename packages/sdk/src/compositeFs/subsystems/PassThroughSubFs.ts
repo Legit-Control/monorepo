@@ -34,9 +34,18 @@ export class PassThroughSubFs extends BaseCompositeSubFs {
 
   private targetFs: CompositeFs;
 
-  constructor({ name, parentFs }: { name: string; parentFs: CompositeFs }) {
+  constructor({
+    name,
+    parentFs,
+    rootPath,
+  }: {
+    name: string;
+    parentFs: CompositeFs;
+    rootPath: string;
+  }) {
     super({
       name,
+      rootPath,
     });
 
     this.compositeFs = parentFs;

@@ -111,13 +111,15 @@ export class CompositeSubFsAdapter
     gitStorageFs,
     gitRoot,
     handler,
+    rootPath,
   }: {
     name: string;
     gitStorageFs: any;
     gitRoot: string;
     handler: VirtualFileDefinition;
+    rootPath: string;
   }) {
-    super({ name });
+    super({ name, rootPath });
 
     this.handler = handler;
     this.gitRoot = gitRoot;

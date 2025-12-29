@@ -48,14 +48,16 @@ export class EphemeralSubFs extends BaseCompositeSubFs {
 
   constructor({
     name,
+    rootPath,
     ephemeralPatterns,
   }: {
     name: string;
-
+    rootPath: string;
     ephemeralPatterns: string[];
   }) {
     super({
       name,
+      rootPath,
     });
 
     this.ig = ignore();
@@ -72,13 +74,12 @@ export class EphemeralSubFs extends BaseCompositeSubFs {
 
     // If sourceRootPath is provided, strip it from the path before pattern matching
     let relative = normalized;
-    if (this.compositeFs.rootPath) {
-      const rootPath = this.compositeFs.rootPath;
+    if (this.rootPath) {
       // Remove the root path prefix if present
-      if (normalized.startsWith(rootPath + '/')) {
-        relative = normalized.slice(rootPath.length + 1);
-      } else if (normalized.startsWith(rootPath)) {
-        relative = normalized.slice(rootPath.length);
+      if (normalized.startsWith(this.rootPath + '/')) {
+        relative = normalized.slice(this.rootPath.length + 1);
+      } else if (normalized.startsWith(this.rootPath)) {
+        relative = normalized.slice(this.rootPath.length);
       }
     }
 

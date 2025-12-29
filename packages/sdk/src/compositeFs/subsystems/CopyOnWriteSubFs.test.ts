@@ -26,6 +26,7 @@ describe('CopyOnWriteSubFs', () => {
       name: 'copy-on-write-subfs',
       sourceFs,
       copyToFs,
+      rootPath: '/',
       copyToRootPath: '/copies',
       patterns: ['*.txt', 'data/**', 'specific-file.md'],
     });
@@ -56,6 +57,7 @@ describe('CopyOnWriteSubFs', () => {
         name: 'cow-with-negation',
         sourceFs,
         copyToFs,
+        rootPath: '/',
         copyToRootPath: '/copies',
         patterns: ['*.txt', '!important.txt'],
       });
@@ -73,6 +75,7 @@ describe('CopyOnWriteSubFs', () => {
         name: 'cow-with-root',
         sourceFs,
         copyToFs,
+        rootPath: '/',
         copyToRootPath: '/copies',
 
         patterns: ['node_modules/**', '*.log'],
@@ -112,6 +115,7 @@ describe('CopyOnWriteSubFs', () => {
         name: 'cow-with-nested',
         sourceFs,
         copyToFs,
+        rootPath: '/',
         copyToRootPath: '/copies',
 
         patterns: ['build/**', 'dist/**', '.next/**'],
@@ -315,6 +319,7 @@ describe('CopyOnWriteSubFs', () => {
           name: 'cow-dir-pattern',
           sourceFs,
           copyToFs,
+          rootPath: '/',
           copyToRootPath: '/copies',
           patterns: ['test-dir/**'],
         });
@@ -329,6 +334,7 @@ describe('CopyOnWriteSubFs', () => {
           name: 'cow-dir-pattern',
           sourceFs,
           copyToFs,
+          rootPath: '/',
           copyToRootPath: '/copies',
           patterns: ['test-dir/**'],
         });

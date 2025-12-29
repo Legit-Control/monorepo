@@ -180,13 +180,14 @@ export async function openLegitFs({
     sourceFs: storageFs,
     copyToFs: copyFs,
     copyToRootPath: '/copies',
-
+    rootPath: gitRoot,
     patterns: ephemaralGitConfig ? ['**/.git/config'] : [],
   });
 
   const rootPassThroughFileSystem = new PassThroughToAsyncFsSubFs({
     name: 'root-passthrough',
     passThroughFs: storageFs,
+    rootPath: gitRoot,
   });
 
   const gitStorageFs = new CompositeFs({
@@ -209,6 +210,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: legitVirtualFile,
+    rootPath: gitRoot,
   });
 
   const operationAdapter = new CompositeSubFsAdapter({
@@ -216,6 +218,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchOperationVirtualFile,
+    rootPath: gitRoot,
   });
 
   const headAdapter = new CompositeSubFsAdapter({
@@ -223,6 +226,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchHeadVirtualFile,
+    rootPath: gitRoot,
   });
 
   const operationHeadAdapter = new CompositeSubFsAdapter({
@@ -230,6 +234,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchOperationHeadVirtualFile,
+    rootPath: gitRoot,
   });
 
   const operationHistoryAdapter = new CompositeSubFsAdapter({
@@ -237,6 +242,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchOperationsVirtualFile,
+    rootPath: gitRoot,
   });
 
   const historyAdapter = new CompositeSubFsAdapter({
@@ -244,6 +250,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchHistory,
+    rootPath: gitRoot,
   });
 
   const currentBranchAdapter = new CompositeSubFsAdapter({
@@ -251,6 +258,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitCurrentBranchVirtualFile,
+    rootPath: gitRoot,
   });
 
   const referenceBranchAdapter = new CompositeSubFsAdapter({
@@ -258,6 +266,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitReferenceBranchVirtualFile,
+    rootPath: gitRoot,
   });
 
   const applyChangesAdapter = new CompositeSubFsAdapter({
@@ -265,6 +274,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitApplyCurrentChangesToVirtualFile,
+    rootPath: gitRoot,
   });
 
   // Branch files and folders
@@ -273,6 +283,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchesListVirtualFile,
+    rootPath: gitRoot,
   });
 
   const branchFileAdapter = new CompositeSubFsAdapter({
@@ -280,6 +291,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitBranchFileVirtualFile,
+    rootPath: gitRoot,
   });
 
   // Commit files and folders
@@ -288,6 +300,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitCommitVirtualFolder,
+    rootPath: gitRoot,
   });
 
   const commitFileAdapter = new CompositeSubFsAdapter({
@@ -295,6 +308,7 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: gitCommitFileVirtualFile,
+    rootPath: gitRoot,
   });
 
   // Claude session files
@@ -303,12 +317,14 @@ export async function openLegitFs({
     gitStorageFs: gitStorageFs,
     gitRoot: gitRoot,
     handler: claudeVirtualSessionFileVirtualFile,
+    rootPath: gitRoot,
   });
 
   const hiddenFiles = showKeepFiles ? ['.git'] : ['.git', '.keep'];
   const gitFsHiddenFs = new HiddenFileSubFs({
     name: 'git-hidden-subfs',
     hiddenFiles,
+    rootPath: gitRoot,
   });
 
   // Read .gitignore file to add patterns to copy-on-write
@@ -356,7 +372,7 @@ export async function openLegitFs({
     sourceFs: gitStorageFs,
     copyToFs: userCopyFs,
     copyToRootPath: '/user-copies',
-
+    rootPath: gitRoot,
     patterns: copyOnWritePatterns,
   });
 

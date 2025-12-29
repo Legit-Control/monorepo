@@ -48,15 +48,19 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
     sourceFs,
     copyToFs,
     copyToRootPath,
+    rootPath,
+
     patterns,
   }: {
     name: string;
     sourceFs: any;
     copyToFs: any;
     copyToRootPath: string;
+    rootPath: string;
     patterns: string[];
   }) {
     super({
+      rootPath,
       name,
     });
 

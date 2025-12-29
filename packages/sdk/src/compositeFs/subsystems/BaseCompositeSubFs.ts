@@ -44,9 +44,11 @@ export abstract class BaseCompositeSubFs implements CompositeSubFs {
   readonly rootInstanceId: string;
 
   name: string;
+  rootPath: string;
 
-  constructor({ name }: { name: string }) {
+  constructor({ name, rootPath }: { name: string; rootPath: string }) {
     this.name = name;
+    this.rootPath = rootPath;
     // Generate a unique ID for this instance
     this.rootInstanceId = `${name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }

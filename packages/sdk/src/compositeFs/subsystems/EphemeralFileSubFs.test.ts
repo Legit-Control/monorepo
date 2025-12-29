@@ -10,7 +10,7 @@ describe('EphemeralFileSubFs', () => {
   beforeEach(() => {
     ephemeralSubFs = new EphemeralSubFs({
       name: 'ephemeral-subfs',
-
+      rootPath: '/',
       ephemeralPatterns: [
         '**/ephemeral_everywhere',
         'temp/**', // any file under temp/
@@ -432,7 +432,7 @@ describe('EphemeralFileSubFs', () => {
       // Create a new instance - data should be gone
       const newEphemeralSubFs = new EphemeralSubFs({
         name: 'new-ephemeral-subfs',
-
+        rootPath: '/',
         ephemeralPatterns: ['temp/**'],
       });
 

@@ -17,6 +17,7 @@ describe('createHiddenFileSubFs', () => {
   const fs = new HiddenFileSubFs({
     name: 'hidden-files-subfs',
     hiddenFiles,
+    rootPath: '/'
   });
 
   it('should be responsible for hidden files and patterns', async () => {

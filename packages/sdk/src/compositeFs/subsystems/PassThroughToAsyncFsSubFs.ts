@@ -42,14 +42,16 @@ export class PassThroughToAsyncFsSubFs
 
   constructor({
     name,
-
+    rootPath,
     passThroughFs,
   }: {
     name: string;
+    rootPath: string;
     passThroughFs: typeof nodeFs;
   }) {
     super({
       name,
+      rootPath,
     });
 
     this.targetFs = passThroughFs;
