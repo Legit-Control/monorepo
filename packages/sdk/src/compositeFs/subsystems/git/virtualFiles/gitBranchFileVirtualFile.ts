@@ -14,6 +14,7 @@ import { getCurrentBranch } from './getCurrentBranch.js';
 import Dirent from 'memfs/lib/node/Dirent.js';
 import { IDirent } from 'memfs/lib/node/types/misc.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -27,8 +28,6 @@ function getGitCacheFromFs(fs: any): any {
   // Default to empty object if no cache found
   return {};
 }
-
-// .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
 
 /**
  * # How to present an empyt folder in git
@@ -108,8 +107,43 @@ function getGitCacheFromFs(fs: any): any {
  *
  *
  *  -
+ * Creates a CompositeSubFsAdapter for branch file operations
+ *
+ * This adapter handles the .legit/branches/[branch-name]/[[...filepath]] routes,
+ * which represent files or folders at paths in a git branch.
+ *
+ * @example
+ * ```ts
+ * const adapter = createBranchFileAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ *
+ * // Use in CompositeFs routes
+ * const compositeFs = new CompositeFs({
+ *   routes: {
+ *     '.legit': {
+ *       branches: adapter,
+ *     },
+ *   },
+ * });
+ * ```
  */
-export const gitBranchFileVirtualFile: VirtualFileDefinition = {
+export function createBranchFileAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'branch-file',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
   type: 'gitBranchFileVirtualFile',
   rootType: 'folder',
 
@@ -711,7 +745,7 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
     }
 
     try {
-      await gitBranchFileVirtualFile.getStats(args);
+      await (this as any).getStats(args);
       throw new Error('Folder exists');
     } catch (err) {
       // no-op
@@ -865,4 +899,8 @@ export const gitBranchFileVirtualFile: VirtualFileDefinition = {
       });
     }
   },
-};
+    },
+  });
+
+  return adapter;
+}

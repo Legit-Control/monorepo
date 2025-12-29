@@ -15,10 +15,38 @@ import {
 } from './resolveOperationBranchName.js';
 import { getCurrentBranch } from '../getCurrentBranch.js';
 import { decodeBranchNameFromVfs } from './nameEncoding.js';
+import { CompositeSubFsAdapter } from '../../../CompositeSubFsAdapter.js';
 
-export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
-  type: 'gitBranchOperationVirtualFile',
-  rootType: 'file',
+/**
+ * Creates a CompositeSubFsAdapter for branch operation file operations
+ *
+ * This adapter handles branch operation tracking and management.
+ *
+ * @example
+ * ```ts
+ * const adapter = createBranchOperationAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createBranchOperationAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'branch-operation',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'gitBranchOperationVirtualFile',
+      rootType: 'file',
 
   getStats: async args => {
     const { gitRoot, nodeFs, pathParams } = args;
@@ -315,4 +343,8 @@ export const gitBranchOperationVirtualFile: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}

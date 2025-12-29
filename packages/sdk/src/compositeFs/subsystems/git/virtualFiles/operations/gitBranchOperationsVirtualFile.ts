@@ -14,6 +14,7 @@ import {
   operationBranchNamePostfix,
 } from './resolveOperationBranchName.js';
 import { getCurrentBranch } from '../getCurrentBranch.js';
+import { CompositeSubFsAdapter } from '../../../CompositeSubFsAdapter.js';
 
 export type Operation = {
   oid: string;
@@ -62,204 +63,240 @@ function folderStats(
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch
 
-export const gitBranchOperationsVirtualFile: VirtualFileDefinition = {
-  type: 'gitBranchOperationsVirtualFile',
-  rootType: 'file',
+/**
+ * Creates a CompositeSubFsAdapter for branch operations history
+ *
+ * This adapter handles reading the history of branch operations.
+ *
+ * @example
+ * ```ts
+ * const adapter = createBranchOperationsAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createBranchOperationsAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const handler: CompositeSubFsAdapter['handler'] = {
+    type: 'gitBranchOperationsVirtualFile',
+    rootType: 'file',
 
-  getStats: async args => {
-    const { gitRoot, nodeFs, pathParams } = args;
+    getStats: async args => {
+      const { gitRoot, nodeFs, pathParams } = args;
 
-    if (pathParams.branchName === undefined) {
-      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
-    }
+      if (pathParams.branchName === undefined) {
+        pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+      }
 
-    let operationBranchName = await resolveOperationBranchName(
-      nodeFs,
-      gitRoot,
-      pathParams.branchName
-    );
+      let operationBranchName = await resolveOperationBranchName(
+        nodeFs,
+        gitRoot,
+        pathParams.branchName
+      );
 
-    let headCommit: string;
-    let hasOperations = false;
+      let headCommit: string;
+      let hasOperations = false;
 
-    if (operationBranchName) {
-      try {
-        headCommit = await git.resolveRef({
-          fs: nodeFs,
-          dir: gitRoot,
-          ref: operationBranchName,
-        });
-        hasOperations = true;
-      } catch {
+      if (operationBranchName) {
         try {
           headCommit = await git.resolveRef({
             fs: nodeFs,
             dir: gitRoot,
-            ref: `refs/heads/${operationBranchName}`,
+            ref: operationBranchName,
           });
           hasOperations = true;
+        } catch {
+          try {
+            headCommit = await git.resolveRef({
+              fs: nodeFs,
+              dir: gitRoot,
+              ref: `refs/heads/${operationBranchName}`,
+            });
+            hasOperations = true;
+          } catch {
+            throw new Error(
+              `Base Branch ${pathParams.branchName} for operations does not exis`
+            );
+          }
+        }
+      } else {
+        try {
+          headCommit = await git.resolveRef({
+            fs: nodeFs,
+            dir: gitRoot,
+            ref: `refs/heads/${pathParams.branchName}`,
+          });
         } catch {
           throw new Error(
             `Base Branch ${pathParams.branchName} for operations does not exis`
           );
         }
       }
-    } else {
-      try {
-        headCommit = await git.resolveRef({
-          fs: nodeFs,
-          dir: gitRoot,
-          ref: `refs/heads/${pathParams.branchName}`,
-        });
-      } catch {
-        throw new Error(
-          `Base Branch ${pathParams.branchName} for operations does not exis`
-        );
-      }
-    }
 
-    const commit = await git.readCommit({
-      fs: nodeFs,
-      dir: gitRoot,
-      oid: headCommit,
-    });
-    const { commit: commitObj } = commit;
-    const commitTimeMs = commitObj.committer.timestamp * 1000;
-
-    try {
-      const file = hasOperations
-        ? await gitBranchOperationsVirtualFile.getFile(args)
-        : undefined;
-      const size = file?.content?.length ?? 0;
-      // Modify the stats object to represent a file instead of a directory
-      return {
-        mode: 0o644,
-        size: size,
-        atimeMs: commitTimeMs,
-        mtimeMs: commitTimeMs,
-        ctimeMs: commitTimeMs,
-        birthtimeMs: commitTimeMs,
-        atime: new Date(commitTimeMs),
-        mtime: new Date(commitTimeMs),
-        ctime: new Date(commitTimeMs),
-        birthtime: new Date(commitTimeMs), // hardcoded to epoch as Date object
-        isFile: () => true,
-        isDirectory: () => false,
-        isSymbolicLink: () => false,
-        isBlockDevice: () => false,
-        isCharacterDevice: () => false,
-        isSocket: () => false,
-        isFIFO: () => false,
-        isFileSync: () => true,
-        isDirectorySync: () => false,
-        dev: 0,
-        ino: 0,
-        nlink: 1,
-        uid: 0,
-        gid: 0,
-        rdev: 0,
-        blksize: 4096,
-        blocks: 0,
-      };
-    } catch (err) {
-      // If .git does not exist, propagate as ENOENT
-      throw new Error(
-        `ENOENT: no such file or directory, stat operationHistory`
-      );
-    }
-  },
-
-  getFile: async args => {
-    const { gitRoot, nodeFs, pathParams } = args;
-
-    if (pathParams.branchName === undefined) {
-      pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
-    }
-
-    // Read all commits from the operation branch and collect their messages
-    let operationBranchName = await resolveOperationBranchName(
-      nodeFs,
-      gitRoot,
-      pathParams.branchName
-    );
-
-    let operations: Operation[] = [];
-
-    if (operationBranchName) {
-      // Resolve the operation branch ref
-      const operationBranchRef = await git.resolveRef({
+      const commit = await git.readCommit({
         fs: nodeFs,
         dir: gitRoot,
-        ref: `refs/heads/${operationBranchName}`,
+        oid: headCommit,
       });
+      const { commit: commitObj } = commit;
+      const commitTimeMs = commitObj.committer.timestamp * 1000;
 
-      let isFirstOperation = false;
+      try {
+        const file = hasOperations
+          ? await adapter.handler.getFile(args)
+          : undefined;
+        const size = file?.content?.length ?? 0;
+        // Modify the stats object to represent a file instead of a directory
+        return {
+          mode: 0o644,
+          size: size,
+          atimeMs: commitTimeMs,
+          mtimeMs: commitTimeMs,
+          ctimeMs: commitTimeMs,
+          birthtimeMs: commitTimeMs,
+          atime: new Date(commitTimeMs),
+          mtime: new Date(commitTimeMs),
+          ctime: new Date(commitTimeMs),
+          birthtime: new Date(commitTimeMs), // hardcoded to epoch as Date object
+          isFile: () => true,
+          isDirectory: () => false,
+          isSymbolicLink: () => false,
+          isBlockDevice: () => false,
+          isCharacterDevice: () => false,
+          isSocket: () => false,
+          isFIFO: () => false,
+          isFileSync: () => true,
+          isDirectorySync: () => false,
+          dev: 0,
+          ino: 0,
+          nlink: 1,
+          uid: 0,
+          gid: 0,
+          rdev: 0,
+          blksize: 4096,
+          blocks: 0,
+        };
+      } catch (err) {
+        // If .git does not exist, propagate as ENOENT
+        throw new Error(
+          `ENOENT: no such file or directory, stat operationHistory`
+        );
+      }
+    },
 
-      // Walk through the commits in the operation branch
-      let oid: string | null = operationBranchRef;
-      while (oid && !isFirstOperation) {
-        const commit = await git.readCommit({ fs: nodeFs, dir: gitRoot, oid });
-        operations.push({
-          oid: commit.oid,
-          parentOids: commit.commit.parent,
-          message: commit.commit.message,
-          originBranchOid: 'unset',
+    getFile: async args => {
+      const { gitRoot, nodeFs, pathParams } = args;
+
+      if (pathParams.branchName === undefined) {
+        pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+      }
+
+      // Read all commits from the operation branch and collect their messages
+      let operationBranchName = await resolveOperationBranchName(
+        nodeFs,
+        gitRoot,
+        pathParams.branchName
+      );
+
+      let operations: Operation[] = [];
+
+      if (operationBranchName) {
+        // Resolve the operation branch ref
+        const operationBranchRef = await git.resolveRef({
+          fs: nodeFs,
+          dir: gitRoot,
+          ref: `refs/heads/${operationBranchName}`,
         });
 
-        // Get parent commit (first parent)
-        oid =
-          commit.commit.parent && commit.commit.parent.length > 0
-            ? commit.commit.parent[0]!
-            : null;
+        let isFirstOperation = false;
 
-        if (
-          commit.commit.parent.length === 2 &&
-          commit.commit.parent[0] === commit.commit.parent[1]
-        ) {
-          isFirstOperation = true;
+        // Walk through the commits in the operation branch
+        let oid: string | null = operationBranchRef;
+        while (oid && !isFirstOperation) {
+          const commit = await git.readCommit({
+            fs: nodeFs,
+            dir: gitRoot,
+            oid,
+          });
+          operations.push({
+            oid: commit.oid,
+            parentOids: commit.commit.parent,
+            message: commit.commit.message,
+            originBranchOid: 'unset',
+          });
+
+          // Get parent commit (first parent)
+          oid =
+            commit.commit.parent && commit.commit.parent.length > 0
+              ? commit.commit.parent[0]!
+              : null;
+
+          if (
+            commit.commit.parent.length === 2 &&
+            commit.commit.parent[0] === commit.commit.parent[1]
+          ) {
+            isFirstOperation = true;
+          }
         }
       }
-    }
 
-    let currentOringinBranchState: string | undefined = undefined;
+      let currentOringinBranchState: string | undefined = undefined;
 
-    for (let i = operations.length - 1; i >= 0; i--) {
-      const op = operations[i]!;
-      if (currentOringinBranchState === undefined) {
-        // we expect the first opration to have two parents
-        if (
-          op.parentOids.length !== 2 &&
-          op.parentOids[0] !== op.parentOids[1]
-        ) {
-          throw new Error(
-            `Operation commit ${op.oid} does not have two parents as expected`
-          );
+      for (let i = operations.length - 1; i >= 0; i--) {
+        const op = operations[i]!;
+        if (currentOringinBranchState === undefined) {
+          // we expect the first opration to have two parents
+          if (
+            op.parentOids.length !== 2 &&
+            op.parentOids[0] !== op.parentOids[1]
+          ) {
+            throw new Error(
+              `Operation commit ${op.oid} does not have two parents as expected`
+            );
+          }
+          currentOringinBranchState = op.parentOids[1];
         }
-        currentOringinBranchState = op.parentOids[1];
+
+        if (op.parentOids.length === 2) {
+          currentOringinBranchState = op.parentOids[1];
+        }
+
+        op.originBranchOid = currentOringinBranchState;
       }
 
-      if (op.parentOids.length === 2) {
-        currentOringinBranchState = op.parentOids[1];
-      }
+      const content = Buffer.from(JSON.stringify(operations, null, 2), 'utf-8');
 
-      op.originBranchOid = currentOringinBranchState;
-    }
+      return {
+        type: 'file',
+        content,
+        mode: 0o644,
+        size: content.length,
+      };
+    },
 
-    const content = Buffer.from(JSON.stringify(operations, null, 2), 'utf-8');
+    rename: async function (args): Promise<void> {
+      throw new Error('not implemented');
+    },
 
-    return {
-      type: 'file',
-      content,
-      mode: 0o644,
-      size: content.length,
-    };
-  },
+    mkdir: async function (args): Promise<void> {
+      throw new Error('not implemented');
+    },
+  };
+  const adapter = new CompositeSubFsAdapter({
+    name: 'branch-operations',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: handler,
+  });
 
-  rename: async function (args): Promise<void> {
-    throw new Error('not implemented');
-  },
-
-  mkdir: async function (args): Promise<void> {
-    throw new Error('not implemented');
-  },
-};
+  return adapter;
+}

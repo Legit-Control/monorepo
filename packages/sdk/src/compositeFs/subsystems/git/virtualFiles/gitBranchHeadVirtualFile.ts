@@ -1,9 +1,10 @@
 import git from 'isomorphic-git';
-import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
+import { VirtualFileArgs } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -18,7 +19,44 @@ function getGitCacheFromFs(fs: any): any {
   return {};
 }
 
-export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
+/**
+ * Creates a CompositeSubFsAdapter for branch head operations
+ *
+ * This adapter handles the .legit/[branchName]/head file, which contains
+ * the commit SHA that the branch currently points to.
+ *
+ * @example
+ * ```ts
+ * const adapter = createBranchHeadAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ *
+ * // Use in CompositeFs routes
+ * const compositeFs = new CompositeFs({
+ *   routes: {
+ *     '.legit': {
+ *       head: adapter,
+ *     },
+ *   },
+ * });
+ * ```
+ */
+export function createBranchHeadAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'branch-head',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
   type: 'gitBranchHeadVirtualFile',
   rootType: 'file',
 
@@ -159,4 +197,8 @@ export const gitBranchHeadVirtualFile: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}

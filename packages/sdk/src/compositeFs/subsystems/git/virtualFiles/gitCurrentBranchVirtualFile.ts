@@ -5,10 +5,38 @@ import { getCurrentBranch, setCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
 import { getReferenceBranch } from './getReferenceBranch.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
-export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
-  type: 'gitCurrentBranchVirtualFile',
-  rootType: 'file',
+/**
+ * Creates a CompositeSubFsAdapter for current branch operations
+ *
+ * This adapter handles reading and writing the current branch name.
+ *
+ * @example
+ * ```ts
+ * const adapter = createCurrentBranchAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createCurrentBranchAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'current-branch',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'gitCurrentBranchVirtualFile',
+      rootType: 'file',
 
   getStats: async ({ gitRoot, nodeFs }) => {
     const branchName = await getCurrentBranch(gitRoot, nodeFs);
@@ -97,4 +125,8 @@ export const gitCurrentBranchVirtualFile: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}

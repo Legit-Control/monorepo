@@ -35,6 +35,17 @@ export interface VirtualFileArgs {
   author: { name: string; email: string; date: number; timezoneOffset: number }; // The author info for commits
 }
 
+
+
+/**
+ * Definition of a virtual file in the Git subsystem
+ * 
+ *  ->  
+ * 
+ * writeFile -> writes the whole file
+ * readFile -> writes the whole file 
+ */
+
 export type VirtualFileDefinition = {
   type: string;
   rootType: 'folder' | 'file';

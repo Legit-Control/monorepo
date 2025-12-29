@@ -4,6 +4,7 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { resolveGitObjAtPath, resolveGitObjAtPathFromArgs } from './utils.js';
 import { ENOENTError } from '../../../errors/ENOENTError.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -18,9 +19,36 @@ function getGitCacheFromFs(fs: any): any {
   return {};
 }
 
-export const gitCommitFileVirtualFile: VirtualFileDefinition = {
-  type: 'gitCommitFileVirtualFile',
-  rootType: 'file',
+/**
+ * Creates a CompositeSubFsAdapter for commit file operations
+ *
+ * This adapter handles reading files from specific commits in git history.
+ *
+ * @example
+ * ```ts
+ * const adapter = createCommitFileAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createCommitFileAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'commit-file',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'gitCommitFileVirtualFile',
+      rootType: 'file',
 
   getStats: async ({ filePath, gitRoot, nodeFs, pathParams, userSpaceFs }) => {
     if (!pathParams.sha_1_1_2) {
@@ -201,4 +229,8 @@ export const gitCommitFileVirtualFile: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}

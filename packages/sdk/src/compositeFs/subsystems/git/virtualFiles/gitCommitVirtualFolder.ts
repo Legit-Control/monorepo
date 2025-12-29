@@ -3,10 +3,38 @@ import git from 'isomorphic-git';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { toDirEntry } from './utils.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
-export const gitCommitVirtualFolder: VirtualFileDefinition = {
-  type: 'gitCommitVirtualFolder',
-  rootType: 'folder',
+/**
+ * Creates a CompositeSubFsAdapter for commit virtual folder operations
+ *
+ * This adapter handles browsing git commits organized by their SHA hashes.
+ *
+ * @example
+ * ```ts
+ * const adapter = createCommitFolderAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createCommitFolderAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'commit-folder',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'gitCommitVirtualFolder',
+      rootType: 'folder',
 
   getStats: async args => {
     // TODO use the commit where the file was changed last as base
@@ -106,4 +134,8 @@ export const gitCommitVirtualFolder: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}

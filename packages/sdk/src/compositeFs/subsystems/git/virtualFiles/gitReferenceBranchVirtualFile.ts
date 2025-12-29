@@ -6,10 +6,38 @@ import {
   setReferenceBranch,
 } from './getReferenceBranch.js';
 import { tryResolveRef } from './utils.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
-export const gitReferenceBranchVirtualFile: VirtualFileDefinition = {
-  type: 'gitReferenceBranchVirtualFile',
-  rootType: 'file',
+/**
+ * Creates a CompositeSubFsAdapter for reference branch operations
+ *
+ * This adapter handles reading and writing the reference branch name.
+ *
+ * @example
+ * ```ts
+ * const adapter = createReferenceBranchAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createReferenceBranchAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'reference-branch',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'gitReferenceBranchVirtualFile',
+      rootType: 'file',
 
   getStats: async ({ gitRoot, nodeFs }) => {
     const branchName = await getReferenceBranch(gitRoot, nodeFs);
@@ -82,4 +110,8 @@ export const gitReferenceBranchVirtualFile: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}

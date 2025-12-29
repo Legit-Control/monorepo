@@ -15,6 +15,7 @@ import Dirent from 'memfs/lib/node/Dirent.js';
 import { IDirent } from 'memfs/lib/node/types/misc.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 import { memfs } from 'memfs';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
 const SESSION_DATA_PATH = 'session_data';
 
@@ -27,9 +28,10 @@ const settingsContent = JSON.stringify(
 );
 
 /**
- * Virtual file for claud session
+ * Creates a CompositeSubFsAdapter for Claude virtual session file operations
  *
- * this serves everything under the .claude folder
+ * This adapter handles the .claude folder for Claude AI session management,
+ * including settings, debug logs, and project-specific session data.
  *
  * .claude
  *  ├── settings.json -> containing the config path to tell claude to store its session under .claude/session_ata
@@ -55,10 +57,31 @@ const settingsContent = JSON.stringify(
  *  - NOTE: for now you can have only one session per reference-branch
  *  - write hash from head to .legit/apply-changes - this should update the tree in reference branch with the changes from head
  *    -> and will create a new commit on the current-branch pointing to head and to the reference branch commit
+ * @example
+ * ```ts
+ * const adapter = createClaudeVirtualSessionFileAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
  */
-export const claudeVirtualSessionFileVirtualFile: VirtualFileDefinition = {
-  type: 'claudeVirtualSessionFileVirtualFile',
-  rootType: 'folder',
+export function createClaudeVirtualSessionFileAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'claude-virtual-session-file',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'claudeVirtualSessionFileVirtualFile',
+      rootType: 'folder',
 
   getStats: async ({ gitRoot, nodeFs, filePath, cacheFs, pathParams }) => {
     // Return folder stats for specific .claude paths regardless of cache
@@ -437,4 +460,8 @@ export const claudeVirtualSessionFileVirtualFile: VirtualFileDefinition = {
   rmdir: async ({ filePath, gitRoot, nodeFs, cacheFs, pathParams, author }) => {
     // done by outer system await cacheFs.promises.rmdir(filePath);
   },
-};
+    },
+  });
+
+  return adapter;
+}

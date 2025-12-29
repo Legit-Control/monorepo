@@ -5,12 +5,40 @@ import * as nodeFs from 'node:fs';
 import { PathLike } from 'node:fs';
 import { getCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
+import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
 
 // .legit/branches -> list of branches
 
-export const gitBranchHistory: VirtualFileDefinition = {
-  type: 'gitBranchHistory',
-  rootType: 'file',
+/**
+ * Creates a CompositeSubFsAdapter for branch history operations
+ *
+ * This adapter handles reading the commit history of a branch.
+ *
+ * @example
+ * ```ts
+ * const adapter = createBranchHistoryAdapter({
+ *   gitStorageFs: memFs,
+ *   gitRoot: '/my-repo',
+ * });
+ * ```
+ */
+export function createBranchHistoryAdapter({
+  gitStorageFs,
+  gitRoot,
+  rootPath,
+}: {
+  gitStorageFs: any;
+  gitRoot: string;
+  rootPath?: string;
+}): CompositeSubFsAdapter {
+  const adapter = new CompositeSubFsAdapter({
+    name: 'branch-history',
+    gitStorageFs,
+    gitRoot,
+    rootPath: rootPath || gitRoot,
+    handler: {
+      type: 'gitBranchHistory',
+      rootType: 'file',
 
   getStats: async ({ gitRoot, nodeFs, pathParams }) => {
     if (pathParams.branchName === undefined) {
@@ -120,4 +148,8 @@ export const gitBranchHistory: VirtualFileDefinition = {
   ): Promise<void> {
     throw new Error('not implemented');
   },
-};
+    },
+  });
+
+  return adapter;
+}
