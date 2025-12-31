@@ -1,6 +1,6 @@
 import * as nodeFs from 'node:fs';
 import { createLegitSyncService } from './sync/createLegitSyncService.js';
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 
 import { CompositeFs } from './compositeFs/CompositeFs.js';
 import { EphemeralSubFs } from './compositeFs/subsystems/EphemeralFileSubFs.js';

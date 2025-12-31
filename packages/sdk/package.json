@@ -62,8 +62,8 @@
     "vitest": "^3.1.1"
   },
   "dependencies": {
+    "@legit-sdk/isomorphic-git": "workspace:*",
     "ignore": "^7.0.4",
-    "isomorphic-git": "workspace:*",
     "memfs": "^4.14.0",
     "typescript": "^5.8.3"
   }

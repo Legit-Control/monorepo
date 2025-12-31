@@ -1,5 +1,5 @@
-import git, { FsClient } from 'isomorphic-git';
-import http from 'isomorphic-git/http/node';
+import git, { FsClient } from '@legit-sdk/isomorphic-git';
+import http from '@legit-sdk/isomorphic-git/http/node';
 import { LegitAuth } from './sessionManager.js';
 
 const remote = 'legit';
