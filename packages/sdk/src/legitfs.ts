@@ -96,6 +96,7 @@ export async function openLegitFs({
       dir: '/',
       defaultBranch: anonymousBranch,
     });
+    await storageFs.promises.writeFile(gitRoot + '/.gitignore', '');
     await storageFs.promises.writeFile(gitRoot + '/.keep', '');
     await git.add({
       fs: storageFs,
