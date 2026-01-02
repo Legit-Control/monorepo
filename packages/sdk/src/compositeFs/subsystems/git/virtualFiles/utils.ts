@@ -2,7 +2,7 @@ import git, {
   FsClient,
   TreeEntry,
   TreeObject,
-} from 'isomorphic-git';
+} from '@legit-sdk/isomorphic-git';
 import { VirtualFileArgs } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 

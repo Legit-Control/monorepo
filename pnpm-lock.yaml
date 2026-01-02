@@ -212,8 +212,8 @@ importers:
   examples/create-react-vite-starter:
     dependencies:
       '@legit-sdk/react':
-        specifier: ^0.2.15
-        version: 0.2.15(react@19.2.1)
+        specifier: workspace:*
+        version: link:../../packages/sdk-react
       diff-match-patch-ts:
         specifier: ^0.8.0
         version: 0.8.0
@@ -559,12 +559,12 @@ importers:
 
   packages/sdk:
     dependencies:
+      '@legit-sdk/isomorphic-git':
+        specifier: workspace:*
+        version: link:../3rd-party/isomorphic-git
       ignore:
         specifier: ^7.0.4
         version: 7.0.5
-      isomorphic-git:
-        specifier: workspace:*
-        version: link:../3rd-party/isomorphic-git
       memfs:
         specifier: ^4.14.0
         version: 4.49.0
@@ -2767,14 +2767,6 @@ packages:
 
   '@legit-sdk/core@0.1.11':
     resolution: {integrity: sha512-No1uhbMEFNxLptYaRZ1owMTRck8rCw12aho7VIb1tkzcXaMi7R9gDELLt+Bb+/IfbgMQp5nbBrSTFAVXVVnXjQ==}
-
-  '@legit-sdk/core@0.2.4':
-    resolution: {integrity: sha512-TGrNmW7TxHlDj5CqhZF9i8yrWpcQBcGMieWYvzkLDkotFuiXy503q+Hha3TTR5kiUO3WvxubUlC11s2FF3p2Qg==}
-
-  '@legit-sdk/react@0.2.15':
-    resolution: {integrity: sha512-XpWyEhCX+SNIXydnToekSxeBK0CPThHfvfFOL5EsA6ot+F4hGpP/tEJPR7uqnx78y4MDhi+8e4vnizBshsXRpw==}
-    peerDependencies:
-      react: '>=18'
 
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
@@ -11437,6 +11429,7 @@ packages:
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
@@ -13781,18 +13774,6 @@ snapshots:
       isomorphic-git: 1.34.0
       memfs: 4.51.1
       typescript: 5.9.3
-
-  '@legit-sdk/core@0.2.4':
-    dependencies:
-      ignore: 7.0.5
-      isomorphic-git: 1.34.0
-      memfs: 4.51.1
-      typescript: 5.9.3
-
-  '@legit-sdk/react@0.2.15(react@19.2.1)':
-    dependencies:
-      '@legit-sdk/core': 0.2.4
-      react: 19.2.1
 
   '@manypkg/find-root@1.1.0':
     dependencies:

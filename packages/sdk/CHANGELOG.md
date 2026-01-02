@@ -1,5 +1,26 @@
 # @legit-sdk/core
 
+## 0.4.1
+
+### Patch Changes
+
+- Update license
+- Updated dependencies
+  - @legit-sdk/isomorphic-git@1.34.2
+
+## 0.4.0
+
+### Minor Changes
+
+- changes dependency from iso-git to forked version
+
+### Patch Changes
+
+- 23fc937: Update license
+- a22b787: fix wrong serverURl Path
+- Updated dependencies
+  - @legit-sdk/isomorphic-git@1.34.1
+
 ## 0.3.0
 
 ### Minor Changes
