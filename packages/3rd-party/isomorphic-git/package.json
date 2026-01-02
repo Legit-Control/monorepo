@@ -6,6 +6,9 @@
   "typings": "./index.d.ts",
   "main": "./index.cjs",
   "module": "./index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./index.d.ts",
