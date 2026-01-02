@@ -14,7 +14,7 @@
     "legit"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
     "@legit-sdk/core": "workspace:*",
