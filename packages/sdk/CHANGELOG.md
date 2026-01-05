@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.4.2
+
+### Patch Changes
+
+- 1bce00e: adds git .ignore on legit initialization
+
 ## 0.4.1
 
 ### Patch Changes
