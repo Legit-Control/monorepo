@@ -66,10 +66,15 @@ type PathRouteDescription = CompositeSubFs | LegitRouteFolder;
 function compilePattern(pattern: string): {
   regexStr: string;
   paramNames: string[];
+  folderRoute: boolean;
+  pathParameter?: string;
 } {
   const segments = pattern.split('/').filter(Boolean);
   const paramNames: string[] = [];
   const regexSegments: string[] = [];
+
+  let folderRoute = false;
+  let pathParameter: string | undefined;
 
   for (const segment of segments) {
     if (segment.startsWith('[[') && segment.endsWith(']]')) {
@@ -78,8 +83,10 @@ function compilePattern(pattern: string): {
       paramNames.push(name);
 
       if (segment.startsWith('[[...')) {
+        folderRoute = true;
         // [[...param]] - zero or more segments
         regexSegments.push('(\/.*)*');
+        pathParameter = name;
       } else {
         throw new Error(
           'Optional single-segment parameters [[param]] are not supported. Use [[...param]] for catch-all or [param] for required single segment.'
@@ -98,16 +105,23 @@ function compilePattern(pattern: string): {
         regexSegments.push('\/([^\\/]+)');
       }
     } else {
-      // Static segment - escape regex special characters
-      regexSegments.push(
-        '\/' + segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ''
-      );
+      if (segment === '.') {
+        // Folder root handler - does not add to regex
+        folderRoute = true;
+      } else {
+        // Static segment - escape regex special characters
+        regexSegments.push(
+          '\/' + segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ''
+        );
+      }
     }
   }
 
   return {
-    regexStr: regexSegments.join('') + '(?:$|/.*)',
+    regexStr: regexSegments.join('') + '$', // '(?:$|/.*)',
     paramNames,
+    folderRoute,
+    pathParameter,
   };
 }
 
@@ -240,35 +254,42 @@ function flattenRoutes(routes: LegitRouteFolder): Array<{
     const staticChildren: { segment: string; type: 'folder' | 'file' }[] = [];
 
     // Validate: . and [[...param]] can coexist, but no other combinations
-    const hasDot = '.' in folder;
-    const hasCatchAll = Object.keys(folder).some(k => k.startsWith('[[...'));
-    const hasOptionalSingle = Object.keys(folder).some(
-      k => k.startsWith('[[') && !k.startsWith('[[...')
+
+    const folderHandlers = Object.keys(folder).filter(
+      k => k.startsWith('[[') || k === '.'
     );
 
-    if ((hasDot && hasOptionalSingle) || (hasCatchAll && hasOptionalSingle)) {
+    if (folderHandlers.length > 1) {
       throw new Error(
-        `Invalid combination of wildcard/optional matchers at path '${currentPath}'`
+        `Expected exactly one folder handler for ${currentPath || '/'} expected but multuple found: ${folderHandlers.join(', ')}`
       );
     }
 
-    let hasRootHandler = false;
+    if (folderHandlers.length === 0) {
+      throw new Error(`No folder handler for ${currentPath || '/'} founds`);
+    }
 
     for (const [segment, child] of Object.entries(folder)) {
       const newPath = currentPath ? `${currentPath}/${segment}` : segment;
 
       if (segment === '.') {
-        hasRootHandler = true;
         // Folder root handler - must be a handler, not a folder
         if (typeof (child as CompositeSubFs).name !== 'string') {
           throw new Error(
             `Folder root '.' at path '${currentPath}' must be a handler, not a folder`
           );
         }
+
+        if (child.fsType !== 'folder' && child.fsType !== 'fs') {
+          throw new Error(
+            `Folder root handler '.' at path '${currentPath}' must be of type 'folder' or 'fs'`
+          );
+        }
+
         flatRoutes.push({
-          pattern: currentPath,
+          pattern: currentPath + '/.',
           handler: child as CompositeSubFs,
-          priority: calculatePriority(currentPath || '.'),
+          priority: calculatePriority(currentPath),
           staticBaseChildren: staticChildren,
         });
       } else if (segment.startsWith('[[')) {
@@ -283,7 +304,11 @@ function flattenRoutes(routes: LegitRouteFolder): Array<{
               priority: calculatePriority(newPath),
               staticBaseChildren: staticChildren,
             });
-            hasRootHandler = true;
+            if (child.fsType !== 'folder' && child.fsType !== 'fs') {
+              throw new Error(
+                `Folder root handler '.' at path '${currentPath}' must be of type 'folder' or 'fs'`
+              );
+            }
           } else {
             // It's a folder - walk into children
             walk(child, newPath);
@@ -310,16 +335,6 @@ function flattenRoutes(routes: LegitRouteFolder): Array<{
         // Static segment - walk into children
         walk(child, newPath);
       }
-    }
-
-    if (!hasRootHandler) {
-      // Add a route for the folder itself if no root handler exists
-      flatRoutes.push({
-        pattern: currentPath || '.',
-
-        priority: calculatePriority(currentPath || '.'),
-        staticBaseChildren: staticChildren,
-      });
     }
   }
 
@@ -368,8 +383,10 @@ export class PathRouter {
     paramNames: string[];
     handler?: CompositeSubFs;
     staticBaseChildren: { segment: string; type: 'folder' | 'file' }[];
+    folderRoute: boolean;
     priority: number;
     pattern: string;
+    pathParameter?: string;
   }>;
 
   /**
@@ -387,7 +404,8 @@ export class PathRouter {
 
     // Compile each route pattern to regex
     this.compiledRoutes = flatRoutes.map(route => {
-      const { regexStr, paramNames } = compilePattern(route.pattern);
+      const { regexStr, paramNames, folderRoute, pathParameter } =
+        compilePattern(route.pattern);
       return {
         regex: new RegExp(regexStr),
         paramNames,
@@ -395,6 +413,8 @@ export class PathRouter {
         handler: route.handler,
         priority: route.priority,
         pattern: route.pattern,
+        folderRoute,
+        pathParameter,
       };
     });
   }
@@ -432,12 +452,9 @@ export class PathRouter {
       relative = relative.slice(0, -1);
     }
 
-    let handlerMatch: (typeof this.compiledRoutes)[0] | undefined;
+    let bestRoute: (typeof this.compiledRoutes)[0] | undefined;
     let params: Record<string, string> = {};
-    let patternToSiblings: Record<
-      string,
-      { segment: string; type: 'folder' | 'file'; routerPriority: number }[]
-    > = {};
+
     let priorityMatched = -1;
     const compiledRoutes = this.compiledRoutes;
 
@@ -447,26 +464,13 @@ export class PathRouter {
       const match = relative.match(currentCompiledRoute.regex);
 
       if (match) {
-        patternToSiblings[currentCompiledRoute.pattern] =
-          patternToSiblings[currentCompiledRoute.pattern] || [];
-        // collect the folder entries from parent path matches
-        for (const sibling of currentCompiledRoute.staticBaseChildren) {
-          patternToSiblings[currentCompiledRoute.pattern]!.push({
-            ...sibling,
-            routerPriority: currentCompiledRoute.priority,
-          });
-        }
         matchingRoutes.push(currentCompiledRoute);
       } else {
         // Not a match
         continue;
       }
 
-      if (
-        !match ||
-        currentCompiledRoute.handler === undefined ||
-        currentCompiledRoute.priority <= priorityMatched
-      ) {
+      if (!match || currentCompiledRoute.priority <= priorityMatched) {
         continue;
       }
 
@@ -484,61 +488,37 @@ export class PathRouter {
       }
 
       priorityMatched = currentCompiledRoute.priority;
-      handlerMatch = currentCompiledRoute;
+      bestRoute = currentCompiledRoute;
     }
 
     // CONTINUE HERE!
-    if (!handlerMatch) {
+    if (!bestRoute || bestRoute.handler === undefined) {
       return undefined;
     }
 
-    const staticSiblings: {
-      segment: string;
-      type: 'folder' | 'file';
-      routerPriority: number;
-    }[] = [];
+    let siblings: typeof bestRoute.staticBaseChildren = [];
 
-    for (const pattern of Object.keys(patternToSiblings)) {
-      // Check if there's a more specific pattern (child route)
-      const hasMoreSpecificPattern = Object.keys(patternToSiblings).some(
-        otherPattern =>
-          otherPattern !== pattern && otherPattern.startsWith(pattern + '/')
-      );
-
-      // Skip this pattern if a more specific one exists
-      if (hasMoreSpecificPattern) {
-        continue;
-      }
-      // throw new Error('debug');
-
-      const siblings = patternToSiblings[pattern];
-
-      for (const sibling of siblings!) {
-        const existingSibilingIndex = staticSiblings.findIndex(
-          existingSibling => existingSibling.segment === sibling.segment
-        );
-
-        if (existingSibilingIndex > -1) {
-          if (
-            staticSiblings[existingSibilingIndex]!.routerPriority <
-            sibling.routerPriority
-          ) {
-            staticSiblings[existingSibilingIndex] = sibling;
-          }
-        } else {
-          staticSiblings.push(sibling);
+    if (bestRoute.folderRoute) {
+      if (bestRoute.pathParameter) {
+        if (params[bestRoute.pathParameter] === '') {
+          siblings = bestRoute.staticBaseChildren.map(sibling => ({
+            segment: sibling.segment,
+            type: sibling.type,
+          }));
         }
+      } else {
+        siblings = bestRoute.staticBaseChildren.map(sibling => ({
+          segment: sibling.segment,
+          type: sibling.type,
+        }));
       }
     }
 
     return {
-      handler: handlerMatch.handler!,
-      matchingPattern: handlerMatch.pattern,
+      handler: bestRoute.handler,
+      matchingPattern: bestRoute.pattern,
       params: params,
-      staticSiblings: staticSiblings.map(sibling => ({
-        segment: sibling.segment,
-        type: sibling.type,
-      })),
+      staticSiblings: siblings,
     };
   }
 }

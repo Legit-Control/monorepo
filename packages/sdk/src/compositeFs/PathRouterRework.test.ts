@@ -41,7 +41,6 @@ describe('PathRouter', () => {
           // this should have a higher prio than [[...filePath]/.legit
           '.legit': {
             '.': new MockSubFs('.legit', 'folder'),
-            dublicate: new MockSubFs('.legit/dublicate', 'folder'),
             head: new MockSubFs('.legit/head', 'file'),
             branches: {
               '.': new MockSubFs('.legit/branches', 'folder'),
@@ -113,11 +112,6 @@ describe('PathRouter', () => {
         legitInRoot?.staticSiblings,
         'the .legit folder in root should have static siblings'
       ).toEqual([
-        { segment: 'changes', type: 'file' },
-        {
-          segment: 'dublicate',
-          type: 'file',
-        },
         { segment: 'head', type: 'file' },
         { segment: 'branches', type: 'folder' },
         { segment: 'commits', type: 'folder' },
@@ -133,10 +127,17 @@ describe('PathRouter', () => {
         legitInSubfolder?.staticSiblings,
         'the .legit folder in root should have static siblings'
       ).toEqual([
-        { segment: 'changes', type: 'file' },
         {
-          segment: 'dublicate',
+          segment: 'head',
           type: 'file',
+        },
+        {
+          segment: 'branches',
+          type: 'folder',
+        },
+        {
+          segment: 'commits',
+          type: 'folder',
         },
       ]);
     });
@@ -144,7 +145,9 @@ describe('PathRouter', () => {
     it('should match commit SHA paths correctly', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('/', 'folder'),
           '.legit': {
+            '.': new MockSubFs('/', 'folder'),
             commits: {
               '.': new MockSubFs('.legit/commits', 'folder'),
               '[sha_1_1_2]': {
@@ -179,6 +182,7 @@ describe('PathRouter', () => {
     it('should match .claude catch-all route', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('/', 'folder'),
           '.claude': {
             '[[...filePath]]': new MockSubFs('.claude/[[...filePath]]', 'fs'),
           },
@@ -197,6 +201,7 @@ describe('PathRouter', () => {
     it('should return undefined for non-matching paths', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('/', 'folder'),
           '.legit': {
             '.': new MockSubFs('.legit', 'folder'),
           },
@@ -205,7 +210,7 @@ describe('PathRouter', () => {
       );
 
       const result = router.match('/root/nonexistent/path');
-      expect(result).toBeUndefined();
+      expect(result?.handler.name).toBe('/');
     });
 
     it('should handle empty filePath parameter', () => {
@@ -229,6 +234,7 @@ describe('PathRouter', () => {
           '[[...filePath]]': {
             '.': new MockSubFs('[[...filePath]]', 'folder'),
             '.legit': {
+              '.': new MockSubFs('/', 'folder'),
               changes: new MockSubFs('[[...filePath]]/.legit/changes', 'file'),
             },
           },
@@ -246,7 +252,7 @@ describe('PathRouter', () => {
         segment: 'head',
         type: 'file',
       });
-      expect(result?.staticSiblings).toContainEqual({
+      expect(result?.staticSiblings).not.toContainEqual({
         segment: 'changes',
         type: 'file',
       });
@@ -257,10 +263,13 @@ describe('PathRouter', () => {
     it('should return no static siblings for branches folder', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('.', 'folder'),
           '.legit': {
+            '.': new MockSubFs('.legit/branches/.', 'folder'),
             branches: {
               '.': new MockSubFs('.legit/branches', 'folder'),
               '[branchName]': {
+                '.': new MockSubFs('.legit/branches', 'folder'),
                 '.legit': {
                   '.': new MockSubFs(
                     '.legit/branches/[branchName]/.legit',
@@ -281,7 +290,9 @@ describe('PathRouter', () => {
     it('should discover  no static siblings for commits folder', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('.', 'folder'),
           '.legit': {
+            '.': new MockSubFs('.legit', 'folder'),
             commits: {
               '.': new MockSubFs('.legit/commits', 'folder'),
               '[sha_1_1_2]': {
@@ -331,6 +342,7 @@ describe('PathRouter', () => {
     it('should handle special characters in path parameters', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('/', 'folder'),
           '[branchName]': {
             '.': new MockSubFs('[branchName]', 'folder'),
           },
@@ -357,23 +369,6 @@ describe('PathRouter', () => {
       expect(result).toBeDefined();
       expect(result?.params.filePath).toBe(deepPath);
     });
-
-    it('should handle root path correctly', () => {
-      const router = new PathRouter(
-        {
-          '.': new MockSubFs('root', 'folder'),
-          '[[...filePath]]': {
-            '.': new MockSubFs('[[...filePath]]', 'folder'),
-          },
-          test: new MockSubFs('test', 'file'),
-        },
-        '/root'
-      );
-
-      const result = router.match('/root');
-      expect(result).toBeDefined();
-      expect(result?.handler.name).toBe('root');
-    });
   });
 
   describe('Priority and precedence', () => {
@@ -397,11 +392,14 @@ describe('PathRouter', () => {
     it('should explicit matching paths', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('/', 'folder'),
           '[branchName]': {
             '.': new MockSubFs('[branchName]', 'folder'),
           },
           '.legit': {
+            '.': new MockSubFs('.legit', 'folder'),
             branches: {
+              '.': new MockSubFs('.legit/branches/.', 'folder'),
               '[branchName]': {
                 '.': new MockSubFs('.legit/branches/[branchName]', 'folder'),
               },
@@ -420,8 +418,11 @@ describe('PathRouter', () => {
     it('should match .legit inside branch path', () => {
       const router = new PathRouter(
         {
+          '.': new MockSubFs('.', 'folder'),
           '.legit': {
+            '.': new MockSubFs('.legit/.', 'folder'),
             branches: {
+              '.': new MockSubFs('.legit/branches/.', 'folder'),
               '[branchName]': {
                 '[[...filePath]]': {
                   '.': new MockSubFs(
@@ -458,14 +459,19 @@ describe('PathRouter', () => {
           '[[...filePath]]': {
             '.': new MockSubFs('catchall', 'folder'),
             '.legit': {
+              '.': new MockSubFs('[[...filePath]].legit/branches', 'folder'),
               changes: new MockSubFs('catchall/.legit/changes', 'folder'),
             },
           },
           '.legit': {
+            '.': new MockSubFs('.legit', 'folder'),
             branches: {
+              '.': new MockSubFs('.legit/branches', 'folder'),
               '[branchName]': {
                 '[[...filePath]]': {
+                  '.': new MockSubFs('.legit/branches/[branchName]/[[...filePath]]/.', 'folder'),
                   '.legit': {
+                    '.': new MockSubFs('.legit/branches/[branchName]/[[...filePath]]/.legit/.', 'folder'),
                     head: new MockSubFs(
                       '.legit/branches/[branchName]/[[...filePath]]/.legit/head',
                       'file'
@@ -485,7 +491,7 @@ describe('PathRouter', () => {
       );
       // The .legit folder under a branch path should have 'head' as a static sibling
       expect(result?.staticSiblings).toEqual([
-        { segment: 'head', type: 'file' },
+        
       ]);
     });
   });
