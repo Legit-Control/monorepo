@@ -22,7 +22,7 @@
     "commander": "^12.1.0",
     "inquirer": "^7.0.0",
     "memfs": "^4.51.1",
-    "isomorphic-git": "workspace:*"
+    "@legit-sdk/isomorphic-git": "workspace:*"
   },
   "devDependencies": {
     "vite": "^7.3.0",

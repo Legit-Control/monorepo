@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/core",
-  "version": "0.2.4",
+  "version": "0.4.4",
   "description": "Legit SDK - Infrastructure for write-enabled AI",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -28,7 +28,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "PolyForm Noncommercial License 1.0.0",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.4.1",
   "publishConfig": {
     "access": "public"
@@ -62,8 +62,8 @@
     "vitest": "^3.1.1"
   },
   "dependencies": {
+    "@legit-sdk/isomorphic-git": "workspace:*",
     "ignore": "^7.0.4",
-    "isomorphic-git": "workspace:*",
     "memfs": "^4.14.0",
     "typescript": "^5.8.3"
   }

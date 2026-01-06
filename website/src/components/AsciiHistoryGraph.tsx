@@ -272,11 +272,22 @@ export default function AsciiHistoryGraph({
     }
   });
 
+  // Store fork information to set after path processing (so it can't be overwritten)
+  const forkInfo: Array<{ row: number; col: number; symbol: string }> = [];
+
   // Mark fork points directly from commits (before processing paths)
-  // For each branch, find the first commit and check if it has a parent on a different branch
+  // For each branch, find the chronologically first commit (oldest timestamp)
+  // and check if it has a parent on a different branch
   allCommitArrays.forEach((branchCommits: HistoryItem[], branchIdx: number) => {
     if (branchCommits.length > 0) {
-      const firstCommit = branchCommits[0];
+      // Find the chronologically first commit (oldest timestamp)
+      // Commits in the array might not be in chronological order
+      const firstCommit = branchCommits.reduce((oldest, commit) => {
+        return commit.author.timestamp < oldest.author.timestamp
+          ? commit
+          : oldest;
+      }, branchCommits[0]);
+
       const firstParent = firstCommit.parent[0];
 
       if (firstParent) {
@@ -285,15 +296,23 @@ export default function AsciiHistoryGraph({
           // This branch forks from a different branch
           const parentRow = commitRows.get(firstParent);
           if (parentRow !== undefined) {
-            // Draw fork symbol at parent commit's row, in the new branch's column
+            // Store fork info to set after path processing
             const forkKey = `${parentRow},${branchIdx}`;
             if (!renderMap.has(forkKey) || renderMap.get(forkKey) !== '●') {
               if (branchIdx > parentBranchIdx) {
                 // Branch forks to the right - draw curve going down: ─┘
-                renderMap.set(forkKey, '─┘  ');
+                forkInfo.push({
+                  row: parentRow,
+                  col: branchIdx,
+                  symbol: '─┘  ',
+                });
               } else {
                 // Branch forks to the left - draw curve going down: ─┐
-                renderMap.set(forkKey, '─┐ ');
+                forkInfo.push({
+                  row: parentRow,
+                  col: branchIdx,
+                  symbol: '─┐ ',
+                });
               }
             }
           }
@@ -315,9 +334,15 @@ export default function AsciiHistoryGraph({
       if (lastCommitRow < mergeRow) {
         for (let row = lastCommitRow + 1; row < mergeRow; row++) {
           const verticalKey = `${row},${mergedBranchIdx}`;
-          // Force set vertical line (only skip if it's a commit)
+          // Force set vertical line (only skip if it's a commit or fork symbol)
           const existing = renderMap.get(verticalKey);
-          if (!existing || existing !== '●') {
+          if (
+            !existing ||
+            (existing !== '●' &&
+              !existing.includes('─') &&
+              !existing.includes('┘') &&
+              !existing.includes('┐'))
+          ) {
             renderMap.set(verticalKey, '│');
           }
         }
@@ -336,6 +361,25 @@ export default function AsciiHistoryGraph({
           return;
         }
 
+        // Don't overwrite fork symbols (check both renderMap and forkInfo)
+        const existing = renderMap.get(key);
+        if (
+          existing &&
+          (existing.includes('─') ||
+            existing.includes('┘') ||
+            existing.includes('┐'))
+        ) {
+          return;
+        }
+
+        // Also check if this location is a fork point (from forkInfo)
+        const isForkPoint = forkInfo.some(
+          f => f.row === point.row && f.col === point.col
+        );
+        if (isForkPoint) {
+          return;
+        }
+
         const prevPoint = i > 0 ? subPath[i - 1] : null;
 
         if (point.isMerge) {
@@ -346,10 +390,17 @@ export default function AsciiHistoryGraph({
           // Draw the horizontal connection line at the merged branch's column
           // This shows the connection from the merged branch to the merge commit
           const mergedBranchKey = `${point.row},${branchIdx}`;
-          // Force set the merge connection symbol (overwrite anything except commits)
+          // Force set the merge connection symbol (overwrite anything except commits and fork symbols)
+          const existingMerge = renderMap.get(mergedBranchKey);
           if (
             !renderMap.has(mergedBranchKey) ||
-            renderMap.get(mergedBranchKey) !== '●'
+            (renderMap.get(mergedBranchKey) !== '●' &&
+              !(
+                existingMerge &&
+                (existingMerge.includes('─') ||
+                  existingMerge.includes('┘') ||
+                  existingMerge.includes('┐'))
+              ))
           ) {
             // Always use ─┐ for merge connections (curves to the left)
             renderMap.set(mergedBranchKey, '─┐ ');
@@ -385,9 +436,15 @@ export default function AsciiHistoryGraph({
       if (lastCommitRow < mergeRow) {
         for (let row = lastCommitRow + 1; row < mergeRow; row++) {
           const verticalKey = `${row},${mergedBranchIdx}`;
-          // Force set vertical line (only skip if it's a commit)
+          // Force set vertical line (only skip if it's a commit or fork symbol)
           const existing = renderMap.get(verticalKey);
-          if (!existing || existing !== '●') {
+          if (
+            !existing ||
+            (existing !== '●' &&
+              !existing.includes('─') &&
+              !existing.includes('┘') &&
+              !existing.includes('┐'))
+          ) {
             renderMap.set(verticalKey, '│');
           }
         }
@@ -396,7 +453,13 @@ export default function AsciiHistoryGraph({
       // Ensure merge connection symbol is set at merge row
       const mergeConnectionKey = `${mergeRow},${mergedBranchIdx}`;
       const existing = renderMap.get(mergeConnectionKey);
-      if (!existing || existing !== '●') {
+      if (
+        !existing ||
+        (existing !== '●' &&
+          !existing.includes('─') &&
+          !existing.includes('┘') &&
+          !existing.includes('┐'))
+      ) {
         // Set the merge connection symbol based on branch positions
         if (mergedBranchIdx < mergeCol) {
           // Merged branch is to the left - draw horizontal line going right then down: ─┐
@@ -407,6 +470,17 @@ export default function AsciiHistoryGraph({
           renderMap.set(mergeConnectionKey, '─┐ ');
         }
       }
+    }
+  });
+
+  // Set fork symbols AFTER all path processing (so they can't be overwritten)
+  // Always set fork symbols, even if there's already a vertical line or other symbol
+  forkInfo.forEach(({ row, col, symbol }) => {
+    const forkKey = `${row},${col}`;
+    // Only skip if it's already a commit (fork symbol should never overwrite a commit)
+    if (!renderMap.has(forkKey) || renderMap.get(forkKey) !== '●') {
+      // Always set the fork symbol, overwriting any vertical lines or other symbols
+      renderMap.set(forkKey, symbol);
     }
   });
 
@@ -438,6 +512,21 @@ export default function AsciiHistoryGraph({
 
         for (let col = 0; col < columns; col++) {
           const key = `${originalRow},${col}`;
+
+          // Check if this is a fork point first - if so, always render the fork symbol
+          const isForkPoint = forkInfo.some(
+            f => f.row === originalRow && f.col === col
+          );
+          if (isForkPoint) {
+            const fork = forkInfo.find(
+              f => f.row === originalRow && f.col === col
+            );
+            if (fork) {
+              slots.push(centerInSlot(fork.symbol));
+              continue;
+            }
+          }
+
           const symbol = renderMap.get(key);
 
           if (symbol) {
@@ -482,11 +571,25 @@ export default function AsciiHistoryGraph({
               } else {
                 // Check if other branches connect through this column at this row
                 // (for fork/merge connections)
+                // BUT: Don't set isActive if there's already a fork symbol here
                 const connectsHere = subPaths.some(subPath =>
                   subPath.some(p => p.row === originalRow && p.col === col)
                 );
                 if (connectsHere) {
-                  isActive = true;
+                  // Double-check that we're not overwriting a fork symbol
+                  const checkSymbol = renderMap.get(key);
+                  const isForkPoint = forkInfo.some(
+                    f => f.row === originalRow && f.col === col
+                  );
+                  if (
+                    !checkSymbol ||
+                    (!checkSymbol.includes('─') &&
+                      !checkSymbol.includes('┘') &&
+                      !checkSymbol.includes('┐') &&
+                      !isForkPoint)
+                  ) {
+                    isActive = true;
+                  }
                 }
               }
             });
@@ -523,7 +626,9 @@ export default function AsciiHistoryGraph({
                       key={colIdx}
                     >
                       {slot.includes('●') ? (
-                        <div className="translate-x-[6px] w-3 h-3 border-2 rounded-full" />
+                        <div
+                          className={`translate-x-[6px] w-3 h-3 border-2 rounded-full ${branchClassName}`}
+                        />
                       ) : (
                         slot
                       )}

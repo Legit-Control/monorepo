@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/create-react-vite-starter",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "A starter template for React + Vite with Legit SDK integration for local-first document editing and version control",
   "type": "module",
   "bin": {
@@ -29,7 +29,7 @@
     "version-control"
   ],
   "author": "Legit Control",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/legitcontrol/monorepo.git",
@@ -42,7 +42,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@legit-sdk/react": "^0.2.15",
+    "@legit-sdk/react": "workspace:*",
     "diff-match-patch-ts": "^0.8.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

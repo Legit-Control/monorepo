@@ -19,6 +19,7 @@
     "build": "pnpm -r build",
     "clean": "pnpm recursive run clean && rm -rf ./node_modules",
     "test": "pnpm -r test",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "publish:all": "source .env && npm config set //registry.npmjs.org/:_authToken \"${NPM_TOKEN}\" && pnpm exec changeset publish --no-git-checks"
   }
 }

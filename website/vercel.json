@@ -1,0 +1,4 @@
+{
+  "installCommand": "cd .. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd .. && pnpm --filter isomorphic-git build && pnpm --filter @legit-sdk/core build && pnpm --filter @legit-sdk/react build && cd website && pnpm build"
+}

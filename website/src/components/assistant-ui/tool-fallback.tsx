@@ -14,25 +14,27 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const { legitFs } = useLegitContext();
   const [isUpdated, setIsUpdated] = useState(false);
 
-  const updateDocument = async () => {
-    if (!legitFs || !args?.body?.content || status?.type !== 'complete') return;
-    try {
-      const currentBranch = await legitFs.getCurrentBranch();
-      await legitFs.promises.writeFile(
-        `/.legit/branches/${currentBranch}/blogpost.md`,
-        args.body.content
-      );
-    } catch (error) {
-      console.error('Error updating document', error);
-    }
-  };
-
   useEffect(() => {
+    const updateDocument = async () => {
+      if (!legitFs || !args?.body?.content || status?.type !== 'complete')
+        return;
+      try {
+        await legitFs.setCurrentBranch('agent-branch');
+        const currentBranch = await legitFs.getCurrentBranch();
+        await legitFs.promises.writeFile(
+          `/.legit/branches/${currentBranch}/blogpost.md`,
+          args.body.content
+        );
+        setIsUpdated(true);
+      } catch (error) {
+        console.error('Error updating document', error);
+      }
+    };
+
     if (status?.type === 'complete' && !isUpdated) {
-      updateDocument();
-      setIsUpdated(true);
+      void updateDocument();
     }
-  }, [status?.type, isUpdated]);
+  }, [args?.body?.content, legitFs, status?.type, isUpdated]);
 
   if (toolName === 'update-document') {
     return (

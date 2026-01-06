@@ -1,8 +1,4 @@
-import {
-  ComposerAddAttachment,
-  ComposerAttachments,
-  UserMessageAttachments,
-} from '@/components/assistant-ui/attachment';
+import { UserMessageAttachments } from '@/components/assistant-ui/attachment';
 import { MarkdownText } from '@/components/assistant-ui/markdown-text';
 import { ToolFallback } from '@/components/assistant-ui/tool-fallback';
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button';
@@ -17,17 +13,13 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from '@assistant-ui/react';
+import { SparklesIcon } from '@heroicons/react/24/outline';
 import {
   ArrowDownIcon,
-  ArrowUpIcon,
-  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CopyIcon,
-  DownloadIcon,
   PencilIcon,
-  RefreshCwIcon,
-  SquareIcon,
+  SparkleIcon,
 } from 'lucide-react';
 import type { FC } from 'react';
 
@@ -79,8 +71,11 @@ const ThreadScrollToBottom: FC = () => {
 
 const ThreadWelcome: FC = () => {
   return (
-    <div className="aui-thread-welcome-root mx-auto my-auto flex max-w-(--thread-max-width) grow flex-col font-mono text-sm text-zinc-400 text-center py-2">
-      Run sandbox session
+    <div className="aui-thread-welcome-root h-full w-full flex flex-col items-center justify-center">
+      <p className="text-zinc-500 text-sm font-mono pt-3">AI Assistant</p>
+      <div className="flex-1 flex items-center justify-center">
+        <SparklesIcon className="w-10 h-10 text-zinc-300" />
+      </div>
     </div>
   );
 };
@@ -111,38 +106,6 @@ const AssistantMessage: FC = () => {
         <MessageError />
       </div>
     </MessagePrimitive.Root>
-  );
-};
-
-const AssistantActionBar: FC = () => {
-  return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      autohideFloat="single-branch"
-      className="aui-assistant-action-bar-root -ml-1 col-start-3 row-start-2 flex gap-1 text-muted-foreground data-floating:absolute data-floating:rounded-md data-floating:border data-floating:bg-background data-floating:p-1 data-floating:shadow-sm"
-    >
-      <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
-          <AssistantIf condition={({ message }) => message.isCopied}>
-            <CheckIcon />
-          </AssistantIf>
-          <AssistantIf condition={({ message }) => !message.isCopied}>
-            <CopyIcon />
-          </AssistantIf>
-        </TooltipIconButton>
-      </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.ExportMarkdown asChild>
-        <TooltipIconButton tooltip="Export as Markdown">
-          <DownloadIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.ExportMarkdown>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
-    </ActionBarPrimitive.Root>
   );
 };
 

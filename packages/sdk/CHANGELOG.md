@@ -1,5 +1,63 @@
 # @legit-sdk/core
 
+## 0.4.4
+
+### Patch Changes
+
+- Update esbuild to use forked package name of isomorphic git
+
+## 0.4.3
+
+### Patch Changes
+
+- Redo publishing because of missing build
+
+## 0.4.2
+
+### Patch Changes
+
+- 1bce00e: adds git .ignore on legit initialization
+
+## 0.4.1
+
+### Patch Changes
+
+- Update license
+- Updated dependencies
+  - @legit-sdk/isomorphic-git@1.34.2
+
+## 0.4.0
+
+### Minor Changes
+
+- changes dependency from iso-git to forked version
+
+### Patch Changes
+
+- 23fc937: Update license
+- a22b787: fix wrong serverURl Path
+- Updated dependencies
+  - @legit-sdk/isomorphic-git@1.34.1
+
+## 0.3.0
+
+### Minor Changes
+
+- 88159bc: SDK Improvements
+  - Added withFileTypes option to readdir operations
+  - Enhanced virtual file system handling
+  - Improved debugging and logging capabilities
+  - Route configuration moved to legitfs core
+  - Branch namespacing: Complex branch names (branch/name.with.dot) are URL-encoded
+  - Current branch file system support via .legit/currentBranch
+  - Improved branch folder listing and navigation
+  - Enhanced compare and branch operations
+
+  NFS Server Enhancements
+  - Improved logging and main process integration
+  - Better server lifecycle management
+  - Enhanced stability for mount/unmount operations
+
 ## 0.2.4
 
 ### Patch Changes

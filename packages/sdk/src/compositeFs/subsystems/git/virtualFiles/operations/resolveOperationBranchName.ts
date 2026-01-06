@@ -1,4 +1,4 @@
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 import * as nodeFs from 'node:fs';
 import {
   decodeBranchNameFromVfs,

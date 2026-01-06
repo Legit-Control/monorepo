@@ -124,6 +124,7 @@ const Hero = () => {
         <Font type="p" className="text-zinc-500 mb-6 mt-4">
           {data.description}
         </Font>
+        {/* TODO remove the second github button and just keep the star button */}
         <div className="flex items-center gap-3 mb-6">
           {data.secondary_buttons.map((button, i) => (
             <a

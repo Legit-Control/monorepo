@@ -307,6 +307,9 @@ article {
   font-size: 14px !important;
   line-height: 1.5 !important;
   border-radius: 0 !important;
+  padding: 6px 10px !important;
+  margin: 0 !important;
+  margin-bottom: -6px !important;
 }
 
 .aui-user-message-root,

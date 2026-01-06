@@ -1,5 +1,5 @@
-import type { MetaRecord } from 'nextra'
- 
+import type { MetaRecord } from 'nextra';
+
 /**
  * type MetaRecordValue =
  *  | TitleSchema
@@ -10,21 +10,27 @@ import type { MetaRecord } from 'nextra'
  * type MetaRecord = Record<string, MetaRecordValue>
  **/
 const meta: MetaRecord = {
-    docs: {
-        title: 'Documentation',
-        type: 'page',
-        href: '/docs',
-    },
-    vision: {
-        title: 'Vision',
-        type: 'page',
-        href: '/vision',
-    },
-    showcase: {
-        title: 'Showcase',
-        type: 'page',
-        href: '/showcase',
-    }
-}
- 
-export default meta
+  docs: {
+    title: 'Documentation',
+    type: 'page',
+    href: '/docs',
+  },
+  vision: {
+    title: 'Vision',
+    type: 'page',
+    href: '/vision',
+  },
+  showcase: {
+    title: 'Showcase',
+    type: 'page',
+    href: '/showcase',
+  },
+  'test-chat': {
+    display: 'hidden',
+  },
+  'test-graph': {
+    display: 'hidden',
+  },
+};
+
+export default meta;

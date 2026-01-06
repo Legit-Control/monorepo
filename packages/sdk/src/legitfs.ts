@@ -1,6 +1,6 @@
 import * as nodeFs from 'node:fs';
 import { createLegitSyncService } from './sync/createLegitSyncService.js';
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 
 import { CompositeFs } from './compositeFs/CompositeFs.js';
 import { CopyOnWriteSubFs } from './compositeFs/subsystems/CopyOnWriteSubFs.js';
@@ -69,7 +69,7 @@ export async function openLegitFs({
     name: 'Local User',
     email: 'local@legitcontrol.com',
   },
-  serverUrl = 'https://sync.legitcontrol.com',
+  serverUrl = 'https://hub.legitcontrol.com',
   publicKey,
   ephemaralGitConfig = false,
   additionalFilterLayers,
@@ -96,6 +96,7 @@ export async function openLegitFs({
       dir: '/',
       defaultBranch: anonymousBranch,
     });
+    await storageFs.promises.writeFile(gitRoot + '/.gitignore', '');
     await storageFs.promises.writeFile(gitRoot + '/.keep', '');
     await git.add({
       fs: storageFs,

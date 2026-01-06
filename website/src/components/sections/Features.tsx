@@ -9,7 +9,13 @@ import Font from '../Font';
 import SmallGrid from '../SmallGrid';
 
 const data = {
-  title: 'Production ready features your users already expect',
+  title: (
+    <>
+    Infrastructure for
+    
+     <span className="text-primary"> AI-native applications</span>
+    </>
+  ),
   description: (
     <>
       <b className="text-black">
@@ -21,7 +27,7 @@ const data = {
   ),
   caption: 'Features',
   primaryFeature: {
-    title: 'Time Travel State',
+    title: 'Version History',
     description: (
       <>
         <b className="text-black">
@@ -39,10 +45,12 @@ const data = {
       description: (
         <>
           <b className="text-black">
-            Let users create isolated workspaces to try out ideas safely.
-          </b>{' '}
-          They can experiment freely and later decide if they want to merge
-          changes back to the original document.
+            Give users the power of Branches &rarr; an isolated workspace for 
+            <span className="text-primary"> AI experiments</span>.
+          </b>
+          <br />
+        
+          Let users run agents in parallel branches, compare diffs, and merge only what they want back into the original document.
         </>
       ),
       image: '/branch.svg',
@@ -51,12 +59,10 @@ const data = {
       title: 'Rollback Anytime',
       description: (
         <>
-          Let users recover from mistakes instantly. They can bring back any
-          earlier version of their data and{' '}
-          <b className="text-black">
-            {' '}
-            stay fully in control of AI assisted changes.
-          </b>
+          Let User recover from AI mistakes. Instantly undo, restore any earlier version, and stay fully in control of AI-assisted changes
+          <b className="text-black"> stay fully in control of AI-assisted changes. </b>
+         
+
         </>
       ),
       image: '/rollback.svg',

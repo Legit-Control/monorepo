@@ -44,7 +44,7 @@ const serverBuildConfig = {
     'process.env.NODE_ENV': '"production"',
   },
   // Exclude Node.js built-ins, browser-specific packages, and dependencies
-  // that don't work well when bundled (memfs, isomorphic-git, etc.)
+  // that don't work well when bundled (memfs, @legit-sdk/isomorphic-git, etc.)
   external: [
     // Node.js built-ins
     'fs',
@@ -64,7 +64,7 @@ const serverBuildConfig = {
     'browser-fs-access',
     // Dependencies that shouldn't be bundled for Node.js
     'memfs',
-    'isomorphic-git',
+    '@legit-sdk/isomorphic-git',
     'ignore',
   ],
   banner: {

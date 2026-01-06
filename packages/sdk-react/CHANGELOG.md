@@ -1,5 +1,52 @@
 # @legit-sdk/react
 
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies
+  - @legit-sdk/core@0.4.4
+
+## 0.2.20
+
+### Patch Changes
+
+- Redo publishing because of missing build
+- Updated dependencies
+  - @legit-sdk/core@0.4.3
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies [1bce00e]
+  - @legit-sdk/core@0.4.2
+
+## 0.2.18
+
+### Patch Changes
+
+- Update license
+- Updated dependencies
+  - @legit-sdk/core@0.4.1
+
+## 0.2.17
+
+### Patch Changes
+
+- 23fc937: Update license
+- Updated dependencies [23fc937]
+- Updated dependencies [a22b787]
+- Updated dependencies
+  - @legit-sdk/core@0.4.0
+
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies [88159bc]
+  - @legit-sdk/core@0.3.0
+
 ## 0.2.15
 
 ### Patch Changes
