@@ -1,1 +1,1 @@
-declare module "isomorphic-git/http/node/index.cjs";
+declare module '@legit-sdk/isomorphic-git/http/node/index.cjs';

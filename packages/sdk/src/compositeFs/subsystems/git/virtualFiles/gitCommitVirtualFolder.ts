@@ -1,4 +1,4 @@
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';

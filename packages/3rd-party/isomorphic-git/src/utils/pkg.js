@@ -1,5 +1,5 @@
 export const pkg = {
   name: 'isomorphic-git',
-  version: '0.0.0-development',
-  agent: 'git/isomorphic-git@0.0.0-development',
+  version: '1.34.1',
+  agent: 'git/isomorphic-git@1.34.1',
 }

@@ -1,4 +1,4 @@
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 import * as nodeFs from 'node:fs';
 
 // .legit/branches/[branch-name]/[[...filepath]] -> file or folder at path in branch

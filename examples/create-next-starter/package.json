@@ -29,7 +29,7 @@
     "version-control"
   ],
   "author": "Legit Control",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/legitcontrol/monorepo.git",
