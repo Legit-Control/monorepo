@@ -119,7 +119,7 @@ console.log('Current branch:', currentBranch)
 
 Switch to a different branch. If the branch doesn't exist locally, it will be loaded from the remote:
 
-//TODO Wenn es die auch remote nicht gibt, kann ich damit neue Branches erstellen? 
+<!-- TODO: Wenn es die auch remote nicht gibt, kann ich damit neue Branches erstellen? -->
 
 
 ```typescript

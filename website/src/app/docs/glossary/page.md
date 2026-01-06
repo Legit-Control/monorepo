@@ -22,7 +22,7 @@ Legit SDK is the developer toolkit that provides programmatic access to Legit FS
 It lets developers mount a branch view, read or write data, and track all edits made by users or agents.
 The SDK handles commit creation, operation history, branching, concurrency, and metadata automatically — making it simple to build reliable, collaborative, AI-native applications.
 
-TODO: API backlink
+<!-- TODO: API backlink -->
 
 ## Legit Hub
 
