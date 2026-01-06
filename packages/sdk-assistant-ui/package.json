@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/assistant-ui",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Legit integration for Assistant UI",
   "type": "module",
   "main": "./dist/index.js",

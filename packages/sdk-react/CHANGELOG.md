@@ -1,5 +1,12 @@
 # @legit-sdk/react
 
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies
+  - @legit-sdk/core@0.4.4
+
 ## 0.2.20
 
 ### Patch Changes

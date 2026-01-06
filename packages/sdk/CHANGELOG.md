@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.4.4
+
+### Patch Changes
+
+- Update esbuild to use forked package name of isomorphic git
+
 ## 0.4.3
 
 ### Patch Changes
