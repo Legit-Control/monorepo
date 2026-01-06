@@ -20,6 +20,37 @@ const showcasePage = () => {
       image: '/showcase/AssistantUi.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
+      tags: ['Example'],
+    },
+    {
+      href: 'https://letgitwebmcp.com/month-view',
+      title: 'Legit x WebMCP exploration',
+      description:
+        'Example of Legit with WebMCP integration.',
+      image: '/showcase/LegitxWebMCP.png',
+      date: 'Nov. 2025',
+      author: 'Legit Team + Alex Nahas',
+      tags: ['Example', 'Integration'],
+    },
+    {
+      href: 'https://www.sigrist.dev/branching-in-opencode-with-legit',
+      title: 'Per-Agent Branching in OpenCode',
+      description:
+        'A deep-dive into per-agent branching workflows powered by Legit.',
+      image: '/showcase/sigrist-opencode-writeup.png',
+      date: 'Dec. 2025',
+      author: 'Loris Sigrist',
+      tags: ['Blogpost', 'Community'],
+    },
+    {
+      href: 'https://neomjs.com/apps/legit/',
+      title: 'Legit x NeoMJS ',
+      description:
+        'Example of Legit with NeoMJS integration.',
+      image: '/showcase/LegitxNeoMJS.png',
+      date: 'Nov. 2025',
+      author: 'Legit Team + Tobias Uhlig',
+      tags: ['Example', 'Integration'],
     },
     {
       href: 'https://legit-starter-react.vercel.app/',
@@ -29,6 +60,7 @@ const showcasePage = () => {
       image: '/showcase/LegitReactStarter.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
+      tags: ['Starter Template'],
     },
     {
       href: 'https://legit-react-example-sync-phcl.vercel.app/',
@@ -38,6 +70,7 @@ const showcasePage = () => {
       image: '/showcase/LegitReactSync.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
+      tags: ['Starter Template'],
     },
     {
       href: 'https://replit.com/@jannes-blobel/Legit-x-Plate-Template',
@@ -47,16 +80,9 @@ const showcasePage = () => {
       image: '/showcase/LegitPlateReplit.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
+      tags: ['Starter Template'],
     },
-    {
-      href: 'https://github.com/Legit-Control/webMCP-exploration',
-      title: 'Legit x WebMCP exploration',
-      description:
-        'Example of Legit with WebMCP integration.',
-      image: '/showcase/LegitxWebMCP.png',
-      date: 'Nov. 2025',
-      author: 'Legit Team + Alex Nahas',
-    },
+   
     {
       href: 'https://discord.gg/34K4t5K9Ra',
       title: 'Add your Own Showcase',
@@ -65,6 +91,7 @@ const showcasePage = () => {
       image: '/showcase/WeAreWaitingForYou.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
+      tags: ['Community'],
     },
   ];
 
@@ -119,6 +146,7 @@ const showcasePage = () => {
                 image={item.image}
                 date={item.date}
                 author={item.author}
+                tags={item.tags}
               />
             </div>
           ))}
