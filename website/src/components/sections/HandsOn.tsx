@@ -82,26 +82,26 @@ const HandsOn = () => {
         {data.description}
       </Font>
       <div className="block lg:hidden col-span-12 lg:col-span-3 lg:col-start-2">
-          <PrimaryButton>{data.button}</PrimaryButton>
+          <PrimaryButton href={data.button_link}>{data.button}</PrimaryButton>
       </div>
       <div className="col-span-12 lg:col-span-10 lg:col-start-2 flex flex-wrap divide-x divide-zinc-200 border border-zinc-200 rounded-lg my-12 divide-y md:divide-y-0" >
         <div className="w-full md:w-1/3 p-4">
           <Label>UI</Label>
-          <img src="/legitUi.svg" alt="ui" className="mx-auto mt-10" />
+          <img src="/legitUi.svg" alt="Legit user interface example" className="mx-auto mt-10" />
         </div>
         <div className="w-full md:w-1/3 flex flex-col divide-y divide-zinc-200">
           <div className="p-4">
             <Label>Legit</Label>
-            <img src="/legitGraph.svg" alt="legit" className="p-10 scale-120" />
+            <img src="/legitGraph.svg" alt="Legit version control graph visualization" className="p-10 scale-125" />
           </div>
           <div className="p-4">
             <Label>File System API</Label>
-            <img src="/legitDir.svg" alt="file system api" className="p-10 scale-120" />
+            <img src="/legitDir.svg" alt="File system API directory structure" className="p-10 scale-125" />
           </div>
         </div>
         <div className="relative w-full md:w-1/3 p-4 max-h-[600px] overflow-y-auto">
           <Label className="sticky top-0">React</Label>
-          <SyntaxHighlighter language="javascript" className="-mt-2 text-[13px] bg-white!" style={docco}>
+          <SyntaxHighlighter language="javascript" className="-mt-2 text-[13px] bg-white" style={docco}>
             {code}
           </SyntaxHighlighter>
         </div>
