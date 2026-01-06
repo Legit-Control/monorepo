@@ -1,5 +1,13 @@
 # @legit-sdk/react
 
+## 0.2.20
+
+### Patch Changes
+
+- Redo publishing because of missing build
+- Updated dependencies
+  - @legit-sdk/core@0.4.3
+
 ## 0.2.19
 
 ### Patch Changes

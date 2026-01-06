@@ -1,5 +1,11 @@
 # @legit-sdk/core
 
+## 0.4.3
+
+### Patch Changes
+
+- Redo publishing because of missing build
+
 ## 0.4.2
 
 ### Patch Changes

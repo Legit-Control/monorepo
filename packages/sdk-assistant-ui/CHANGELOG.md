@@ -1,5 +1,13 @@
 # @legit-sdk/assistant-ui
 
+## 0.2.9
+
+### Patch Changes
+
+- Redo publishing because of missing build
+- Updated dependencies
+  - @legit-sdk/core@0.4.3
+
 ## 0.2.8
 
 ### Patch Changes
