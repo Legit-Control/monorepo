@@ -13,6 +13,8 @@ import { DiffMatchPatch } from 'diff-match-patch-ts';
 import { format } from 'timeago.js';
 import DemoChat from './DemoChat';
 import Font from './Font';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import docco from 'react-syntax-highlighter/dist/esm/styles/hljs/docco';
 
 const INITIAL_TEXT = `# Blog post (notes)
 
@@ -47,6 +49,31 @@ const branches = [
   },
 ];
 
+const codeExample = `
+import { LegitProvider, useLegitFile } 
+  from '@legit-sdk/react';
+ 
+function App() {
+  return (
+    <LegitProvider>
+      <Editor />
+    </LegitProvider>
+  );
+}
+ 
+function Editor() {
+  const { content, setContent, history } 
+    = useLegitFile('/document.txt');
+
+  return (
+    <textarea
+      value={content || ''}
+      onChange={e => setContent(e.target.value)}
+    />
+  );
+}
+`;
+
 const DemoComponent = () => {
   const { data, setData, loading, history, getPastState, legitFs } =
     useLegitFile('/blogpost.md', {
@@ -60,6 +87,7 @@ const DemoComponent = () => {
   const [agentHistory, setAgentHistory] = useState<HistoryItem[]>([]);
   const [currentBranch, setCurrentBranch] = useState<string>('anonymous');
   const [outstandingChanges, setOutstandingChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState<'history' | 'code'>('history');
 
   useEffect(() => {
     let isMounted = true;
@@ -278,35 +306,69 @@ const DemoComponent = () => {
           </div>
         </div>
         <div className="col-span-7 border border-zinc-400 lg:border-l-0 my-auto lg:h-[400px] lg:overflow-y-scroll pt-4 lg:pt-0 mx-4 lg:mx-0">
-          <div className="h-[34px] flex items-center px-4 font-mono text-zinc-600 text-sm">
-            Legit state
+          <div className="h-[34px] flex items-center justify-between px-4 font-mono text-zinc-600 text-sm border-b border-zinc-400">
+            <span>Legit state</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`px-3 py-1 text-xs transition-all duration-100 ${
+                  activeTab === 'history'
+                    ? 'bg-zinc-200 text-zinc-900'
+                    : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                History
+              </button>
+              <button
+                onClick={() => setActiveTab('code')}
+                className={`px-3 py-1 text-xs transition-all duration-100 ${
+                  activeTab === 'code'
+                    ? 'bg-zinc-200 text-zinc-900'
+                    : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                Code
+              </button>
+            </div>
           </div>
           <div className="px-4 py-2">
-            <AsciiHistoryGraph
-              branches={[
-                {
-                  entries: getmappedHistoryMessages(mainHistory, [
-                    { position: 1, message: 'Notes Machine Learning' },
-                  ]),
-                  className: 'text-zinc-500 border-zinc-500',
-                },
-                {
-                  entries: getmappedHistoryMessages(
-                    agentHistory && agentHistory.length > 2
-                      ? agentHistory.slice(0, -2)
-                      : [],
-                    [
-                      { position: 0, message: '🤖 Add paragraphs' },
-                      { position: 1, message: '🤖 Improve voice' },
-                      { position: 2, message: '🤖 Add summary' },
-                    ]
-                  ),
-                  className: 'text-primary border-primary',
-                },
-              ]}
-              onCommitClick={getDiff}
-              collapsibleContent={loadedCommit}
-            />
+            {activeTab === 'history' ? (
+              <AsciiHistoryGraph
+                branches={[
+                  {
+                    entries: getmappedHistoryMessages(mainHistory, [
+                      { position: 1, message: 'Notes Machine Learning' },
+                    ]),
+                    className: 'text-zinc-500 border-zinc-500',
+                  },
+                  {
+                    entries: getmappedHistoryMessages(
+                      agentHistory && agentHistory.length > 2
+                        ? agentHistory.slice(0, -2)
+                        : [],
+                      [
+                        { position: 0, message: '🤖 Add paragraphs' },
+                        { position: 1, message: '🤖 Improve voice' },
+                        { position: 2, message: '🤖 Add summary' },
+                      ]
+                    ),
+                    className: 'text-primary border-primary',
+                  },
+                ]}
+                onCommitClick={getDiff}
+                collapsibleContent={loadedCommit}
+              />
+            ) : (
+              <div className="max-h-[360px] overflow-y-auto">
+                <SyntaxHighlighter
+                  language="javascript"
+                  className="text-[13px] bg-white"
+                  style={docco}
+                >
+                  {codeExample.trim()}
+                </SyntaxHighlighter>
+              </div>
+            )}
           </div>
         </div>
       </div>
