@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createFsFromVolume, Volume } from 'memfs';
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 import { createBranchesListAdapter } from './gitBranchesListVirtualFile.js';
 
 describe('createBranchesListAdapter', () => {

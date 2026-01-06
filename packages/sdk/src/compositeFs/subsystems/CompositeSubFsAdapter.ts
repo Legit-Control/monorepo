@@ -1,4 +1,4 @@
-import git from 'isomorphic-git';
+import git from '@legit-sdk/isomorphic-git';
 import { CompositeSubFs } from '../CompositeSubFs.js';
 import CompositFsFileHandle from '../CompositeFsFileHandle.js';
 import * as path from 'path';
