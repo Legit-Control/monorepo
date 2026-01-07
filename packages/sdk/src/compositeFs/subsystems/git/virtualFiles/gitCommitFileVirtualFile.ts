@@ -50,7 +50,7 @@ export function createCommitFileAdapter({
       type: 'gitCommitFileVirtualFile',
       rootType: 'file',
 
-      getStats: async ({ filePath, gitRoot, pathParams, userSpaceFs }) => {
+      getStats: async ({ filePath, pathParams, userSpaceFs }) => {
         if (!pathParams.sha_1_1_2) {
           throw new Error('sha_1_1_2 should be in pathParams');
         }
@@ -156,7 +156,7 @@ export function createCommitFileAdapter({
           } as any;
         }
       },
-      getFile: async ({ filePath, gitRoot, pathParams, userSpaceFs }) => {
+      getFile: async ({ filePath, pathParams, userSpaceFs }) => {
         if (!pathParams.sha_1_1_2) {
           throw new Error('sha_1_1_2 should be in pathParams');
         }

@@ -38,96 +38,94 @@ export function createCurrentBranchAdapter({
       type: 'gitCurrentBranchVirtualFile',
       rootType: 'file',
 
-  getStats: async (args) => {
-    const { gitRoot } = args;
-    const branchName = await getCurrentBranch(gitRoot, gitStorageFs);
-    const size = branchName.length;
+      getStats: async args => {
+        const branchName = await getCurrentBranch(gitRoot, gitStorageFs);
+        const size = branchName.length;
 
-    return {
-      mode: 0o644,
-      size: size,
-      isFile: () => true,
-      isDirectory: () => false,
-      isSymbolicLink: () => false,
-      isBlockDevice: () => false,
-      isCharacterDevice: () => false,
-      isSocket: () => false,
-      isFIFO: () => false,
-      isFileSync: () => true,
-      isDirectorySync: () => false,
-      dev: 0,
-      ino: 0,
-      nlink: 1,
-      uid: 0,
-      gid: 0,
-      rdev: 0,
-      blksize: 4096,
-      blocks: Math.ceil(size / 4096),
-      atimeMs: Date.now(),
-      mtimeMs: Date.now(),
-      ctimeMs: Date.now(),
-      birthtimeMs: Date.now(),
-      atime: new Date(),
-      mtime: new Date(),
-      ctime: new Date(),
-      birthtime: new Date(),
-    } as any;
-  },
+        return {
+          mode: 0o644,
+          size: size,
+          isFile: () => true,
+          isDirectory: () => false,
+          isSymbolicLink: () => false,
+          isBlockDevice: () => false,
+          isCharacterDevice: () => false,
+          isSocket: () => false,
+          isFIFO: () => false,
+          isFileSync: () => true,
+          isDirectorySync: () => false,
+          dev: 0,
+          ino: 0,
+          nlink: 1,
+          uid: 0,
+          gid: 0,
+          rdev: 0,
+          blksize: 4096,
+          blocks: Math.ceil(size / 4096),
+          atimeMs: Date.now(),
+          mtimeMs: Date.now(),
+          ctimeMs: Date.now(),
+          birthtimeMs: Date.now(),
+          atime: new Date(),
+          mtime: new Date(),
+          ctime: new Date(),
+          birthtime: new Date(),
+        } as any;
+      },
 
-  getFile: async (args) => {
-    const { gitRoot } = args;
-    const branchName = await getCurrentBranch(gitRoot, gitStorageFs);
-    return {
-      type: 'file',
-      content: branchName + '\n',
-      mode: 0o644,
-      size: branchName.length + 1,
-    };
-  },
+      getFile: async args => {
+        const branchName = await getCurrentBranch(gitRoot, gitStorageFs);
+        return {
+          type: 'file',
+          content: branchName + '\n',
+          mode: 0o644,
+          size: branchName.length + 1,
+        };
+      },
 
-  writeFile: async (args) => {
-    const { gitRoot, content } = args;
-    const newBranchName = content.toString().trim();
+      writeFile: async args => {
+        const { content } = args;
+        const newBranchName = content.toString().trim();
 
-    // Check that the branch exists before setting it
+        // Check that the branch exists before setting it
 
-    const ref = await tryResolveRef(gitStorageFs, gitRoot, newBranchName);
-    if (!ref) {
-      const sourceBranch = await getReferenceBranch(gitRoot, gitStorageFs);
+        const ref = await tryResolveRef(gitStorageFs, gitRoot, newBranchName);
+        if (!ref) {
+          const sourceBranch = await getReferenceBranch(gitRoot, gitStorageFs);
 
-      const sourceBranchRef = await tryResolveRef(
-        gitStorageFs,
-        gitRoot,
-        sourceBranch
-      );
+          const sourceBranchRef = await tryResolveRef(
+            gitStorageFs,
+            gitRoot,
+            sourceBranch
+          );
 
-      if (!sourceBranchRef) {
-        throw new Error(
-          `Ref branch ${sourceBranch} does not exist in the repository`
-        );
-      }
-      await git.branch({
-        fs: gitStorageFs,
-        dir: gitRoot,
-        ref: decodeBranchNameFromVfs(newBranchName),
-        object: sourceBranchRef,
-      });
-    }
+          if (!sourceBranchRef) {
+            throw new Error(
+              `Ref branch ${sourceBranch} does not exist in the repository`
+            );
+          }
+          await git.branch({
+            fs: gitStorageFs,
+            dir: gitRoot,
+            ref: decodeBranchNameFromVfs(newBranchName),
+            object: sourceBranchRef,
+          });
+        }
 
-    // Use setCurrentBranch to set the new branch
-    await setCurrentBranch(gitRoot, gitStorageFs, newBranchName);
-  },
+        // Use setCurrentBranch to set the new branch
+        await setCurrentBranch(gitRoot, gitStorageFs, newBranchName);
+      },
 
-  rename(args) {
-    throw new Error('not implemented');
-  },
-  mkdir: async function (
-    args: VirtualFileArgs & {
-      options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
-    }
-  ): Promise<void> {
-    throw new Error('not implemented');
-  },
+      rename(args) {
+        throw new Error('not implemented');
+      },
+      mkdir: async function (
+        args: VirtualFileArgs & {
+          options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
+        }
+      ): Promise<void> {
+        throw new Error('not implemented');
+      },
     },
   });
 

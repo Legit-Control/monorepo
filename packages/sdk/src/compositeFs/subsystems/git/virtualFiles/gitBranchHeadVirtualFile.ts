@@ -60,7 +60,7 @@ export function createBranchHeadAdapter({
       type: 'gitBranchHeadVirtualFile',
       rootType: 'file',
 
-      getStats: async ({ gitRoot, pathParams, userSpaceFs }) => {
+      getStats: async ({ pathParams, userSpaceFs }) => {
         if (pathParams.branchName === undefined) {
           pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);
         }
@@ -117,7 +117,7 @@ export function createBranchHeadAdapter({
         } as any;
       },
 
-      getFile: async ({ gitRoot, pathParams, userSpaceFs }) => {
+      getFile: async ({ pathParams, userSpaceFs }) => {
         if (pathParams.branchName === undefined) {
           pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);
         }
@@ -150,14 +150,7 @@ export function createBranchHeadAdapter({
         }
       },
 
-      writeFile: async ({
-        filePath,
-        gitRoot,
-        content,
-        cacheFs,
-        pathParams,
-        userSpaceFs,
-      }) => {
+      writeFile: async ({ content, pathParams, userSpaceFs }) => {
         if (pathParams.branchName === undefined) {
           pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);
         }

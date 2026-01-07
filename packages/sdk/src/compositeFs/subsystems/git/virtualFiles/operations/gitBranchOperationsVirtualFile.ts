@@ -90,7 +90,7 @@ export function createBranchOperationsAdapter({
     rootType: 'file',
 
     getStats: async args => {
-      const { gitRoot, pathParams } = args;
+      const { pathParams } = args;
 
       if (pathParams.branchName === undefined) {
         pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);
@@ -193,7 +193,7 @@ export function createBranchOperationsAdapter({
     },
 
     getFile: async args => {
-      const { gitRoot, pathParams } = args;
+      const {  pathParams } = args;
 
       if (pathParams.branchName === undefined) {
         pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);

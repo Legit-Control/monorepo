@@ -21,7 +21,6 @@ export interface VirtualFileArgs {
   cacheFs: IFs;
   filePath: string;
   // fs: CompositeFs;
-  gitRoot: string;
   userSpaceFs: CompositeFs;
   pathParams: any; // Parameters extracted from the router
   author: { name: string; email: string; date: number; timezoneOffset: number }; // The author info for commits

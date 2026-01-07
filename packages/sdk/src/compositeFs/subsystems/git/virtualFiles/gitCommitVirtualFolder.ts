@@ -36,105 +36,110 @@ export function createCommitFolderAdapter({
       type: 'gitCommitVirtualFolder',
       rootType: 'folder',
 
-  getStats: async args => {
-    // TODO use the commit where the file was changed last as base
-    const gitDir = args.gitRoot + '/' + '.git';
-    try {
-      const gitStats = await gitStorageFs.promises.stat(gitDir);
-      return gitStats;
-    } catch (err) {
-      // If .git does not exist, propagate as ENOENT
-      throw new Error(`ENOENT: no such file or directory, stat '${gitDir}'`);
-    }
-  },
-  getFile: async (args) => {
-    const { filePath, gitRoot, pathParams } = args;
-    const branchNames = await git.listBranches({ fs: gitStorageFs, dir: gitRoot });
-    const headCommits = new Set<string>();
-    const commits = new Set<string>();
-
-    for (const branch of branchNames) {
-      const ref = `refs/heads/${branch}`;
-      try {
-        const commitOid = await git.resolveRef({
+      getStats: async args => {
+        // TODO use the commit where the file was changed last as base
+        const gitDir = gitRoot + '/' + '.git';
+        try {
+          const gitStats = await gitStorageFs.promises.stat(gitDir);
+          return gitStats;
+        } catch (err) {
+          // If .git does not exist, propagate as ENOENT
+          throw new Error(
+            `ENOENT: no such file or directory, stat '${gitDir}'`
+          );
+        }
+      },
+      getFile: async args => {
+        const { filePath, pathParams } = args;
+        const branchNames = await git.listBranches({
           fs: gitStorageFs,
           dir: gitRoot,
-          ref,
         });
-        headCommits.add(commitOid);
-      } catch (err) {
-        // skip branches that can't be resolved
-      }
-    }
+        const headCommits = new Set<string>();
+        const commits = new Set<string>();
 
-    for (const headCommit of headCommits) {
-      const commitsFromHead = await git.log({
-        fs: gitStorageFs,
-        dir: gitRoot,
-        ref: headCommit,
-      });
-      for (const commit of commitsFromHead) {
-        commits.add(commit.oid);
-      }
-    }
-
-    if (!pathParams.sha_1_1_2) {
-      const fistTwo = new Set<string>();
-      for (const commit of commits) {
-        fistTwo.add(commit.slice(0, 2));
-        if (fistTwo.size >= 256) {
-          break;
+        for (const branch of branchNames) {
+          const ref = `refs/heads/${branch}`;
+          try {
+            const commitOid = await git.resolveRef({
+              fs: gitStorageFs,
+              dir: gitRoot,
+              ref,
+            });
+            headCommits.add(commitOid);
+          } catch (err) {
+            // skip branches that can't be resolved
+          }
         }
-      }
-      const content = Array.from(fistTwo)
-        .sort()
-        .map(sha =>
-          toDirEntry({
-            parent: filePath,
-            name: sha,
-            isDir: true,
-          })
-        );
-      return {
-        type: 'directory',
-        content,
-        mode: 0o755,
-        size: content,
-      };
-    }
 
-    const lastThrityEight = new Set<string>();
-    for (const commit of commits) {
-      if (commit.startsWith(pathParams.sha_1_1_2)) {
-        lastThrityEight.add(commit.slice(2, 40));
-      }
-    }
-    const content = Array.from(lastThrityEight)
-      .sort()
-      .map(sha =>
-        toDirEntry({
-          parent: filePath,
-          name: sha,
-          isDir: true,
-        })
-      );
-    return {
-      type: 'directory',
-      content,
-      mode: 0o755,
-      size: content.length,
-    };
-  },
-  rename(args) {
-    throw new Error('not implementsd');
-  },
-  mkdir: async function (
-    args: VirtualFileArgs & {
-      options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
-    }
-  ): Promise<void> {
-    throw new Error('not implemented');
-  },
+        for (const headCommit of headCommits) {
+          const commitsFromHead = await git.log({
+            fs: gitStorageFs,
+            dir: gitRoot,
+            ref: headCommit,
+          });
+          for (const commit of commitsFromHead) {
+            commits.add(commit.oid);
+          }
+        }
+
+        if (!pathParams.sha_1_1_2) {
+          const fistTwo = new Set<string>();
+          for (const commit of commits) {
+            fistTwo.add(commit.slice(0, 2));
+            if (fistTwo.size >= 256) {
+              break;
+            }
+          }
+          const content = Array.from(fistTwo)
+            .sort()
+            .map(sha =>
+              toDirEntry({
+                parent: filePath,
+                name: sha,
+                isDir: true,
+              })
+            );
+          return {
+            type: 'directory',
+            content,
+            mode: 0o755,
+            size: content,
+          };
+        }
+
+        const lastThrityEight = new Set<string>();
+        for (const commit of commits) {
+          if (commit.startsWith(pathParams.sha_1_1_2)) {
+            lastThrityEight.add(commit.slice(2, 40));
+          }
+        }
+        const content = Array.from(lastThrityEight)
+          .sort()
+          .map(sha =>
+            toDirEntry({
+              parent: filePath,
+              name: sha,
+              isDir: true,
+            })
+          );
+        return {
+          type: 'directory',
+          content,
+          mode: 0o755,
+          size: content.length,
+        };
+      },
+      rename(args) {
+        throw new Error('not implementsd');
+      },
+      mkdir: async function (
+        args: VirtualFileArgs & {
+          options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
+        }
+      ): Promise<void> {
+        throw new Error('not implemented');
+      },
     },
   });
 

@@ -39,80 +39,78 @@ export function createReferenceBranchAdapter({
       type: 'gitReferenceBranchVirtualFile',
       rootType: 'file',
 
-  getStats: async (args) => {
-    const { gitRoot } = args;
-    const branchName = await getReferenceBranch(gitRoot, gitStorageFs);
-    const size = branchName.length;
+      getStats: async args => {
+        const branchName = await getReferenceBranch(gitRoot, gitStorageFs);
+        const size = branchName.length;
 
-    return {
-      mode: 0o644,
-      size: size,
-      isFile: () => true,
-      isDirectory: () => false,
-      isSymbolicLink: () => false,
-      isBlockDevice: () => false,
-      isCharacterDevice: () => false,
-      isSocket: () => false,
-      isFIFO: () => false,
-      isFileSync: () => true,
-      isDirectorySync: () => false,
-      dev: 0,
-      ino: 0,
-      nlink: 1,
-      uid: 0,
-      gid: 0,
-      rdev: 0,
-      blksize: 4096,
-      blocks: Math.ceil(size / 4096),
-      atimeMs: Date.now(),
-      mtimeMs: Date.now(),
-      ctimeMs: Date.now(),
-      birthtimeMs: Date.now(),
-      atime: new Date(),
-      mtime: new Date(),
-      ctime: new Date(),
-      birthtime: new Date(),
-    } as any;
-  },
+        return {
+          mode: 0o644,
+          size: size,
+          isFile: () => true,
+          isDirectory: () => false,
+          isSymbolicLink: () => false,
+          isBlockDevice: () => false,
+          isCharacterDevice: () => false,
+          isSocket: () => false,
+          isFIFO: () => false,
+          isFileSync: () => true,
+          isDirectorySync: () => false,
+          dev: 0,
+          ino: 0,
+          nlink: 1,
+          uid: 0,
+          gid: 0,
+          rdev: 0,
+          blksize: 4096,
+          blocks: Math.ceil(size / 4096),
+          atimeMs: Date.now(),
+          mtimeMs: Date.now(),
+          ctimeMs: Date.now(),
+          birthtimeMs: Date.now(),
+          atime: new Date(),
+          mtime: new Date(),
+          ctime: new Date(),
+          birthtime: new Date(),
+        } as any;
+      },
 
-  getFile: async (args) => {
-    const { gitRoot } = args;
-    const branchName = await getReferenceBranch(gitRoot, gitStorageFs);
-    return {
-      type: 'file',
-      content: branchName + '\n',
-      mode: 0o644,
-      size: branchName.length + 1,
-    };
-  },
+      getFile: async args => {
+        const branchName = await getReferenceBranch(gitRoot, gitStorageFs);
+        return {
+          type: 'file',
+          content: branchName + '\n',
+          mode: 0o644,
+          size: branchName.length + 1,
+        };
+      },
 
-  writeFile: async (args) => {
-    const { gitRoot, content } = args;
-    const newBranchName = content.toString().trim();
+      writeFile: async args => {
+        const { content } = args;
+        const newBranchName = content.toString().trim();
 
-    // Check that the branch exists before setting it
+        // Check that the branch exists before setting it
 
-    const ref = await tryResolveRef(gitStorageFs, gitRoot, newBranchName);
-    if (!ref) {
-      throw new Error(
-        `Branch ${newBranchName} does not exist in the repository`
-      );
-    }
+        const ref = await tryResolveRef(gitStorageFs, gitRoot, newBranchName);
+        if (!ref) {
+          throw new Error(
+            `Branch ${newBranchName} does not exist in the repository`
+          );
+        }
 
-    // Use setTargetBranch to set the new branch
-    await setReferenceBranch(gitRoot, gitStorageFs, newBranchName);
-  },
+        // Use setTargetBranch to set the new branch
+        await setReferenceBranch(gitRoot, gitStorageFs, newBranchName);
+      },
 
-  rename(args) {
-    throw new Error('not implemented');
-  },
-  mkdir: async function (
-    args: VirtualFileArgs & {
-      options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
-    }
-  ): Promise<void> {
-    throw new Error('not implemented');
-  },
+      rename(args) {
+        throw new Error('not implemented');
+      },
+      mkdir: async function (
+        args: VirtualFileArgs & {
+          options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
+        }
+      ): Promise<void> {
+        throw new Error('not implemented');
+      },
     },
   });
 

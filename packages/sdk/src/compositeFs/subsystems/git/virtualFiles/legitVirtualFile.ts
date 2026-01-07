@@ -41,19 +41,20 @@ export function createLegitVirtualFileAdapter({
     handler: {
       type: 'legitVirtualFile',
       rootType: 'folder',
-      getStats: async (args) => {
-        const { gitRoot } = args;
+      getStats: async args => {
         const gitDir = gitRoot + '/' + '.git';
         try {
           const gitStats = await gitStorageFs.promises.stat(gitDir);
           return gitStats;
         } catch (err) {
           // If .git does not exist, propagate as ENOENT
-          throw new Error(`ENOENT: no such file or directory, stat '${gitDir}'`);
+          throw new Error(
+            `ENOENT: no such file or directory, stat '${gitDir}'`
+          );
         }
       },
 
-      getFile: async (args) => {
+      getFile: async args => {
         return {
           type: 'directory',
           content: [],

@@ -52,7 +52,7 @@ export function createApplyChangesAdapter({
       type: 'gitApplyCurrentChangesToVirtualFile',
       rootType: 'file',
 
-      getStats: async ({ gitRoot, pathParams, userSpaceFs }) => {
+      getStats: async ({ pathParams, userSpaceFs }) => {
         const epoch = new Date(0);
 
         // TODO use the head information of the commit
@@ -86,7 +86,7 @@ export function createApplyChangesAdapter({
           birthtime: epoch,
         } as any;
       },
-      getFile: async ({ gitRoot, pathParams, userSpaceFs }) => {
+      getFile: async ({ pathParams, userSpaceFs }) => {
         try {
           return {
             type: 'file',
@@ -100,7 +100,7 @@ export function createApplyChangesAdapter({
       },
 
       writeFile: async args => {
-        const { gitRoot, content, userSpaceFs } = args;
+        const { content, userSpaceFs } = args;
         const sourceBranch = await getCurrentBranch(gitRoot, gitStorageFs);
         const targetBranch = await getReferenceBranch(gitRoot, gitStorageFs);
         const commitMessage = content.toString().trim();

@@ -159,7 +159,6 @@ export class CompositeSubFsAdapter
       cacheFs: this.memFs,
       filePath,
       userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
 
       pathParams: routeParams,
       author: author,
@@ -256,7 +255,6 @@ export class CompositeSubFsAdapter
         cacheFs: this.memFs,
         filePath: path.toString(),
         userSpaceFs: this.compositeFs,
-        gitRoot: this.gitRoot,
 
         pathParams: routeParams,
         ...optionsToPass,
@@ -373,7 +371,6 @@ export class CompositeSubFsAdapter
       cacheFs: this.memFs,
       filePath: pathStr,
       userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
 
       pathParams: routeParams,
       author,
@@ -464,7 +461,6 @@ export class CompositeSubFsAdapter
       cacheFs: this.memFs,
       filePath: pathStr,
       userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
 
       pathParams: routeParams,
       author,
@@ -528,7 +524,6 @@ export class CompositeSubFsAdapter
         cacheFs: this.memFs,
         filePath: openFh.path,
         userSpaceFs: this.compositeFs,
-        gitRoot: this.gitRoot,
 
         pathParams: routeParams,
         author,
@@ -606,7 +601,6 @@ export class CompositeSubFsAdapter
         cacheFs: this.memFs,
         filePath: openFh!.path,
         userSpaceFs: this.compositeFs,
-        gitRoot: this.gitRoot,
 
         pathParams: routeParams,
         author: author,
@@ -673,7 +667,6 @@ export class CompositeSubFsAdapter
           cacheFs: this.memFs,
           filePath: openFh.path,
           userSpaceFs: this.compositeFs,
-          gitRoot: this.gitRoot,
 
           content: content,
           pathParams: routeParams,
@@ -847,7 +840,6 @@ export class CompositeSubFsAdapter
       cacheFs: this.memFs,
       filePath: oldPathStr,
       userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
 
       newPath: newPathStr,
       pathParams: routeParams,
@@ -880,7 +872,6 @@ export class CompositeSubFsAdapter
         cacheFs: this.memFs,
         filePath: pathStr,
         userSpaceFs: this.compositeFs,
-        gitRoot: this.gitRoot,
 
         pathParams: routeParams,
         author,
@@ -924,7 +915,6 @@ export class CompositeSubFsAdapter
       cacheFs: this.memFs,
       filePath: pathStr,
       userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
 
       pathParams: routeParams,
       author,

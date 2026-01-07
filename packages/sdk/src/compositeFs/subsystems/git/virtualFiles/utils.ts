@@ -655,8 +655,9 @@ export async function resolveGitObjAtPath({
   commitSha,
   pathParams,
   gitCache,
-}: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'pathParams'> & {
+}: Pick<VirtualFileArgs, 'filePath' | 'pathParams'> & {
   commitSha: string;
+  gitRoot: string;
   gitCache: any;
   nodeFs: any;
 }): Promise<
@@ -772,7 +773,8 @@ export async function resolveGitObjAtPathFromArgs({
   commitSha,
   pathParams,
   args,
-}: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'pathParams'> & {
+}: Pick<VirtualFileArgs, 'filePath' | 'pathParams'> & {
+  gitRoot: string;
   commitSha: string;
   args: VirtualFileArgs;
   nodeFs: any;

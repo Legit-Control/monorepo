@@ -50,7 +50,7 @@ export function createBranchesListAdapter({
       type: 'gitBranchesListVirtualFile',
       rootType: 'folder',
 
-      getStats: async ({ gitRoot }) => {
+      getStats: async () => {
         const gitDir = gitRoot + '/' + '.git';
         try {
           const gitStats = await gitStorageFs.promises.stat(gitDir);
@@ -63,7 +63,7 @@ export function createBranchesListAdapter({
         }
       },
 
-      getFile: async ({ gitRoot, filePath }) => {
+      getFile: async ({ filePath }) => {
         try {
           const branches = await git.listBranches({
             fs: gitStorageFs,
