@@ -9,6 +9,7 @@ type ContentCardProps = {
   date?: string
   author?: string
   image: string
+  tags?: string[]
 }
 
 export function ContentCard({
@@ -17,7 +18,8 @@ export function ContentCard({
   description,
   date,
   author,
-  image
+  image,
+  tags
 }: ContentCardProps) {
   const isExternal = href.startsWith('http://') || href.startsWith('https://')
   
@@ -34,6 +36,19 @@ export function ContentCard({
       </div>
 
       <div className="p-4 flex flex-col flex-grow">
+        {!!tags?.length && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {(author || date) && (
           <div className="mb-2 text-xs text-gray-500">
             {author && <span>by {author}</span>}
