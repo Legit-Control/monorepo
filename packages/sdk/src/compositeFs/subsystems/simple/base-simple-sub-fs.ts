@@ -24,7 +24,7 @@ import type {
 
 import { BaseCompositeSubFs } from '../BaseCompositeSubFs.js';
 import * as nodeFs from 'node:fs';
-import { toDirEntry } from '../git/virtualFiles/utils.js';
+import { toDirEntry } from '../../utils/toDirEntry.js';
 
 export abstract class ASimpleCompositeSubfs
   extends BaseCompositeSubFs
@@ -41,13 +41,7 @@ export abstract class ASimpleCompositeSubfs
     }
   > = {};
 
-  constructor({
-    name,
-    rootPath,
-  }: {
-    name: string;
-    rootPath: string;
-  }) {
+  constructor({ name, rootPath }: { name: string; rootPath: string }) {
     super({ name, rootPath });
     this.memFs = createFsFromVolume(new Volume());
   }
@@ -185,7 +179,11 @@ export abstract class ASimpleCompositeSubfs
     return filehandle;
   }
 
-  abstract createDirectory(args: {path: string, recursive?: boolean, context: ASimpleCompositeSubfs['context']}): Promise<void>;
+  abstract createDirectory(args: {
+    path: string;
+    recursive?: boolean;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
 
   abstract readFileContent(args: {
     path: string;
@@ -227,8 +225,12 @@ export abstract class ASimpleCompositeSubfs
     const pathStr = path.toString();
 
     try {
-      await this.createDirectory({ path: pathStr, recursive: true, context: this.context });
-      
+      await this.createDirectory({
+        path: pathStr,
+        recursive: true,
+        context: this.context,
+      });
+
       const optionsToPassToMemfs =
         typeof options === 'object'
           ? { ...options, recursive: true }
@@ -741,7 +743,10 @@ export abstract class ASimpleCompositeSubfs
     });
   }
 
-  override async fchmod(_fh: CompositFsFileHandle, _mode: TMode): Promise<void> {
+  override async fchmod(
+    _fh: CompositFsFileHandle,
+    _mode: TMode
+  ): Promise<void> {
     // noop
   }
 
