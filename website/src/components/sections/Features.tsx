@@ -11,18 +11,18 @@ import SmallGrid from '../SmallGrid';
 const data = {
   title: (
     <>
-    Infrastructure for
-    
-     <span className="text-primary"> AI-native applications</span>
+      Infrastructure for{' '}
+      <span className="text-primary">AI-native applications</span>
     </>
   ),
   description: (
     <>
-      <b className="text-black">
-        From undo-redo to rollback , branching to experiments, sync and more.
-      </b>{' '}
-      Deliver reliability and collaboration without building your own version
-      control and powered by Git.
+      Build reliable, collaborative AI workflows without worrying about the basics of version control.
+      {/*   what is about this:    Build reliable, collaborative AI workflows without worring about  or how to control an Agent.
+ */}
+      <br />  
+      We provide the infrastructure that makes AI trustworthy by design.
+
     </>
   ),
   caption: 'Features',
@@ -31,10 +31,9 @@ const data = {
     description: (
       <>
         <b className="text-black">
-          Let your user move through the entire history like a living timeline.
-        </b>{' '}
-        They can jump back to previous moments, explore past states, and restore
-        them instantly.
+        Let users move through the full history as a living timeline.
+        </b><br />
+       Build complete context graphs that map relationships between AI operations, decisions, and outcomes.
       </>
     ),
     image: '/timetravel.svg',
@@ -45,13 +44,11 @@ const data = {
       description: (
         <>
           <b className="text-black">
-            Give users the power of Branches &rarr; an isolated workspace for 
-            <span className="text-primary"> AI experiments</span>.
+          Test AI ideas without risk in isolation before they affect real work.
           </b>
           <br />
-        
-          Let users run agents in parallel branches, compare diffs, and merge only what they want back into the original document.
-        </>
+          Run agents in parallel, compare diffs, and choose which result becomes the final version.
+          </>
       ),
       image: '/branch.svg',
     },
@@ -59,11 +56,12 @@ const data = {
       title: 'Rollback Anytime',
       description: (
         <>
-          Let User recover from AI mistakes. Instantly undo, restore any earlier version, and stay fully in control of AI-assisted changes
-          <b className="text-black"> stay fully in control of AI-assisted changes. </b>
-         
-
-        </>
+    <b className="text-black">
+      Recover instantly from AI mistakes.
+    </b>
+    <br />
+    Jump back to previous moments, explore past states, and restore them instantly.
+  </>
       ),
       image: '/rollback.svg',
     },
@@ -115,11 +113,17 @@ const Features = () => {
       <div className="col-span-12 lg:col-span-6 lg:col-start-2 my-12 w-full">
         <img
           src={data.primaryFeature.image}
-          alt={data.primaryFeature.title}
-          className="w-full h-full object-cover"
+          alt="Version History: Visualization showing version history timeline with decision trails"
+          className="w-full h-full object-contain"
         />
       </div>
       <div className="hidden md:block col-span-12 lg:col-span-3 lg:col-start-9 my-12 lg:my-auto">
+        <Font type="h3">{data.primaryFeature.title}</Font>
+        <Font className="text-zinc-500 pt-4" type="p">
+          {data.primaryFeature.description}
+        </Font>
+      </div>
+      <div className="block md:hidden col-span-12 lg:col-span-6 lg:col-start-2 my-6">
         <Font type="h3">{data.primaryFeature.title}</Font>
         <Font className="text-zinc-500 pt-4" type="p">
           {data.primaryFeature.description}
@@ -134,8 +138,8 @@ const Features = () => {
           </Font>
           <img
             src={data.secondaryFeatures[0].image}
-            alt={data.secondaryFeatures[0].title}
-            className="w-full h-full object-fit"
+            alt={`${data.secondaryFeatures[0].title}: Branching and experimentation workflow diagram`}
+            className="w-full h-full object-contain"
           />
         </div>
         <div className="bg-zinc-100 w-px h-[calc(100%+1rem)] -mt-2 mx-12" />
@@ -146,8 +150,8 @@ const Features = () => {
           </Font>
           <img
             src={data.secondaryFeatures[1].image}
-            alt={data.secondaryFeatures[1].title}
-            className="w-full h-full object-fit"
+            alt={`${data.secondaryFeatures[1].title}: Rollback and restore functionality illustration`}
+            className="w-full h-full object-contain"
           />
         </div>
       </div>
