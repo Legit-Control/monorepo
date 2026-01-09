@@ -6,7 +6,10 @@ import { CompositeSubFs } from './CompositeSubFs.js';
 import { CompositeFsDir } from './CompositeFsDir.js';
 import { IStats } from 'memfs/lib/node/types/misc.js';
 import { FsOperationLogger } from './utils/fs-operation-logger.js';
-import { PathRouter, LegitRouteFolder } from './PathRouter.js';
+import {
+  PathRouter,
+  LegitRouteFolder,
+} from './subsystems/file-path-routing-fs/router/PathRouter.js';
 
 import { BaseCompositeSubFs } from './subsystems/BaseCompositeSubFs.js';
 

@@ -1,0 +1,808 @@
+import { CompositeSubFs } from '../../CompositeSubFs.js';
+import CompositFsFileHandle from '../../CompositeFsFileHandle.js';
+import * as path from 'path';
+
+import { createFsFromVolume, IFs, Volume } from 'memfs';
+import {
+  IStats,
+  TFileHandleReadResult,
+  TFileHandleWriteResult,
+  TTime,
+} from 'memfs/lib/node/types/misc.js';
+import {
+  IStatOptions,
+  IWriteFileOptions,
+} from 'memfs/lib/node/types/options.js';
+import type {
+  PathLike,
+  IFileHandle,
+  TData,
+  TDataOut,
+  IReadFileOptions,
+  TMode,
+} from '../../../types/fs-types.js';
+
+import { BaseCompositeSubFs } from '../BaseCompositeSubFs.js';
+import * as nodeFs from 'node:fs';
+import { toDirEntry } from '../git/virtualFiles/utils.js';
+
+export abstract class ASimpleCompositeSubfs
+  extends BaseCompositeSubFs
+  implements CompositeSubFs
+{
+  private memFs: IFs;
+  private openFh: Record<
+    number,
+    {
+      path: string;
+      mode: string;
+      fh: IFileHandle;
+      unflushed: { start: number; length: number }[];
+    }
+  > = {};
+
+  constructor({
+    name,
+    rootPath,
+  }: {
+    name: string;
+    rootPath: string;
+  }) {
+    super({ name, rootPath });
+    this.memFs = createFsFromVolume(new Volume());
+  }
+
+  /**
+   * Check if write operations are supported by this adapter
+   * Subclasses can override this to return false for read-only adapters
+   */
+  isWriteSupported(): boolean {
+    return true;
+  }
+
+  async responsible(_filePath: string): Promise<boolean> {
+    // This adapter is responsible for all paths routed to it by CompositeFs
+    // The routing happens at the CompositeFs level based on route patterns
+    return true;
+  }
+
+  /**
+   * Get route parameters from the operation context
+   * CompositeFs sets this context when routing to this adapter
+   */
+  private getRouteParams(): Record<string, string> {
+    return this.context?.params || {};
+  }
+
+  /**
+   * Get static siblings from the operation context
+   * These are static entries that should appear in directory listings
+   */
+  private getStaticSiblings(): { segment: string; type: 'folder' | 'file' }[] {
+    return this.context?.staticSiblings || [];
+  }
+
+  /**
+   * Opens a virtual file using the configured handler.
+   *
+   * The handler receives route parameters via context set by CompositeFs.
+   */
+  override async open(
+    filePath: string,
+    flags: string,
+    mode?: number
+  ): Promise<CompositFsFileHandle> {
+    // Check if write operations are supported
+    const isWritable = this.isWriteSupported();
+    if (!isWritable && (flags.includes('w') || flags.includes('a'))) {
+      throw new Error(`Write operations not allowed`);
+    }
+
+    // TODO add flags to handler definition
+    if (flags.includes('x')) {
+      // Check if exclusive create is supported
+      // Subclasses can override this check
+    }
+
+    let fileExists = false;
+    try {
+      await this.getStats({
+        path: filePath,
+        context: this.context,
+      });
+      fileExists = true;
+    } catch {
+      fileExists = false;
+    }
+
+    let fileExistsInCache = false;
+    for (const fh of Object.values(this.openFh)) {
+      if (fh.path === filePath) {
+        fileExistsInCache = true;
+      }
+    }
+
+    // assert flags / file existence state
+    if ((fileExists || fileExistsInCache) && flags.includes('x')) {
+      throw Object.assign(
+        new Error(`EEXIST: file already exists, open '${filePath}'`),
+        { code: 'EEXIST', errno: -17, syscall: 'open', path: filePath }
+      );
+    }
+
+    if (
+      !fileExists &&
+      !fileExistsInCache &&
+      !(flags.includes('w') || flags.includes('a'))
+    ) {
+      // in case the file doesnt exist but planned to
+      throw Object.assign(
+        new Error(`ENOENT: no such file or directory, open '${filePath}'`),
+        { code: 'ENOENT', errno: -2, syscall: 'open', path: filePath }
+      );
+    }
+
+    // Ensure parent directories exist in memfs
+    const dir = path.dirname(filePath);
+    await this.memFs.promises.mkdir(dir, { recursive: true });
+
+    // Write the virtual file content to memfs if the file existed
+    if (fileExists) {
+      try {
+        await this.memFs.promises.access(filePath);
+      } catch {
+        // file did not exist - create it
+        await this.memFs.promises.writeFile(
+          filePath,
+          '' // we start with an empty string and use the memfs file only as placeholder
+        );
+      }
+    }
+
+    const fh = await this.memFs.promises.open(filePath, flags, mode);
+    const fd = fh.fd;
+    const filehandle = new CompositFsFileHandle({
+      fs: this,
+      compositeFs: this.compositeFs,
+      subFsFileDescriptor: fd,
+      parentFsFileDescriptors: [],
+    });
+    this.openFh[fd] = {
+      path: filePath,
+      mode: flags,
+      fh: fh,
+      unflushed: [],
+    };
+    if (flags.includes('x') || flags.includes('w')) {
+      // NOTE workaround for created files that don't exist in the git history yet
+      // Added to allow stats call (that is used in the create call) that is not aware of the open flags
+      // to return the stats from the memory file
+      this.openFh[fd].unflushed.push({
+        length: 0,
+        start: 0,
+      });
+    }
+    return filehandle;
+  }
+
+  abstract createDirectory(args: {path: string, recursive?: boolean, context: ASimpleCompositeSubfs['context']}): Promise<void>;
+
+  abstract readFileContent(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<{ content: string | Buffer; oid?: string } | undefined>;
+
+  abstract writeFileContent(args: {
+    path: string;
+    content: Buffer | string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract readDirectory(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<nodeFs.Dirent[]>;
+
+  abstract renamePath(args: {
+    oldPath: string;
+    newPath: string;
+    oldContext: ASimpleCompositeSubfs['context'];
+    newContext: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract deleteFile(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract removeDirectory(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  override async mkdir(
+    path: PathLike,
+    options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null
+  ): Promise<void> {
+    const pathStr = path.toString();
+
+    try {
+      await this.createDirectory({ path: pathStr, recursive: true, context: this.context });
+      
+      const optionsToPassToMemfs =
+        typeof options === 'object'
+          ? { ...options, recursive: true }
+          : { recursive: true };
+
+      await this.memFs.promises.mkdir(path, optionsToPassToMemfs);
+      // Create file handles for every folder on the path
+      const parts = pathStr.split('/');
+      let current = '';
+      for (let i = 1; i <= parts.length; i++) {
+        current = parts.slice(0, i).join('/');
+        // Only create if not already open and is a directory
+        try {
+          const stats = await this.memFs.promises.stat(current);
+          if (stats.isDirectory()) {
+            const fh = await this.memFs.promises.open(current, 'r');
+            this.openFh[fh.fd] = {
+              path: current,
+              mode: 'r',
+              fh: fh,
+              unflushed: [],
+            };
+          }
+        } catch {
+          // Ignore if not exists or not a directory
+        }
+      }
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  override async access(path: PathLike, _mode?: number): Promise<void> {
+    // for now just use the stats call
+    await this.stat(path);
+  }
+
+  override async futimes(
+    fh: CompositFsFileHandle,
+    atime: TTime,
+    mtime: TTime
+  ): Promise<void> {
+    const openFh = this.openFh[fh.subFsFileDescriptor];
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+    return await openFh.fh.utimes(atime, mtime);
+  }
+
+  override async fstat(
+    fh: CompositFsFileHandle,
+    options?: IStatOptions
+  ): Promise<IStats> {
+    const openFh = this.openFh[fh.subFsFileDescriptor];
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+    // TODO get the stats from the filehandles path instead?
+    return this.stat(openFh.path, options);
+  }
+
+  override async ftruncate(
+    fh: CompositFsFileHandle,
+    len?: number
+  ): Promise<void> {
+    const openFh = this.openFh[fh.subFsFileDescriptor];
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+    openFh.unflushed.push({
+      length: 0,
+      start: 0,
+    });
+    return await openFh.fh.truncate(len);
+  }
+
+  override async stat(
+    path: PathLike,
+    opts?: { bigint?: false }
+  ): Promise<nodeFs.Stats>;
+  override async stat(
+    path: PathLike,
+    opts: { bigint: true }
+  ): Promise<nodeFs.BigIntStats>;
+  override async stat(
+    path: PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats>;
+  override async stat(
+    path: PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats> {
+    const pathStr = path.toString();
+
+    // Check if there is an open file handle for this path
+    const openFhEntry = Object.values(this.openFh).find(
+      fh => fh.path === pathStr && fh.unflushed.length > 0
+    );
+    if (openFhEntry && openFhEntry.unflushed.length > 0) {
+      return (await openFhEntry.fh.stat(opts)) as any; // TODO fix type
+    }
+
+    return this.getStats({
+      path: pathStr,
+      context: this.context,
+    });
+  }
+
+  abstract getStats(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<nodeFs.Stats>;
+
+  override async lstat(
+    path: PathLike,
+    opts?: { bigint?: false }
+  ): Promise<nodeFs.Stats>;
+  override async lstat(
+    path: PathLike,
+    opts: { bigint: true }
+  ): Promise<nodeFs.BigIntStats>;
+  override async lstat(
+    path: PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats>;
+  override async lstat(
+    path: PathLike,
+    opts?: { bigint?: boolean }
+  ): Promise<nodeFs.Stats | nodeFs.BigIntStats> {
+    return this.stat(path, opts);
+  }
+
+  override async readdir(
+    path: PathLike,
+    options?:
+      | (nodeFs.ObjectEncodingOptions & {
+          withFileTypes?: false | undefined;
+          recursive?: boolean | undefined;
+        })
+      | BufferEncoding
+      | null
+  ): Promise<string[]>;
+  override async readdir(
+    path: PathLike,
+    options?:
+      | {
+          encoding: 'buffer';
+          withFileTypes?: false | undefined;
+          recursive?: boolean | undefined;
+        }
+      | 'buffer'
+      | null
+  ): Promise<Buffer[]>;
+  override async readdir(
+    path: PathLike,
+    options?:
+      | (nodeFs.ObjectEncodingOptions & {
+          withFileTypes?: false | undefined;
+          recursive?: boolean | undefined;
+        })
+      | BufferEncoding
+      | null
+  ): Promise<string[] | Buffer[]>;
+  override async readdir(
+    path: PathLike,
+    options: nodeFs.ObjectEncodingOptions & {
+      withFileTypes: true;
+      recursive?: boolean | undefined;
+    }
+  ): Promise<nodeFs.Dirent[]>;
+  override async readdir(
+    path: PathLike,
+    options?:
+      | {
+          encoding: 'buffer';
+          withFileTypes?: false | undefined;
+          recursive?: boolean | undefined;
+        }
+      | (nodeFs.ObjectEncodingOptions & {
+          withFileTypes?: boolean;
+          recursive?: boolean;
+        })
+      | BufferEncoding
+      | 'buffer'
+      | null
+  ): Promise<string[] | Buffer[] | nodeFs.Dirent[]> {
+    const pathStr = path.toString();
+
+    const siblings = this.getStaticSiblings();
+
+    const result = await this.readDirectory({
+      path: pathStr,
+      context: this.context,
+    });
+
+    // Merge siblings and entries, remove duplicates, and sort POSIX-style
+    const allFolders = Array.from(
+      new Set([
+        ...result,
+        ...siblings.map(s =>
+          toDirEntry({
+            name: s.segment,
+            parent: pathStr,
+            isDir: s.type === 'folder',
+          })
+        ),
+      ])
+    ).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    );
+
+    // @ts-ignore
+    if (options?.withFileTypes) {
+      // TODO implement Dirent return type
+      return allFolders;
+    }
+    return allFolders.map(entry => entry.name);
+  }
+
+  // write not implemented - we do this when we implement branches
+
+  override async read(
+    fh: CompositFsFileHandle,
+    buffer: Buffer | Uint8Array,
+    offset: number,
+    length: number,
+    position: number
+  ): Promise<TFileHandleReadResult> {
+    const subFsFd = fh.subFsFileDescriptor;
+    const openFh = this.openFh[subFsFd];
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+
+    // if there is no unflushed change - read the object directly from storage
+    if (openFh.unflushed.length === 0) {
+      const fileFromHandler = await this.readFileContent({
+        path: openFh.path,
+        context: this.context,
+      });
+
+      if (!fileFromHandler?.content) {
+        throw new Error('couldnt access content');
+      }
+
+      const contentBuffer =
+        typeof fileFromHandler.content === 'string'
+          ? Buffer.from(fileFromHandler.content)
+          : fileFromHandler.content;
+      const start = typeof position === 'number' ? position : 0;
+      const end = Math.min(start + length, contentBuffer.length);
+      const bytesToRead = Math.max(0, end - start);
+
+      contentBuffer.copy(buffer, offset, start, start + bytesToRead);
+
+      return { bytesRead: bytesToRead, buffer };
+    }
+
+    // read the state from memfs that is used as write surface
+    return await openFh.fh.read(buffer, offset, length, position);
+  }
+
+  /**
+   *
+   * Writes (parts) of a buffer to a specific position in the file
+   *
+   * - a write leads to a new commit and on flush since the point in time a flush may occur may vary a read operation may
+   *  not see changed done on the read lays.
+   *
+   *
+   * @param fh
+   * @param buffer
+   * @param offset
+   * @param length
+   * @param position
+   * @returns
+   */
+  override async write(
+    fh: CompositFsFileHandle,
+    buffer: Buffer | ArrayBufferView | DataView,
+    offset?: number,
+    length?: number,
+    position?: number
+  ): Promise<TFileHandleWriteResult> {
+    const openFh = this.openFh[fh.subFsFileDescriptor];
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+
+    // Check if the file was opened with write permissions
+    const flags = openFh.mode;
+    if (!flags.includes('w') && !flags.includes('a') && !flags.includes('+')) {
+      throw Object.assign(new Error(`EBADF: bad file descriptor, write`), {
+        code: 'EBADF',
+        errno: -9,
+        syscall: 'write',
+      });
+    }
+
+    if (openFh.unflushed.length === 0) {
+      // no write was excuted before -> read the file first
+      // NOTE for no we realize the whole file
+
+      const fileFromStorage = await this.readFileContent({
+        path: openFh!.path,
+        context: this.context,
+      });
+
+      if (fileFromStorage && fileFromStorage.content) {
+        // update the memFs content to represent the storage content
+        await this.memFs.promises.writeFile(
+          openFh.path,
+          fileFromStorage.content as string
+        );
+      }
+    }
+
+    // Write to the memfs file handle
+    const result = await openFh.fh.write(buffer, offset, length, position);
+
+    const setOffset = offset ?? 0;
+    const startPos = position ?? 0;
+
+    // Mark as dirty by adding the written range to unflushed
+    openFh.unflushed.push({
+      start: startPos,
+      length: length ? length : buffer.byteLength - setOffset + startPos,
+    });
+
+    return result;
+  }
+
+  override async close(fh: CompositFsFileHandle): Promise<void> {
+    const subFsFd = fh.subFsFileDescriptor;
+    const openFh = this.openFh[subFsFd];
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+
+    try {
+      await this.dataSync(fh);
+      await openFh.fh.close();
+    } finally {
+      delete this.openFh[subFsFd];
+    }
+  }
+
+  override async dataSync(fh: CompositFsFileHandle): Promise<void> {
+    const subFsFd = fh.subFsFileDescriptor;
+    const openFh = this.openFh[subFsFd];
+
+    if (!openFh) {
+      throw new Error('Invalid file handle');
+    }
+
+    if (openFh.unflushed.length > 0) {
+      // File was written to, need to commit changes to storage
+      // Read the content from memfs
+      const content = await this.memFs.promises.readFile(openFh.path);
+
+      // Write to storage using the abstract method
+      await this.writeFileContent({
+        path: openFh.path,
+        content: content,
+        context: this.context,
+      });
+
+      // remove the write cache
+      openFh.unflushed = [];
+    }
+  }
+
+  override async readFile(
+    path: PathLike | IFileHandle,
+    options?: IReadFileOptions | string
+  ): Promise<TDataOut> {
+    // Convert path to string
+    const pathStr =
+      typeof path === 'string'
+        ? path
+        : Buffer.isBuffer(path)
+          ? path.toString()
+          : (path as IFileHandle).fd
+            ? `FileHandle(${(path as IFileHandle).fd})`
+            : path.toString();
+
+    // Extract encoding from options
+    let encoding: BufferEncoding | null = null;
+
+    if (typeof options === 'string') {
+      encoding = options as BufferEncoding;
+    } else if (options && typeof options === 'object') {
+      if (options.encoding) encoding = options.encoding as BufferEncoding;
+    }
+
+    // Open the file for reading
+    const fh = await this.open(pathStr, 'r');
+
+    try {
+      // Get the file stats to know the size
+      const stats = await this.fstat(fh);
+      const size = stats.size;
+
+      // Create a buffer to read the entire file
+      // @ts-expect-error -- we only support number for now big int follows later
+      const buffer = Buffer.alloc(size);
+
+      // Read the entire file
+      // @ts-expect-error -- we only support number for now big int follows later
+      await this.read(fh, buffer, 0, size, 0);
+
+      // Close the file handle
+      await this.close(fh);
+
+      // Return the content with proper encoding
+      if (encoding) {
+        return buffer.toString(encoding);
+      }
+      return buffer;
+    } catch (error) {
+      // Make sure to close the file handle even if read fails
+      try {
+        await this.close(fh);
+      } catch (closeError) {
+        // Ignore close errors
+      }
+      throw error;
+    }
+  }
+
+  override async writeFile(
+    path: string,
+    data: TData,
+    options?: IWriteFileOptions | string
+  ): Promise<void> {
+    // Extract flags and encoding from options
+    let flags = 'w';
+    let encoding: BufferEncoding = 'utf8';
+    let mode: number | undefined;
+
+    if (typeof options === 'string') {
+      encoding = options as BufferEncoding;
+    } else if (options && typeof options === 'object') {
+      if (options.flag) flags = String(options.flag);
+      if (options.encoding) encoding = options.encoding as BufferEncoding;
+      if (options.mode)
+        mode =
+          typeof options.mode === 'string'
+            ? parseInt(options.mode, 8)
+            : options.mode;
+    }
+
+    // Open the file with the extracted flags
+    const fh = await this.open(path, flags, mode);
+
+    try {
+      // Convert data to Buffer if needed
+      let buffer: Buffer;
+      if (typeof data === 'string') {
+        buffer = Buffer.from(data, encoding);
+      } else if (Buffer.isBuffer(data)) {
+        buffer = data;
+      } else if (data instanceof Uint8Array) {
+        buffer = Buffer.from(data);
+      } else if (ArrayBuffer.isView(data)) {
+        buffer = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+      } else {
+        buffer = Buffer.from(data as any);
+      }
+
+      // Write the data using the write method
+      await this.write(fh, buffer, 0, buffer.length, 0);
+    } finally {
+      // Make sure to close the file handle even if write fails
+      await this.close(fh);
+    }
+  }
+
+  override async rename(oldPath: PathLike, newPath: PathLike): Promise<void> {
+    const oldPathStr = oldPath.toString();
+    const newPathStr = newPath.toString();
+
+    // TODO: Handle cross-adapter renames properly
+    const oldExistsInMemory = await this.memFs.promises
+      .access(oldPathStr)
+      .then(() => true)
+      .catch(() => false);
+
+    // Handle memory file rename
+    if (oldExistsInMemory) {
+      // Ensure the target directory exists
+      const targetDir = path.dirname(newPathStr);
+      try {
+        await this.memFs.promises.access(targetDir);
+      } catch {
+        await this.memFs.promises.mkdir(targetDir, { recursive: true });
+      }
+      await this.memFs.promises.rename(oldPath, newPath);
+    }
+
+    // Delegate to storage backend
+    await this.renamePath({
+      oldPath: oldPathStr,
+      newPath: newPathStr,
+      oldContext: this.context,
+      newContext: this.newContext || this.context,
+    });
+  }
+
+  override async fchmod(_fh: CompositFsFileHandle, _mode: TMode): Promise<void> {
+    // noop
+  }
+
+  override async unlink(path: PathLike): Promise<void> {
+    const pathStr = path.toString();
+
+    try {
+      await this.deleteFile({
+        path: pathStr,
+        context: this.context,
+      });
+    } catch (err) {
+      // if the file was only written i memory unlink will fail
+      let unflused = false;
+      for (const [fd, fh] of Object.entries(this.openFh)) {
+        if (fh.path === pathStr && fh.unflushed.length > 0) {
+          unflused = true;
+        }
+      }
+      if (!unflused) {
+        throw err;
+      }
+    } finally {
+      let existsInMem = false;
+      for (const [fd, fh] of Object.entries(this.openFh)) {
+        if (fh.path === pathStr) {
+          existsInMem = true;
+          await fh.fh.close();
+          delete this.openFh[Number(fd)];
+        }
+      }
+      if (existsInMem) {
+        // file existed in memory and was removed
+        await this.memFs.promises.unlink(pathStr);
+      }
+    }
+  }
+
+  override async rmdir(path: PathLike, ..._args: any[]): Promise<void> {
+    const pathStr = path.toString();
+
+    await this.removeDirectory({
+      path: pathStr,
+      context: this.context,
+    });
+
+    let existsInMem = false;
+    for (const [fd, fh] of Object.entries(this.openFh)) {
+      if (fh.path === pathStr) {
+        existsInMem = true;
+        await fh.fh.close();
+        delete this.openFh[Number(fd)];
+      }
+    }
+    if (existsInMem) {
+      // file existed in memory and was removed
+      await this.memFs.promises.rmdir(pathStr, { recursive: true });
+    }
+  }
+
+  fileType(): number {
+    return 10; // Unique type for GitLegitVirtualFileSubFs
+  }
+}
