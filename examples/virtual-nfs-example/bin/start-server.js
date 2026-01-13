@@ -81,7 +81,7 @@ function startNfsServer(servePoint, port, logFile) {
 
   // Ensure the serve point directory exists
   if (!fsDisk.existsSync(servePoint)) {
-    fsfsDisk.mkdirSync(servePoint, { recursive: true });
+    fsDisk.mkdirSync(servePoint, { recursive: true });
     logWithTimestamp(`Created serve point directory: ${servePoint}`);
   }
 
