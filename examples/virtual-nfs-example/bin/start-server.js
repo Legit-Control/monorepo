@@ -166,7 +166,7 @@ function mountNfsShare(mountPoint, port) {
       }
 
       // Mount the NFS share
-      const mountCommand = `mount_nfs -o nolocks,soft,retrans=2,timeo=10,vers=3,tcp,rsize=131072,actimeo=120,port=${port},mountport=${port} localhost:/ ${mountPoint}`;
+      const mountCommand = `mount_nfs -o nolocks,soft,retrans=2,timeo=10,vers=3,tcp,rsize=131072,actimeo=0,port=${port},mountport=${port} localhost:/ ${mountPoint}`;
 
       exec(mountCommand, mountErr => {
         if (mountErr) {
