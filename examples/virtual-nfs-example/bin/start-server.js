@@ -131,6 +131,7 @@ function startNfsServer(servePoint, port, logFile) {
     ready: serverReadyPromise,
     stop: async () => {
       logWithTimestamp('Stopping NFS server...');
+      await nfsServer.closeAllConnections();
       if (nfsServer) {
         return new Promise(resolve => {
           nfsServer.close(() => {
@@ -285,9 +286,11 @@ async function main() {
 
     // Stop NFS server
     if (nfsServer) {
+      console.log('Stopping NFS server...');
       await nfsServer.stop();
     }
 
+    console.log('Shutdown complete.');
     process.exit(0);
   };
 
