@@ -6,7 +6,7 @@ import {
   setReferenceBranch,
 } from './getReferenceBranch.js';
 import { tryResolveRef } from './utils.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for reference branch operations

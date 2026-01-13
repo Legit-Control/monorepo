@@ -2,7 +2,7 @@ import git from '@legit-sdk/isomorphic-git';
 
 import { resolveOperationBranchName } from './resolveOperationBranchName.js';
 import { getCurrentBranch } from '../getCurrentBranch.js';
-import { CompositeSubFsAdapter } from '../../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from '../CompositeSubFsAdapter.js';
 
 export type Operation = {
   oid: string;

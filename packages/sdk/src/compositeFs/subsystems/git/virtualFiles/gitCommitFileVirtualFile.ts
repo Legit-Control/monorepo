@@ -4,7 +4,7 @@ import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { resolveGitObjAtPath, resolveGitObjAtPathFromArgs } from './utils.js';
 import { ENOENTError } from '../../../errors/ENOENTError.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it

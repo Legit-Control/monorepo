@@ -14,7 +14,7 @@ import { getCurrentBranch } from './getCurrentBranch.js';
 import Dirent from 'memfs/lib/node/Dirent.js';
 import { IDirent } from 'memfs/lib/node/types/misc.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it

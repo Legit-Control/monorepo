@@ -15,7 +15,7 @@ import {
 } from './resolveOperationBranchName.js';
 import { getCurrentBranch } from '../getCurrentBranch.js';
 import { decodeBranchNameFromVfs } from './nameEncoding.js';
-import { CompositeSubFsAdapter } from '../../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from '../CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for branch operation file operations

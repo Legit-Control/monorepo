@@ -3,7 +3,7 @@ import git from '@legit-sdk/isomorphic-git';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 import * as nodeFs from 'node:fs';
 import { toDirEntry } from '../../../utils/toDirEntry.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for commit virtual folder operations

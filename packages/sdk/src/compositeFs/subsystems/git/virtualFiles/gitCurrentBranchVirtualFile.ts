@@ -5,7 +5,7 @@ import { getCurrentBranch, setCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
 import { getReferenceBranch } from './getReferenceBranch.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for current branch operations

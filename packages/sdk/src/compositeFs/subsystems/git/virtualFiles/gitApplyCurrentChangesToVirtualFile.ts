@@ -6,7 +6,7 @@ import { getCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 import { getReferenceBranch } from './getReferenceBranch.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 function getGitCacheFromFs(fs: any): any {
   // If it's a CompositeFs with gitCache, use it

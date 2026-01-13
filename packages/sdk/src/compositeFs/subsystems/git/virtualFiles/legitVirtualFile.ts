@@ -1,7 +1,7 @@
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for legit virtual folder operations

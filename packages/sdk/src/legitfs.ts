@@ -30,7 +30,7 @@ import { CompositeSubFs } from './compositeFs/CompositeSubFs.js';
 import {
   LegitRouteFolder,
   PathRouteDescription,
-} from './compositeFs/subsystems/file-path-routing-fs/router/PathRouter.js';
+} from './compositeFs/router/PathRouter.js';
 
 function isLegitRouteFolder(
   value: PathRouteDescription | undefined

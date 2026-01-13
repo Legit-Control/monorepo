@@ -7,7 +7,7 @@ import {
 import * as nodeFs from 'node:fs';
 import { getCurrentBranch } from '../getCurrentBranch.js';
 import { tryResolveRef } from '../utils.js';
-import { CompositeSubFsAdapter } from '../../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from '../CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for branch operation head operations

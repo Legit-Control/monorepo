@@ -1,6 +1,6 @@
 import git from '@legit-sdk/isomorphic-git';
-import { CompositeSubFs } from '../CompositeSubFs.js';
-import CompositFsFileHandle from '../CompositeFsFileHandle.js';
+import { CompositeSubFs } from '../../../CompositeSubFs.js';
+import CompositFsFileHandle from '../../../CompositeFsFileHandle.js';
 import * as path from 'path';
 
 import { createFsFromVolume, IFs, Volume } from 'memfs';
@@ -21,12 +21,12 @@ import type {
   TDataOut,
   IReadFileOptions,
   TMode,
-} from '../../types/fs-types.js';
+} from '../../../../types/fs-types.js';
 
-import { BaseCompositeSubFs } from './BaseCompositeSubFs.js';
+import { BaseCompositeSubFs } from '../../BaseCompositeSubFs.js';
 import * as nodeFs from 'node:fs';
-import { VirtualFileDefinition } from './git/virtualFiles/gitVirtualFiles.js';
-import { toDirEntry } from '../utils/toDirEntry.js';
+import { VirtualFileDefinition } from './gitVirtualFiles.js';
+import { toDirEntry } from '../../../utils/toDirEntry.js';
 
 /**
  * CompositeSubFsAdapter - Adapts a virtual file handler to work as a SubFS
@@ -320,7 +320,6 @@ export class CompositeSubFsAdapter
     if (!openFh) {
       throw new Error('Invalid file handle');
     }
-    // TODO get the stats from the filehandles path instead?
     return this.stat(openFh.path, options);
   }
 

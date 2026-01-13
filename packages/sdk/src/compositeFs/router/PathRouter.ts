@@ -42,7 +42,7 @@
  * // ]
  * ```
  */
-import { CompositeSubFs } from '../../../CompositeSubFs.js';
+import { CompositeSubFs } from '../CompositeSubFs.js';
 
 export type MatchResult = {
   handler: CompositeSubFs;

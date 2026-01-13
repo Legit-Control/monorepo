@@ -5,7 +5,7 @@ import * as nodeFs from 'node:fs';
 import { PathLike } from 'node:fs';
 import { getCurrentBranch } from './getCurrentBranch.js';
 import { tryResolveRef } from './utils.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 // .legit/branches -> list of branches
 
