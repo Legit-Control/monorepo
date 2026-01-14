@@ -1,6 +1,12 @@
 import * as nodeFs from 'node:fs';
 import { createLegitSyncService } from './sync/createLegitSyncService.js';
 import git from '@legit-sdk/isomorphic-git';
+import * as pako from 'pako';
+
+interface ArchiveManifest {
+  version: number;
+  files: Record<string, string>; // base64 encoded binary data
+}
 
 import { CompositeFs } from './compositeFs/CompositeFs.js';
 import { CopyOnWriteSubFs } from './compositeFs/subsystems/CopyOnWriteSubFs.js';
@@ -489,27 +495,147 @@ export async function openLegitFs({
     },
 
     /**
-     * 
+     *
      * This function takes a legit archive - earlier compressed with saveArchive and writes it to storage fs.
-     * 
+     *
      * Refs that can be fast forwarded should get updeted - referecences that cannot be fast forwarded create a ref named branchname-conflict-uuid.
      * New Refs should be added. (TODO how do we handle deleted refs to prevent them from coming back?)
-     * 
+     *
      * The git config should get ignored for now
-     * 
+     *
      * @param legitArchieve a zlib compressed legit repo
      */
     loadArchive: async (legitArchieve: Uint8Array): Promise<void> => {
+      // Decompress the archive
+      const decompressed = pako.inflate(legitArchieve);
+      const text = new TextDecoder().decode(decompressed);
+      const manifest = JSON.parse(text) as ArchiveManifest;
 
-    }, 
+      // Get existing refs before we start modifying
+      const existingRefsMap = new Map<string, string>();
+      try {
+        const existingBranches = await git.listBranches({
+          fs: storageFs,
+          dir: gitRoot,
+        });
+        for (const branch of existingBranches) {
+          const oid = await git.resolveRef({
+            fs: storageFs,
+            dir: gitRoot,
+            ref: branch,
+          });
+          existingRefsMap.set(branch, oid);
+        }
+      } catch (e) {
+        // Ignore if no branches exist yet
+      }
+
+      // Process each file in the archive
+      for (const [relativePath, base64Content] of Object.entries(manifest.files)) {
+        const fullPath = `${gitRoot}/.git/${relativePath}`;
+
+        // Skip config files as per spec
+        if (relativePath === 'config') {
+          continue;
+        }
+
+        // Decode base64 content to binary
+        const content = Buffer.from(base64Content, 'base64');
+
+        // Special handling for refs/heads/
+        if (relativePath.startsWith('refs/heads/') || relativePath.startsWith('refs/tags/')) {
+          const refName = relativePath.replace(/^refs\/(heads|tags)\//, '');
+
+          // Check if this is a new ref or an existing one
+          if (!existingRefsMap.has(refName)) {
+            // New ref - just write it
+            await storageFs.promises.mkdir(fullPath.split('/').slice(0, -1).join('/'), { recursive: true });
+            await storageFs.promises.writeFile(fullPath, content);
+          } else {
+            // Existing ref - check if we can fast-forward
+            const existingOid = existingRefsMap.get(refName)!;
+            const newOid = content.toString('utf-8').trim();
+
+            try {
+              // Check if newOid is a descendant of existingOid (fast-forward check)
+              // If newOid is a descendant of existingOid, we can fast-forward
+              const isDescendant = await git.isDescendent({
+                fs: storageFs,
+                dir: gitRoot,
+                oid: newOid,
+                ancestor: existingOid,
+              });
+
+              if (isDescendant || existingOid === newOid) {
+                // Can fast-forward or already up to date
+                await storageFs.promises.writeFile(fullPath, content);
+              } else {
+                // Cannot fast-forward - create conflict branch
+                const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
+                const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
+                await storageFs.promises.mkdir(conflictRefPath.split('/').slice(0, -1).join('/'), { recursive: true });
+                await storageFs.promises.writeFile(conflictRefPath, content);
+              }
+            } catch (e) {
+              // If we can't verify, assume it's not fast-forwardable and create conflict
+              const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
+              const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
+              await storageFs.promises.mkdir(conflictRefPath.split('/').slice(0, -1).join('/'), { recursive: true });
+              await storageFs.promises.writeFile(conflictRefPath, content);
+            }
+          }
+        } else {
+          // For non-ref files, just write them directly
+          await storageFs.promises.mkdir(fullPath.split('/').slice(0, -1).join('/'), { recursive: true });
+          await storageFs.promises.writeFile(fullPath, content);
+        }
+      }
+    },
 
     /**
      * creates a legit archieve - a compressed representation of the legit repo (the .git folder in the storage fs)
-     * 
-     * @returns 
+     *
+     * @returns
      */
     saveArchive: async (): Promise<Uint8Array> => {
-      return new Uint8Array();
+      const manifest: ArchiveManifest = {
+        version: 1,
+        files: {},
+      };
+
+      // Recursively read all files in .git folder
+      async function readDirectoryRecursive(dirPath: string, relativePath: string = '') {
+        const entries = await storageFs.promises.readdir(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullPath = `${dirPath}/${entry.name}`;
+          const entryRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+
+          if (entry.isDirectory()) {
+            await readDirectoryRecursive(fullPath, entryRelativePath);
+          } else if (entry.isFile()) {
+            // Read as binary (Buffer/Uint8Array) and encode as base64
+            const content = await storageFs.promises.readFile(fullPath);
+            manifest.files[entryRelativePath] = Buffer.from(content).toString('base64');
+          }
+        }
+      }
+
+      const gitFolderPath = `${gitRoot}/.git`;
+      try {
+        await readDirectoryRecursive(gitFolderPath);
+      } catch (e) {
+        // If .git doesn't exist or can't be read, return empty archive
+        console.warn('Failed to read .git folder:', e);
+      }
+
+      // Serialize and compress
+      const jsonString = JSON.stringify(manifest);
+      const encoder = new TextEncoder();
+      const data = encoder.encode(jsonString);
+      const compressed = pako.deflate(data);
+
+      return compressed;
     }
 
   });

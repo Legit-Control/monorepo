@@ -65,6 +65,7 @@
     "@legit-sdk/isomorphic-git": "workspace:*",
     "ignore": "^7.0.4",
     "memfs": "^4.14.0",
+    "pako": "^2.1.0",
     "typescript": "^5.8.3"
   }
 }

@@ -108,9 +108,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new empty repo in a new memfs
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -154,9 +159,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo and load archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -188,9 +198,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo, load first archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -244,9 +259,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo, load first archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -329,9 +349,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo and load first archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -369,9 +394,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo and load archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -399,9 +429,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo and load archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -428,9 +463,14 @@ describe('saveArchive and loadArchive', () => {
 
       // Create new repo and load archive
       const newMemfs = createFsFromVolume(new Volume());
-      await isogit.init({ fs: newMemfs, dir: repoPath, defaultBranch: 'anonymous' });
+      await isogit.init({
+        fs: newMemfs,
+        dir: repoPath,
+        defaultBranch: 'anonymous',
+      });
 
       const newLegitfs = await openLegitFs({
+        // @ts-ignore -- fix type
         storageFs: newMemfs,
         gitRoot: repoPath,
         anonymousBranch: 'anonymous',
@@ -446,7 +486,9 @@ describe('saveArchive and loadArchive', () => {
       });
 
       expect(restoredLog.length).toBe(originalLog.length);
-      expect(restoredLog[0].commit.message).toBe(originalLog[0].commit.message);
+      expect(restoredLog[0]!.commit.message).toBe(
+        originalLog[0]!.commit.message
+      );
     });
   });
 });
