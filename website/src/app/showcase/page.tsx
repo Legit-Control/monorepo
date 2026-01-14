@@ -25,8 +25,7 @@ const showcasePage = () => {
     {
       href: 'https://letgitwebmcp.com/month-view',
       title: 'Legit x WebMCP exploration',
-      description:
-        'Example of Legit with WebMCP integration.',
+      description: 'Example of Legit with WebMCP integration.',
       image: '/showcase/LegitxWebMCP.png',
       date: 'Nov. 2025',
       author: 'Legit Team + Alex Nahas',
@@ -45,8 +44,7 @@ const showcasePage = () => {
     {
       href: 'https://neomjs.com/apps/legit/',
       title: 'Legit x NeoMJS ',
-      description:
-        'Example of Legit with NeoMJS integration.',
+      description: 'Example of Legit with NeoMJS integration.',
       image: '/showcase/LegitxNeoMJS.png',
       date: 'Nov. 2025',
       author: 'Legit Team + Tobias Uhlig',
@@ -65,8 +63,7 @@ const showcasePage = () => {
     {
       href: 'https://legit-react-example-sync-phcl.vercel.app/',
       title: 'Legit React Sync example',
-      description:
-        'Example of Legit React with sync functionality.',
+      description: 'Example of Legit React with sync functionality.',
       image: '/showcase/LegitReactSync.png',
       date: 'Nov. 2025',
       author: 'Legit Team',
@@ -82,7 +79,7 @@ const showcasePage = () => {
       author: 'Legit Team',
       tags: ['Starter Template'],
     },
-   
+
     {
       href: 'https://discord.gg/34K4t5K9Ra',
       title: 'Add your Own Showcase',
@@ -146,7 +143,6 @@ const showcasePage = () => {
                 image={item.image}
                 date={item.date}
                 author={item.author}
-                tags={item.tags}
               />
             </div>
           ))}

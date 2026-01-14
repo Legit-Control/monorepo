@@ -310,6 +310,31 @@ importers:
         specifier: ^4.51.1
         version: 4.51.1
 
+  examples/virtual-nfs-example:
+    dependencies:
+      '@legit-sdk/core':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@legit-sdk/nfs-serve':
+        specifier: workspace:*
+        version: link:../../packages/nfs-serve
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
+      inquirer:
+        specifier: ^7.0.0
+        version: 7.3.3
+      memfs:
+        specifier: ^4.51.1
+        version: 4.51.1
+    devDependencies:
+      vite:
+        specifier: ^7.3.0
+        version: 7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.10.4)(happy-dom@14.12.3)(jiti@2.6.1)(jsdom@27.1.0)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.2)
+
   packages/3rd-party/isomorphic-git:
     dependencies:
       async-lock:
