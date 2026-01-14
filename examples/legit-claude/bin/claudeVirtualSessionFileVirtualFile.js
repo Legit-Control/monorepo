@@ -1,4 +1,5 @@
 import { CompositeSubFsAdapter } from '@legit-sdk/core';
+import { currentBranch } from '@legit-sdk/isomorphic-git';
 
 const SESSION_DATA_PATH = 'session_data';
 
@@ -80,7 +81,7 @@ export function createClaudeVirtualSessionFileAdapter({
       type: 'claudeVirtualSessionFileVirtualFile',
       rootType: 'folder',
 
-      getStats: async ({ gitRoot, filePath, cacheFs, pathParams }) => {
+      getStats: async ({ filePath, cacheFs, pathParams }) => {
         // Return folder stats for specific .claude paths regardless of cache
         const normalizedPath = filePath.replace(/\\/g, '/');
         if (
@@ -425,9 +426,11 @@ export function createClaudeVirtualSessionFileAdapter({
               textualDesscription = `System: ${parsed.type || 'unknown action'}\n\n---\n\n`;
             }
 
+            console.log('operation wrtingin test to file with desscription:');
             await userSpaceFs.promises.writeFile(
               gitRoot + '/.legit/operation',
-              textualDesscription + lastLine
+
+              textualDesscription + ' \n\n ' + lastLine
             );
           }
         } else {
@@ -461,8 +464,10 @@ export function createClaudeVirtualSessionFileAdapter({
   });
 
   adapter.responsible = async filePath => {
-    const normalizedPath = filePath.replace(/\\/g, '/');
-    return normalizedPath.startsWith('/.claude/');
+    const normalizedPath = filePath
+      .replace(/\\/g, '/')
+      .replace(new RegExp(`^${gitRoot.replace(/\\/g, '/')}`), '');
+    return normalizedPath.startsWith('/.claude');
   };
 
   adapter.getAuthor = async () => {

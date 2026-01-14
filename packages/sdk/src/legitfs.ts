@@ -27,6 +27,46 @@ import { createApplyChangesAdapter } from './compositeFs/subsystems/git/virtualF
 import { createReferenceBranchAdapter } from './compositeFs/subsystems/git/virtualFiles/gitReferenceBranchVirtualFile.js';
 import { PassThroughToAsyncFsSubFs } from './compositeFs/subsystems/PassThroughToAsyncFsSubFs.js';
 import { CompositeSubFs } from './compositeFs/CompositeSubFs.js';
+import {
+  LegitRouteFolder,
+  PathRouteDescription,
+} from './compositeFs/router/PathRouter.js';
+
+function isLegitRouteFolder(
+  value: PathRouteDescription | undefined
+): value is LegitRouteFolder {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    value !== undefined &&
+    !Array.isArray(value)
+  );
+}
+
+export function mergeLegitRouteFolders(
+  a: LegitRouteFolder,
+  b: LegitRouteFolder
+): LegitRouteFolder {
+  const result: LegitRouteFolder = { ...a };
+
+  for (const key of Object.keys(b)) {
+    const aVal = a[key];
+    const bVal = b[key];
+
+    if (
+      aVal !== undefined &&
+      isLegitRouteFolder(aVal) &&
+      isLegitRouteFolder(bVal)
+    ) {
+      result[key] = mergeLegitRouteFolders(aVal, bVal);
+    } else {
+      // leaf conflict OR new key → b wins
+      result[key] = bVal!;
+    }
+  }
+
+  return result;
+}
 
 function getGitCache(fs: any): any {
   // If it's a CompositeFs with gitCache, use it
@@ -73,6 +113,7 @@ export async function openLegitFs({
   publicKey,
   ephemaralGitConfig = false,
   additionalFilterLayers,
+  routeOverrides,
 }: {
   storageFs: typeof nodeFs;
   gitRoot: string;
@@ -83,6 +124,7 @@ export async function openLegitFs({
   publicKey?: string;
   ephemaralGitConfig?: boolean;
   additionalFilterLayers?: CompositeSubFs[];
+  routeOverrides?: LegitRouteFolder;
 }) {
   let repoExists = await storageFs.promises
     .readdir(gitRoot + '/.git')
@@ -236,7 +278,6 @@ export async function openLegitFs({
 
   const commitFileAdapter = createCommitFileAdapter(adapterConfig);
 
-
   const hiddenFiles = showKeepFiles ? ['.git'] : ['.git', '.keep'];
   const gitFsHiddenFs = new HiddenFileSubFs({
     name: 'git-hidden-subfs',
@@ -293,6 +334,51 @@ export async function openLegitFs({
     patterns: copyOnWritePatterns,
   });
 
+  const routeConfig = {
+    '.legit': {
+      '.': legitVirtualFileAdapter,
+      operation: operationAdapter,
+      head: headAdapter,
+      operationHead: operationHeadAdapter,
+      operationHistory: operationHistoryAdapter,
+      history: historyAdapter,
+      currentBranch: currentBranchAdapter,
+      'reference-branch': referenceBranchAdapter,
+      'apply-changes': applyChangesAdapter,
+      branches: {
+        '.': branchesListAdapter,
+        '[branchName]': {
+          // branch names could include / so this is not a good delimiter here
+          '.legit': {
+            '.': legitVirtualFileAdapter,
+            operation: operationAdapter,
+            head: headAdapter,
+            operationHead: operationHeadAdapter,
+            operationHistory: operationHistoryAdapter,
+            history: historyAdapter,
+          },
+          '[[...filePath]]': branchFileAdapter,
+        },
+      },
+      commits: {
+        '.': commitFolderAdapter,
+        '[sha_1_1_2]': {
+          '.': commitFolderAdapter,
+          '[sha1_3__40]': {
+            '[[...filePath]]': commitFileAdapter,
+          },
+        },
+      },
+    },
+    '[[...filePath]]': {
+      '.': branchFileAdapter,
+    },
+  };
+
+  const routes = routeOverrides
+    ? mergeLegitRouteFolders(routeConfig, routeOverrides)
+    : routeConfig;
+
   const userSpaceFs = new CompositeFs({
     name: 'git',
     rootPath: gitRoot,
@@ -301,44 +387,7 @@ export async function openLegitFs({
       gitFsCopyOnWriteFs,
       ...(additionalFilterLayers || []),
     ],
-    routes: {
-      '.legit': {
-        '.': legitVirtualFileAdapter,
-        operation: operationAdapter,
-        head: headAdapter,
-        operationHead: operationHeadAdapter,
-        operationHistory: operationHistoryAdapter,
-        history: historyAdapter,
-        currentBranch: currentBranchAdapter,
-        'reference-branch': referenceBranchAdapter,
-        'apply-changes': applyChangesAdapter,
-        branches: {
-          '.': branchesListAdapter,
-          '[branchName]': {
-            // branch names could include / so this is not a good delimiter here
-            '.legit': {
-              '.': legitVirtualFileAdapter,
-              operation: operationAdapter,
-              head: headAdapter,
-              operationHead: operationHeadAdapter,
-              operationHistory: operationHistoryAdapter,
-              history: historyAdapter,
-            },
-            '[[...filePath]]': branchFileAdapter,
-          },
-        },
-        commits: {
-          '.': commitFolderAdapter,
-          '[sha_1_1_2]': {
-            '.': commitFolderAdapter,
-            '[sha1_3__40]': {
-              '[[...filePath]]': commitFileAdapter,
-            },
-          },
-        },
-      },
-      '[[...filePath]]': branchFileAdapter,
-    },
+    routes: routes,
   });
 
   const tokenStore = createGitConfigTokenStore({

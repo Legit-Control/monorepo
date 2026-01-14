@@ -94,7 +94,7 @@ function spawnSubProcess(cwd, cmd) {
   });
 }
 
-function startNfsServerWorker(servePoint, port, logFile) {
+function startNfsServerWorker(servePoint, port, logFile, debugBrk = true) {
   // console.log(`\nStarting NFS server worker...`);
   // console.log(`Serve point: ${servePoint}`);
   // console.log(`Initial port: ${port}`);
@@ -115,9 +115,18 @@ function startNfsServerWorker(servePoint, port, logFile) {
 
   const workerScript = path.join(__dirname, 'nfs-server-worker.js');
 
+  if (debugBrk) {
+    console.log(`Waiting for debugger`);
+  }
+
   const child = spawn(
     process.execPath,
-    ['--inspect', workerScript, servePoint, port.toString()],
+    [
+      debugBrk ? '--inspect-brk' : '--inspect',
+      workerScript,
+      servePoint,
+      port.toString(),
+    ],
     {
       cwd: process.cwd(),
       stdio: ['inherit', 'pipe', 'pipe'],

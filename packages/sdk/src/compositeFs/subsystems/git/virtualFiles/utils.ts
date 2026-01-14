@@ -4,12 +4,12 @@ import git, {
   TreeObject,
 } from '@legit-sdk/isomorphic-git';
 import { VirtualFileArgs } from './gitVirtualFiles.js';
-import * as nodeFs from 'node:fs';
 
 import { IFs } from 'memfs';
 
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 import { IDirent } from 'memfs/lib/node/types/misc.js';
+import { toDirEntry } from '../../../utils/toDirEntry.js';
 
 function getGitCacheFromArgs(args: VirtualFileArgs): any {
   // Access gitCache through the userSpaceFs hierarchy
@@ -40,8 +40,7 @@ function getGitCacheFromFs(fs: any): any {
 export async function tryResolveRef(
   fs: FsClient,
   gitRoot: string,
-  refName: string,
-  gitCache?: any
+  refName: string
 ) {
   try {
     const branchCommit = await git.resolveRef({
@@ -656,9 +655,11 @@ export async function resolveGitObjAtPath({
   commitSha,
   pathParams,
   gitCache,
-}: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'nodeFs' | 'pathParams'> & {
+}: Pick<VirtualFileArgs, 'filePath' | 'pathParams'> & {
   commitSha: string;
+  gitRoot: string;
   gitCache: any;
+  nodeFs: any;
 }): Promise<
   | { type: 'tree'; oid: string; entries: IDirent[] }
   | { type: 'blob'; oid: string }
@@ -746,25 +747,6 @@ export async function resolveGitObjAtPath({
   return fileOrFolder;
 }
 
-export function toDirEntry(args: {
-  parent: string;
-  name: string;
-  isDir: boolean;
-}): nodeFs.Dirent {
-  return {
-    name: args.name,
-    isFile: () => !args.isDir,
-    isDirectory: () => args.isDir,
-    isBlockDevice: () => true,
-    isCharacterDevice: () => false,
-    isSymbolicLink: () => false,
-    isFIFO: () => false,
-    isSocket: () => false,
-    parentPath: args.parent,
-    path: args.parent,
-  };
-}
-
 export async function resolveGitObjAtPathFromArgs({
   filePath,
   gitRoot,
@@ -772,9 +754,11 @@ export async function resolveGitObjAtPathFromArgs({
   commitSha,
   pathParams,
   args,
-}: Pick<VirtualFileArgs, 'filePath' | 'gitRoot' | 'nodeFs' | 'pathParams'> & {
+}: Pick<VirtualFileArgs, 'filePath' | 'pathParams'> & {
+  gitRoot: string;
   commitSha: string;
   args: VirtualFileArgs;
+  nodeFs: any;
 }): Promise<
   | { type: 'tree'; oid: string; entries: IDirent[] }
   | { type: 'blob'; oid: string }

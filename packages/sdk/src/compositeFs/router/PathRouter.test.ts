@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PathRouter } from './PathRouter.js';
-import { BaseCompositeSubFs } from './subsystems/BaseCompositeSubFs.js';
+import { BaseCompositeSubFs } from '../subsystems/BaseCompositeSubFs.js';
 
 // Mock SubFS class for testing
 class MockSubFs extends BaseCompositeSubFs {

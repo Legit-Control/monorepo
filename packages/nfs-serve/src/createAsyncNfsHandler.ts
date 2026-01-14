@@ -1043,8 +1043,10 @@ export const createAsyncNfsHandler = (args: {
       }
 
       if (fileHandle.fsHandle.fh === undefined) {
+        const path = fileHandleManager.getPathFromHandle(handle);
         throw new Error(
-          'a commit expects a write which should have realized the file?'
+          'a commit expects a write which should have realized the file ? ' +
+            path
         );
       }
 
@@ -1053,6 +1055,8 @@ export const createAsyncNfsHandler = (args: {
       await fsHandle.sync();
 
       const stats = await fsHandle.stat();
+
+      await fsHandle.close();
 
       // get rid of the fh reference
       fileHandle.fsHandle.fh = undefined;
@@ -1338,12 +1342,14 @@ export const createAsyncNfsHandler = (args: {
         if (stableHow !== 0) {
           // 0 = undestable, 1 = data sync, 2 = file sync
           await fsHandle.sync();
-
-          // TODO close the handler since we dont expect a commit?
         }
 
         // Get updated file stats after write
         const newStats = await fsHandle.stat();
+
+        if (stableHow !== 0) {
+          await fsHandle.close();
+        }
 
         console.log(
           `Successfully wrote ${bytesWritten} bytes to ${fsHandle} at offset ${offset}`

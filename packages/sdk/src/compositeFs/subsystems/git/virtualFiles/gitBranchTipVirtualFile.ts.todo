@@ -9,9 +9,9 @@ export const gitBranchTipVirtualFile: VirtualFileDefinition = {
   rootType: 'file',
   getStats: async args => {
     // TODO use the information within the tip tag
-    const gitDir = args.gitRoot + '/' + '.git';
+    const gitDir = gitRoot + '/' + '.git';
     try {
-      const gitStats = await args.nodeFs.stat(gitDir);
+      const gitStats = await node.stat(gitDir);
       return gitStats;
     } catch (err) {
       // If .git does not exist, propagate as ENOENT
@@ -19,13 +19,14 @@ export const gitBranchTipVirtualFile: VirtualFileDefinition = {
     }
   },
 
-  getFile: async ({ filePath, gitRoot, nodeFs, pathParams }) => {
+  getFile: async args => {
+    const { pathParams } = args;
     if (!pathParams.branchName) {
       throw new Error('branchName should be in pathParams');
     }
 
     const tipCommit = await tryResolveRef(
-      nodeFs,
+      gitStorageFs,
       gitRoot,
       pathParams.branchName
     );

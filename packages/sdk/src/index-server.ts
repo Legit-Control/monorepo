@@ -5,8 +5,8 @@ export * from './compositeFs/CompositeFs.js';
 export * from './compositeFs/subsystems/HiddenFileSubFs.js';
 export * from './compositeFs/subsystems/EphemeralFileSubFs.js';
 export * from './compositeFs/subsystems/CopyOnWriteSubFs.js';
-export * from './compositeFs/subsystems/PassThroughSubFs.js';
-export * from './compositeFs/subsystems/CompositeSubFsAdapter.js';
+export * from './compositeFs/subsystems/git/virtualFiles/CompositeSubFsAdapter.js';
+export * from './compositeFs/subsystems/git/virtualFiles/legitVirtualFile.js';
 
 export * from './compositeFs/subsystems/git/virtualFiles/operations/gitBranchOperationsVirtualFile.js';
 export * from './legitfs.js';
@@ -15,3 +15,6 @@ export * from './sync/createLegitSyncService.js';
 export * from './compositeFs/subsystems/git/virtualFiles/types/HistoryItom.js';
 export * from './compositeFs/subsystems/git/virtualFiles/types/User.js';
 export * from './compositeFs/utils/fs-operation-logger.js';
+export * from './compositeFs/subsystems/simple/SimpleMemorySubFs.js';
+export * from './compositeFs/subsystems/simple/base-simple-sub-fs.js';
+export * from './compositeFs/utils/toDirEntry.js';

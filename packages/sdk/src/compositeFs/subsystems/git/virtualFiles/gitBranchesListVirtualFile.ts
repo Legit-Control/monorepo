@@ -2,9 +2,9 @@ import git from '@legit-sdk/isomorphic-git';
 import { VirtualFileArgs, VirtualFileDefinition } from './gitVirtualFiles.js';
 
 import * as nodeFs from 'node:fs';
-import { toDirEntry } from './utils.js';
+import { toDirEntry } from '../../../utils/toDirEntry.js';
 import { encodeBranchNameForVfs } from './operations/nameEncoding.js';
-import { CompositeSubFsAdapter } from '../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
 /**
  * Creates a CompositeSubFsAdapter for listing git branches
@@ -50,25 +50,30 @@ export function createBranchesListAdapter({
       type: 'gitBranchesListVirtualFile',
       rootType: 'folder',
 
-      getStats: async ({ gitRoot, nodeFs }) => {
+      getStats: async () => {
         const gitDir = gitRoot + '/' + '.git';
         try {
-          const gitStats = await nodeFs.promises.stat(gitDir);
+          const gitStats = await gitStorageFs.promises.stat(gitDir);
           return gitStats;
         } catch (err) {
           // If .git does not exist, propagate as ENOENT
-          throw new Error(`ENOENT: no such file or directory, stat '${gitDir}'`);
+          throw new Error(
+            `ENOENT: no such file or directory, stat '${gitDir}'`
+          );
         }
       },
 
-      getFile: async ({ gitRoot, nodeFs, filePath }) => {
+      getFile: async ({ filePath }) => {
         try {
-          const branches = await git.listBranches({ fs: nodeFs, dir: gitRoot });
+          const branches = await git.listBranches({
+            fs: gitStorageFs,
+            dir: gitRoot,
+          });
 
           const branchesInfo = await Promise.all(
             branches.map(async branch => {
               const oid = await git.resolveRef({
-                fs: nodeFs,
+                fs: gitStorageFs,
                 dir: gitRoot,
                 ref: branch,
               });
@@ -107,65 +112,3 @@ export function createBranchesListAdapter({
 
   return adapter;
 }
-
-/**
- * @deprecated Use createBranchesListAdapter() instead
- * Kept for backward compatibility during migration
- */
-export const gitBranchesListVirtualFile: VirtualFileDefinition = {
-  type: 'gitBranchesListVirtualFile',
-  rootType: 'folder',
-
-  getStats: async ({ gitRoot, nodeFs }) => {
-    const gitDir = gitRoot + '/' + '.git';
-    try {
-      const gitStats = await nodeFs.promises.stat(gitDir);
-      return gitStats;
-    } catch (err) {
-      // If .git does not exist, propagate as ENOENT
-      throw new Error(`ENOENT: no such file or directory, stat '${gitDir}'`);
-    }
-  },
-
-  getFile: async ({ gitRoot, nodeFs, filePath }) => {
-    try {
-      const branches = await git.listBranches({ fs: nodeFs, dir: gitRoot });
-
-      const branchesInfo = await Promise.all(
-        branches.map(async branch => {
-          const oid = await git.resolveRef({
-            fs: nodeFs,
-            dir: gitRoot,
-            ref: branch,
-          });
-          return toDirEntry({
-            parent: filePath,
-            name: encodeBranchNameForVfs(branch),
-            isDir: true,
-          });
-        })
-      );
-
-      return {
-        type: 'directory',
-        content: branchesInfo,
-        mode: 0o755,
-        size: branchesInfo,
-      };
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  rename: async (args: VirtualFileArgs & { newPath: string }) => {
-    throw new Error('not implemented');
-  },
-
-  mkdir: async function (
-    args: VirtualFileArgs & {
-      options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null;
-    }
-  ): Promise<void> {
-    throw new Error('not implemented');
-  },
-};

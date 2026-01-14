@@ -1,0 +1,30 @@
+{
+  "name": "virtual-nfs-example",
+  "version": "1.0.0",
+  "description": "Example project serving a composite fs via NFS",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "virtual-nfs-example": "./bin/start-server.js"
+  },
+  "scripts": {},
+  "keywords": [
+    "cli",
+    "mount",
+    "legit"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.4.1",
+  "dependencies": {
+    "@legit-sdk/core": "workspace:*",
+    "@legit-sdk/nfs-serve": "workspace:*",
+    "commander": "^12.1.0",
+    "inquirer": "^7.0.0",
+    "memfs": "^4.51.1"
+  },
+  "devDependencies": {
+    "vite": "^7.3.0",
+    "vitest": "^3.2.4"
+  }
+}

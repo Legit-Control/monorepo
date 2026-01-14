@@ -1,4 +1,3 @@
-import { CompositeFs } from '../CompositeFs.js';
 import CompositFsFileHandle from '../CompositeFsFileHandle.js';
 
 export type FsOperationLogger = (args: {

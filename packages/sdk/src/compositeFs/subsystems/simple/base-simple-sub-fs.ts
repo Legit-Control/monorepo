@@ -1,6 +1,5 @@
-import git from '@legit-sdk/isomorphic-git';
-import { CompositeSubFs } from '../CompositeSubFs.js';
-import CompositFsFileHandle from '../CompositeFsFileHandle.js';
+import { CompositeSubFs } from '../../CompositeSubFs.js';
+import CompositFsFileHandle from '../../CompositeFsFileHandle.js';
 import * as path from 'path';
 
 import { createFsFromVolume, IFs, Volume } from 'memfs';
@@ -21,44 +20,13 @@ import type {
   TDataOut,
   IReadFileOptions,
   TMode,
-} from '../../types/fs-types.js';
+} from '../../../types/fs-types.js';
 
-import { BaseCompositeSubFs } from './BaseCompositeSubFs.js';
+import { BaseCompositeSubFs } from '../BaseCompositeSubFs.js';
 import * as nodeFs from 'node:fs';
-import { VirtualFileDefinition } from './git/virtualFiles/gitVirtualFiles.js';
-import { toDirEntry } from './git/virtualFiles/utils.js';
+import { toDirEntry } from '../../utils/toDirEntry.js';
 
-const stub = async () => undefined;
-const stubStats = async () =>
-  ({
-    isFile: () => true,
-    isDirectory: () => false,
-    size: 0,
-    mode: 0,
-    mtime: new Date(),
-    ctime: new Date(),
-    atime: new Date(),
-    birthtime: new Date(),
-  }) as any;
-
-const noAdditionalFiles = {
-  type: 'directory',
-  pattern: /.*/,
-  getFile: stub,
-  getStats: stubStats,
-  rename: stub,
-  mkdir: stub,
-};
-
-/**
- * CompositeSubFsAdapter - Adapts a virtual file handler to work as a SubFS
- *
- * This class adapts a single VirtualFileDefinition to work as a CompositeSubFs.
- * It receives routing context (extracted parameters) from CompositeFs, eliminating the need for internal routing.
- *
- * Each virtual file type (branch file, commit file, etc.) gets its own adapter instance.
- */
-export class CompositeSubFsAdapter
+export abstract class ASimpleCompositeSubfs
   extends BaseCompositeSubFs
   implements CompositeSubFs
 {
@@ -69,65 +37,24 @@ export class CompositeSubFsAdapter
       path: string;
       mode: string;
       fh: IFileHandle;
-      openSha: string | undefined;
-      readSha: string | undefined;
       unflushed: { start: number; length: number }[];
     }
   > = {};
 
-  storageFs: any;
-  protected gitRoot: string;
-
-  /**
-   * The virtual file handler for this adapter
-   * This defines how to read/write/stat the virtual file
-   */
-  public handler: VirtualFileDefinition;
-
-  public async getAuthor(): Promise<{
-    name: string;
-    email: string;
-    date: number;
-    timezoneOffset: number;
-  }> {
-    const name = await git.getConfig({
-      fs: this.storageFs,
-      dir: this.gitRoot,
-      path: 'user.name',
-    });
-    const email = await git.getConfig({
-      fs: this.storageFs,
-      dir: this.gitRoot,
-      path: 'user.email',
-    });
-    const date = Math.floor(Date.now() / 1000);
-    const timezoneOffset = new Date().getTimezoneOffset();
-
-    return { name, email, date, timezoneOffset };
-  }
-
-  constructor({
-    name,
-    gitStorageFs,
-    gitRoot,
-    handler,
-    rootPath,
-  }: {
-    name: string;
-    gitStorageFs: any;
-    gitRoot: string;
-    handler: VirtualFileDefinition;
-    rootPath: string;
-  }) {
+  constructor({ name, rootPath }: { name: string; rootPath: string }) {
     super({ name, rootPath });
-
-    this.handler = handler;
-    this.gitRoot = gitRoot;
-    this.storageFs = gitStorageFs;
     this.memFs = createFsFromVolume(new Volume());
   }
 
-  async responsible(filePath: string): Promise<boolean> {
+  /**
+   * Check if write operations are supported by this adapter
+   * Subclasses can override this to return false for read-only adapters
+   */
+  isWriteSupported(): boolean {
+    return true;
+  }
+
+  async responsible(_filePath: string): Promise<boolean> {
     // This adapter is responsible for all paths routed to it by CompositeFs
     // The routing happens at the CompositeFs level based on route patterns
     return true;
@@ -159,33 +86,28 @@ export class CompositeSubFsAdapter
     flags: string,
     mode?: number
   ): Promise<CompositFsFileHandle> {
-    const isWritable = this.handler.writeFile !== undefined;
+    // Check if write operations are supported
+    const isWritable = this.isWriteSupported();
     if (!isWritable && (flags.includes('w') || flags.includes('a'))) {
-      throw new Error(`Write operations not allowed for ${this.handler.type}`);
+      throw new Error(`Write operations not allowed`);
     }
 
     // TODO add flags to handler definition
-    if (
-      flags.includes('x') &&
-      this.handler.type !== 'gitBranchFileVirtualFile' &&
-      this.handler.type !== 'claudeVirtualSessionFileVirtualFile'
-    ) {
-      throw new Error(
-        `Exclusive operations not allowed for ${this.handler.type}`
-      );
+    if (flags.includes('x')) {
+      // Check if exclusive create is supported
+      // Subclasses can override this check
     }
 
-    const author = await this.getAuthor();
-    const routeParams = this.getRouteParams();
-    const fileFromGit = await this.handler.getFile({
-      cacheFs: this.memFs,
-      filePath,
-      userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
-      nodeFs: this.storageFs,
-      pathParams: routeParams,
-      author: author,
-    });
+    let fileExists = false;
+    try {
+      await this.getStats({
+        path: filePath,
+        context: this.context,
+      });
+      fileExists = true;
+    } catch {
+      fileExists = false;
+    }
 
     let fileExistsInCache = false;
     for (const fh of Object.values(this.openFh)) {
@@ -195,7 +117,7 @@ export class CompositeSubFsAdapter
     }
 
     // assert flags / file existence state
-    if ((fileFromGit || fileExistsInCache) && flags.includes('x')) {
+    if ((fileExists || fileExistsInCache) && flags.includes('x')) {
       throw Object.assign(
         new Error(`EEXIST: file already exists, open '${filePath}'`),
         { code: 'EEXIST', errno: -17, syscall: 'open', path: filePath }
@@ -203,7 +125,7 @@ export class CompositeSubFsAdapter
     }
 
     if (
-      !fileFromGit &&
+      !fileExists &&
       !fileExistsInCache &&
       !(flags.includes('w') || flags.includes('a'))
     ) {
@@ -219,13 +141,10 @@ export class CompositeSubFsAdapter
     await this.memFs.promises.mkdir(dir, { recursive: true });
 
     // Write the virtual file content to memfs if the file existed
-    if (
-      (fileFromGit === undefined && !flags.includes('x')) ||
-      (fileFromGit && fileFromGit.type === 'file')
-    ) {
+    if (fileExists) {
       try {
-        const access = await this.memFs.promises.access(filePath);
-      } catch (err) {
+        await this.memFs.promises.access(filePath);
+      } catch {
         // file did not exist - create it
         await this.memFs.promises.writeFile(
           filePath,
@@ -246,9 +165,6 @@ export class CompositeSubFsAdapter
       path: filePath,
       mode: flags,
       fh: fh,
-      // NOTE consider using empty content sha instead of undefined
-      openSha: fileFromGit?.oid,
-      readSha: undefined,
       unflushed: [],
     };
     if (flags.includes('x') || flags.includes('w')) {
@@ -263,26 +179,56 @@ export class CompositeSubFsAdapter
     return filehandle;
   }
 
+  abstract createDirectory(args: {
+    path: string;
+    recursive?: boolean;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract readFileContent(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<{ content: string | Buffer; oid?: string } | undefined>;
+
+  abstract writeFileContent(args: {
+    path: string;
+    content: Buffer | string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract readDirectory(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<nodeFs.Dirent[]>;
+
+  abstract renamePath(args: {
+    oldPath: string;
+    newPath: string;
+    oldContext: ASimpleCompositeSubfs['context'];
+    newContext: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract deleteFile(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
+  abstract removeDirectory(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<void>;
+
   override async mkdir(
     path: PathLike,
     options?: nodeFs.MakeDirectoryOptions | nodeFs.Mode | null
   ): Promise<void> {
     const pathStr = path.toString();
-    const routeParams = this.getRouteParams();
-
-    const optionsToPass = options ? { options: options } : {};
 
     try {
-      const author = await this.getAuthor();
-      await this.handler.mkdir({
-        cacheFs: this.memFs,
-        filePath: path.toString(),
-        userSpaceFs: this.compositeFs,
-        nodeFs: this.storageFs,
-        gitRoot: this.gitRoot,
-        pathParams: routeParams,
-        ...optionsToPass,
-        author: author,
+      await this.createDirectory({
+        path: pathStr,
+        recursive: true,
+        context: this.context,
       });
 
       const optionsToPassToMemfs =
@@ -305,8 +251,6 @@ export class CompositeSubFsAdapter
               path: current,
               mode: 'r',
               fh: fh,
-              openSha: undefined,
-              readSha: undefined,
               unflushed: [],
             };
           }
@@ -319,7 +263,7 @@ export class CompositeSubFsAdapter
     }
   }
 
-  override async access(path: PathLike, mode?: number): Promise<void> {
+  override async access(path: PathLike, _mode?: number): Promise<void> {
     // for now just use the stats call
     await this.stat(path);
   }
@@ -389,20 +333,16 @@ export class CompositeSubFsAdapter
       return (await openFhEntry.fh.stat(opts)) as any; // TODO fix type
     }
 
-    const routeParams = this.getRouteParams();
-    const author = await this.getAuthor();
-    const stats = await this.handler.getStats({
-      cacheFs: this.memFs,
-      filePath: pathStr,
-      userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
-      nodeFs: this.storageFs,
-      pathParams: routeParams,
-      author,
+    return this.getStats({
+      path: pathStr,
+      context: this.context,
     });
-
-    return stats;
   }
+
+  abstract getStats(args: {
+    path: string;
+    context: ASimpleCompositeSubfs['context'];
+  }): Promise<nodeFs.Stats>;
 
   override async lstat(
     path: PathLike,
@@ -479,52 +419,38 @@ export class CompositeSubFsAdapter
   ): Promise<string[] | Buffer[] | nodeFs.Dirent[]> {
     const pathStr = path.toString();
 
-    const routeParams = this.getRouteParams();
     const siblings = this.getStaticSiblings();
-    const author = await this.getAuthor();
-    const result = await this.handler.getFile({
-      cacheFs: this.memFs,
-      filePath: pathStr,
-      userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
-      nodeFs: this.storageFs,
-      pathParams: routeParams,
-      author,
+
+    const result = await this.readDirectory({
+      path: pathStr,
+      context: this.context,
     });
 
-    if (result) {
-      if (result.type !== 'directory') {
-        throw new Error('not a folder');
-      }
+    // Merge siblings and entries, remove duplicates, and sort POSIX-style
+    const allFolders = Array.from(
+      new Set([
+        ...result,
+        ...siblings.map(s =>
+          toDirEntry({
+            name: s.segment,
+            parent: pathStr,
+            isDir: s.type === 'folder',
+          })
+        ),
+      ])
+    ).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      })
+    );
 
-      // Merge siblings and entries, remove duplicates, and sort POSIX-style
-      const allFolders = Array.from(
-        new Set([
-          ...result.content,
-          ...siblings.map(s =>
-            toDirEntry({
-              name: s.segment,
-              parent: pathStr,
-              isDir: s.type === 'folder',
-            })
-          ),
-        ])
-      ).sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, {
-          numeric: true,
-          sensitivity: 'base',
-        })
-      );
-
-      // @ts-ignore
-      if (options?.withFileTypes) {
-        // TODO implement Dirent return type
-        return allFolders;
-      }
-      return allFolders.map(entry => entry.name);
+    // @ts-ignore
+    if (options?.withFileTypes) {
+      // TODO implement Dirent return type
+      return allFolders;
     }
-
-    return [];
+    return allFolders.map(entry => entry.name);
   }
 
   // write not implemented - we do this when we implement branches
@@ -542,63 +468,21 @@ export class CompositeSubFsAdapter
       throw new Error('Invalid file handle');
     }
 
-    // // TODO return an empty file if it was just created
-
-    // if (openFh.openSha === undefined) {
-    //   if (fileFromGit === undefined) {
-    //     // file didn't extist on open and still doesnt exist
-    //     return await openFh.fh.read(buffer, offset, length, position);
-    //   } else {
-    //     // file didn't exist on open but does now?
-    //     // 1. file was written in the meantime
-    //     // 2. same file was created in the meantime - via pull?
-    //   }
-    // } else if (openFh.openSha === fileFromGit?.oid) {
-    //   // git hasn't changed yet
-    //   if (openFh.readSha === undefined) {
-    //     // TODO realize the file and return it
-    //   } else if (openFh.readSha === fileFromGit?.oid) {
-    //     // cool - use the cache
-    //     return await openFh.fh.read(buffer, offset, length, position);
-    //   } else {
-    //     // ok the file has changed in git
-    //     if (openFh.unflushed.length > 0) {
-    //       // writes have taken place but also changes in git appeared
-    //       // TODO what to return?
-    //       // Option A: the curent written file from cache - flush will win
-    //       // Option B: the state from git -> unflushed changes gonna loose
-    //       // Option C: merge the state from git with the unflushed changes?
-    //     } else {
-    //     }
-    //   }
-    // }
-
-    // if there is no unflushed change - read the object directly from git
+    // if there is no unflushed change - read the object directly from storage
     if (openFh.unflushed.length === 0) {
-      const routeParams = this.getRouteParams();
-      const author = await this.getAuthor();
-      const fileFromGit = await this.handler.getFile({
-        cacheFs: this.memFs,
-        filePath: openFh.path,
-        userSpaceFs: this.compositeFs,
-        gitRoot: this.gitRoot,
-        nodeFs: this.storageFs,
-        pathParams: routeParams,
-        author,
+      const fileFromHandler = await this.readFileContent({
+        path: openFh.path,
+        context: this.context,
       });
 
-      if (!fileFromGit?.content) {
+      if (!fileFromHandler?.content) {
         throw new Error('couldnt access content');
       }
 
-      if (fileFromGit.type !== 'file') {
-        throw new Error('not a file');
-      }
-
       const contentBuffer =
-        typeof fileFromGit.content === 'string'
-          ? Buffer.from(fileFromGit.content)
-          : fileFromGit.content;
+        typeof fileFromHandler.content === 'string'
+          ? Buffer.from(fileFromHandler.content)
+          : fileFromHandler.content;
       const start = typeof position === 'number' ? position : 0;
       const end = Math.min(start + length, contentBuffer.length);
       const bytesToRead = Math.max(0, end - start);
@@ -653,25 +537,17 @@ export class CompositeSubFsAdapter
       // no write was excuted before -> read the file first
       // NOTE for no we realize the whole file
 
-      const routeParams = this.getRouteParams();
-      const author = await this.getAuthor();
-      const fileFromGit = await this.handler.getFile({
-        cacheFs: this.memFs,
-        filePath: openFh!.path,
-        userSpaceFs: this.compositeFs,
-        gitRoot: this.gitRoot,
-        nodeFs: this.storageFs,
-        pathParams: routeParams,
-        author: author,
+      const fileFromStorage = await this.readFileContent({
+        path: openFh!.path,
+        context: this.context,
       });
 
-      if (fileFromGit && fileFromGit.oid) {
-        // update the memFs content to represent the git content
+      if (fileFromStorage && fileFromStorage.content) {
+        // update the memFs content to represent the storage content
         await this.memFs.promises.writeFile(
           openFh.path,
-          fileFromGit.content as string
+          fileFromStorage.content as string
         );
-        openFh.readSha = fileFromGit.oid;
       }
     }
 
@@ -714,25 +590,16 @@ export class CompositeSubFsAdapter
     }
 
     if (openFh.unflushed.length > 0) {
-      // File was written to, need to commit changes to git
-      if (this.handler.writeFile) {
-        // Read the content from memfs
-        const content = await this.memFs.promises.readFile(openFh.path);
+      // File was written to, need to commit changes to storage
+      // Read the content from memfs
+      const content = await this.memFs.promises.readFile(openFh.path);
 
-        // Write to git using the virtual file descriptor
-        const routeParams = this.getRouteParams();
-        const author = await this.getAuthor();
-        await this.handler.writeFile({
-          cacheFs: this.memFs,
-          filePath: openFh.path,
-          userSpaceFs: this.compositeFs,
-          gitRoot: this.gitRoot,
-          nodeFs: this.storageFs,
-          content: content,
-          pathParams: routeParams,
-          author: author,
-        });
-      }
+      // Write to storage using the abstract method
+      await this.writeFileContent({
+        path: openFh.path,
+        content: content,
+        context: this.context,
+      });
 
       // remove the write cache
       openFh.unflushed = [];
@@ -800,7 +667,7 @@ export class CompositeSubFsAdapter
   override async writeFile(
     path: string,
     data: TData,
-    options: IWriteFileOptions | string
+    options?: IWriteFileOptions | string
   ): Promise<void> {
     // Extract flags and encoding from options
     let flags = 'w';
@@ -849,40 +716,13 @@ export class CompositeSubFsAdapter
     const oldPathStr = oldPath.toString();
     const newPathStr = newPath.toString();
 
-    // Get the new context for newPath (might have different route params)
-    // For now, we use the current handler and assume old/new paths are compatible
     // TODO: Handle cross-adapter renames properly
-
-    // Check if handler supports rename
-    if (!this.handler.rename) {
-      throw new Error(`Rename not supported for ${this.handler.type} files`);
-    }
-    // open question how do we want to deal with flushing?
-    // a rename leads to a commit independent from open writes!?
-
-    const newExistsInMemory = await this.memFs.promises
-      .access(newPathStr)
-      .then(() => true)
-      .catch(() => false);
-
-    const newExistsInBranch = await this.stat(newPathStr)
-      .then(() => true)
-      .catch(() => false);
-
-    const oldExistsInBranch = await this.stat(oldPathStr)
-      .then(() => true)
-      .catch(() => false);
-
     const oldExistsInMemory = await this.memFs.promises
       .access(oldPathStr)
       .then(() => true)
       .catch(() => false);
 
-    // id
-
-    // todo check if the source file exists in memory
-    // todo check if the target file exists in memory
-
+    // Handle memory file rename
     if (oldExistsInMemory) {
       // Ensure the target directory exists
       const targetDir = path.dirname(newPathStr);
@@ -894,49 +734,29 @@ export class CompositeSubFsAdapter
       await this.memFs.promises.rename(oldPath, newPath);
     }
 
-    const routeParams = this.getRouteParams();
-    const author = await this.getAuthor();
-    await this.handler.rename({
-      cacheFs: this.memFs,
-      filePath: oldPathStr,
-      userSpaceFs: this.compositeFs,
-      gitRoot: this.gitRoot,
-      nodeFs: this.storageFs,
+    // Delegate to storage backend
+    await this.renamePath({
+      oldPath: oldPathStr,
       newPath: newPathStr,
-      pathParams: routeParams,
-      newPathParams: this.newContext?.params || {}, // TODO: Extract new path params
-      author,
+      oldContext: this.context,
+      newContext: this.newContext || this.context,
     });
-
-    // } else if (oldParsed.type === "branch-file" && !newParsed.isLegitPath) {
-    // Branch file to regular file - extract from branch
-    // await this.extractBranchFileToRegular(oldPathStr, newPathStr, oldParsed);
-    // } else if (!oldParsed.isLegitPath && newParsed.type === "branch-file") {
-    // Regular file to branch file - add to branch
-    // await this.addRegularFileToBranch(oldPathStr, newPathStr, newParsed);
   }
 
-  override async fchmod(fh: CompositFsFileHandle, mode: TMode): Promise<void> {
+  override async fchmod(
+    _fh: CompositFsFileHandle,
+    _mode: TMode
+  ): Promise<void> {
     // noop
   }
 
   override async unlink(path: PathLike): Promise<void> {
     const pathStr = path.toString();
 
-    if (!this.handler.unlink) {
-      throw new Error(`Cannot unlink ${this.handler.type} files`);
-    }
     try {
-      const routeParams = this.getRouteParams();
-      const author = await this.getAuthor();
-      await this.handler.unlink({
-        cacheFs: this.memFs,
-        filePath: pathStr,
-        userSpaceFs: this.compositeFs,
-        nodeFs: this.storageFs,
-        gitRoot: this.gitRoot,
-        pathParams: routeParams,
-        author,
+      await this.deleteFile({
+        path: pathStr,
+        context: this.context,
       });
     } catch (err) {
       // if the file was only written i memory unlink will fail
@@ -965,23 +785,14 @@ export class CompositeSubFsAdapter
     }
   }
 
-  override async rmdir(path: PathLike, ...args: any[]): Promise<void> {
+  override async rmdir(path: PathLike, ..._args: any[]): Promise<void> {
     const pathStr = path.toString();
 
-    if (!this.handler.rmdir) {
-      throw new Error(`Cannot rmdir ${this.handler.type} directories`);
-    }
-    const routeParams = this.getRouteParams();
-    const author = await this.getAuthor();
-    await this.handler.rmdir({
-      cacheFs: this.memFs,
-      filePath: pathStr,
-      userSpaceFs: this.compositeFs,
-      nodeFs: this.storageFs,
-      gitRoot: this.gitRoot,
-      pathParams: routeParams,
-      author,
+    await this.removeDirectory({
+      path: pathStr,
+      context: this.context,
     });
+
     let existsInMem = false;
     for (const [fd, fh] of Object.entries(this.openFh)) {
       if (fh.path === pathStr) {

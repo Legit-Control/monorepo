@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Volume, createFsFromVolume } from 'memfs';
-import * as isogit from 'isomorphic-git';
+import * as isogit from '@legit-sdk/isomorphic-git';
 import { openLegitFs, openLegitFsWithMemoryFs } from '@legit-sdk/core';
 import { createClaudeVirtualSessionFileAdapter } from './claudeVirtualSessionFileVirtualFile.js';
 
@@ -200,5 +200,59 @@ describe('readdir .claude', () => {
       'utf-8'
     );
     expect(originalContent).toBe('{"name": "test"}');
+  });
+
+  it('should materialize claude sesion in operation branch', async () => {
+    // Write a claude session file
+    const sessionContent = {
+      type: 'user',
+      message: {
+        content: 'test',
+      },
+    };
+    await legitfs.promises.writeFile(
+      `/.claude/projects/test/session-test.jsonl`,
+      JSON.stringify(sessionContent) + '\n'
+    );
+
+    const legitFolder = await legitfs.promises.readdir(`/.legit`);
+
+    const history = await legitfs.promises.readFile(
+      `/.legit/operationHistory`,
+      'utf-8'
+    );
+
+    // // Verify the file exists in the working copy
+    // const readContent = await legitfs.promises.readFile(
+    //   `/.legit/`,
+    //   'utf-8'
+    // );
+    // expect(JSON.parse(readContent)).toEqual(sessionContent);
+
+    // Now check that the file is stored in the operation branch
+    const operationBranchName = 'legit____main-operation';
+    const operationBranchRef = `refs/heads/${operationBranchName}`;
+
+    // Check that the operation branch exists
+    const refs = await isogit.listBranches({
+      fs: memfs,
+      dir: repoPath,
+    });
+    expect(refs).toContain(operationBranchName);
+
+    // Read the file from the operation branch
+    const { blob } = await isogit.readBlob({
+      fs: memfs,
+      dir: repoPath,
+      oid: await isogit.resolveRef({
+        fs: memfs,
+        dir: repoPath,
+        ref: operationBranchRef,
+      }),
+      filepath: `.claude/session-test.json`,
+    });
+
+    const operationBranchFileContent = new TextDecoder().decode(blob);
+    expect(JSON.parse(operationBranchFileContent)).toEqual(sessionContent);
   });
 });

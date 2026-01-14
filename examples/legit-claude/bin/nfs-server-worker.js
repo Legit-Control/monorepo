@@ -6,7 +6,7 @@ import {
   createFileHandleManager,
 } from '@legit-sdk/nfs-serve';
 
-import { openLegitFs } from '@legit-sdk/core';
+import { openLegitFs, createLegitVirtualFileAdapter } from '@legit-sdk/core';
 import * as fs from 'fs';
 import { createClaudeVirtualSessionFileAdapter } from './claudeVirtualSessionFileVirtualFile.js';
 
@@ -37,6 +37,13 @@ const claudeSessionAdapter =
   createClaudeVirtualSessionFileAdapter(adapterConfig);
 
 try {
+  const legitVirtualFileAdapter = createLegitVirtualFileAdapter(adapterConfig);
+
+  const overrideConfig = {
+    '[[...filePath]]': {
+      '.claude': legitVirtualFileAdapter,
+    },
+  };
   const legitFs = await openLegitFs({
     storageFs: fs,
     gitRoot: SERVE_POINT,
@@ -45,6 +52,7 @@ try {
     claudeHandler: true,
     ephemaralGitConfig: true,
     additionalFilterLayers: [claudeSessionAdapter],
+    routeOverrides: overrideConfig,
   });
 
   const fhM = createFileHandleManager(

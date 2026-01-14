@@ -1,20 +1,8 @@
 import git from '@legit-sdk/isomorphic-git';
-import {
-  tryResolveRef,
-  resolveGitObjAtPath,
-  buildUpdatedTree,
-} from '../utils.js';
-import { VirtualFileArgs, VirtualFileDefinition } from '../gitVirtualFiles.js';
 
-import { ENOENTError } from '../../../../errors/ENOENTError.js';
-import * as nodeFs from 'node:fs';
-import { CompositeFs } from '../../../../CompositeFs.js';
-import {
-  resolveOperationBranchName,
-  operationBranchNamePostfix,
-} from './resolveOperationBranchName.js';
+import { resolveOperationBranchName } from './resolveOperationBranchName.js';
 import { getCurrentBranch } from '../getCurrentBranch.js';
-import { CompositeSubFsAdapter } from '../../../CompositeSubFsAdapter.js';
+import { CompositeSubFsAdapter } from '../CompositeSubFsAdapter.js';
 
 export type Operation = {
   oid: string;
@@ -90,14 +78,14 @@ export function createBranchOperationsAdapter({
     rootType: 'file',
 
     getStats: async args => {
-      const { gitRoot, nodeFs, pathParams } = args;
+      const { pathParams } = args;
 
       if (pathParams.branchName === undefined) {
-        pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+        pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);
       }
 
       let operationBranchName = await resolveOperationBranchName(
-        nodeFs,
+        gitStorageFs,
         gitRoot,
         pathParams.branchName
       );
@@ -108,7 +96,7 @@ export function createBranchOperationsAdapter({
       if (operationBranchName) {
         try {
           headCommit = await git.resolveRef({
-            fs: nodeFs,
+            fs: gitStorageFs,
             dir: gitRoot,
             ref: operationBranchName,
           });
@@ -116,7 +104,7 @@ export function createBranchOperationsAdapter({
         } catch {
           try {
             headCommit = await git.resolveRef({
-              fs: nodeFs,
+              fs: gitStorageFs,
               dir: gitRoot,
               ref: `refs/heads/${operationBranchName}`,
             });
@@ -130,7 +118,7 @@ export function createBranchOperationsAdapter({
       } else {
         try {
           headCommit = await git.resolveRef({
-            fs: nodeFs,
+            fs: gitStorageFs,
             dir: gitRoot,
             ref: `refs/heads/${pathParams.branchName}`,
           });
@@ -142,7 +130,7 @@ export function createBranchOperationsAdapter({
       }
 
       const commit = await git.readCommit({
-        fs: nodeFs,
+        fs: gitStorageFs,
         dir: gitRoot,
         oid: headCommit,
       });
@@ -193,15 +181,15 @@ export function createBranchOperationsAdapter({
     },
 
     getFile: async args => {
-      const { gitRoot, nodeFs, pathParams } = args;
+      const { pathParams } = args;
 
       if (pathParams.branchName === undefined) {
-        pathParams.branchName = await getCurrentBranch(gitRoot, nodeFs);
+        pathParams.branchName = await getCurrentBranch(gitRoot, gitStorageFs);
       }
 
       // Read all commits from the operation branch and collect their messages
       let operationBranchName = await resolveOperationBranchName(
-        nodeFs,
+        gitStorageFs,
         gitRoot,
         pathParams.branchName
       );
@@ -211,7 +199,7 @@ export function createBranchOperationsAdapter({
       if (operationBranchName) {
         // Resolve the operation branch ref
         const operationBranchRef = await git.resolveRef({
-          fs: nodeFs,
+          fs: gitStorageFs,
           dir: gitRoot,
           ref: `refs/heads/${operationBranchName}`,
         });
@@ -222,7 +210,7 @@ export function createBranchOperationsAdapter({
         let oid: string | null = operationBranchRef;
         while (oid && !isFirstOperation) {
           const commit = await git.readCommit({
-            fs: nodeFs,
+            fs: gitStorageFs,
             dir: gitRoot,
             oid,
           });

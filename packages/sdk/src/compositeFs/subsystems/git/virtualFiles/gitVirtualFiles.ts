@@ -1,9 +1,6 @@
 import * as nodeFs from 'node:fs';
 import { IFs } from 'memfs';
 import { CompositeFs } from '../../../CompositeFs.js';
-import { gitBranchesListVirtualFile } from './gitBranchesListVirtualFile.js';
-import { gitBranchTipVirtualFile } from './gitBranchTipVirtualFile.js';
-import { gitStatusVirtualFile } from './gitStatusVirtualFile.js';
 
 export type VirtualFile =
   | {
@@ -24,9 +21,7 @@ export interface VirtualFileArgs {
   cacheFs: IFs;
   filePath: string;
   // fs: CompositeFs;
-  gitRoot: string;
   userSpaceFs: CompositeFs;
-  nodeFs?: any; // The actual node fs for git operations
   pathParams: any; // Parameters extracted from the router
   author: { name: string; email: string; date: number; timezoneOffset: number }; // The author info for commits
 }

@@ -42,7 +42,7 @@
  * // ]
  * ```
  */
-import { CompositeSubFs } from './CompositeSubFs.js';
+import { CompositeSubFs } from '../CompositeSubFs.js';
 
 export type MatchResult = {
   handler: CompositeSubFs;
@@ -55,7 +55,7 @@ export interface LegitRouteFolder {
   [key: string]: PathRouteDescription;
 }
 
-type PathRouteDescription = CompositeSubFs | LegitRouteFolder;
+export type PathRouteDescription = CompositeSubFs | LegitRouteFolder;
 
 /**
  * Compiles route pattern into a regex string with named capture groups.
