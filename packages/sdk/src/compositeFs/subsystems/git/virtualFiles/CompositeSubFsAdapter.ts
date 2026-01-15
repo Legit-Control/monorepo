@@ -640,6 +640,7 @@ export class CompositeSubFsAdapter
     try {
       await this.dataSync(fh);
       await openFh.fh.close();
+      await this.memFs.promises.unlink(openFh.path);
     } finally {
       delete this.openFh[subFsFd];
     }
