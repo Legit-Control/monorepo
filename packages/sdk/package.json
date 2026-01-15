@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/core",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "Legit SDK - Infrastructure for write-enabled AI",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/react",
-  "version": "0.2.22",
+  "version": "0.2.23",
   "description": "React wrapper for @legit-sdk/core",
   "type": "module",
   "main": "./dist/index.js",

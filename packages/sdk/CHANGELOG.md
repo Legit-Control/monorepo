@@ -1,5 +1,64 @@
 # @legit-sdk/core
 
+## 0.5.0
+
+### Minor Changes
+
+- 4b1be8e: New Features
+  - Archive & Restore Functionality
+    - Added saveArchive() method - Creates a compressed portable archive of the entire Legit repository (.git folder)
+      - Recursively captures all Git objects, refs, and configuration
+      - Encodes binary content as base64 in a JSON manifest
+      - Compresses output using pako.deflate() for efficient storage and transfer
+      - Returns Uint8Array suitable for file storage or network transmission
+    - Added loadArchive() method - Restores a Legit repository from a previously created archive
+      - Decompresses and parses the archive manifest
+      - Intelligently handles Git references to prevent data loss: - New refs → Added directly to repository
+        - Fast-forwardable refs → Updated to new commit
+        - Conflicting refs → Created as {branch}-conflict-{uuid} to preserve both versions
+      - Skips config files to avoid overriding user-specific settings
+      - Safely merges archive data with existing repository state
+  - Use Cases
+    - Backup & Restore: Complete repository snapshots for disaster recovery
+    - Repository Sharing: Transfer repositories between systems without network sync
+    - Offline Distribution: Bundle repositories with applications or documentation
+    - State Preservation: Save and restore repository state at specific points in time
+
+- Major Changes
+  - Routing Architecture Refactor
+    - Moved PathRouter and related types to compositeFs/router/ subdirectory
+    - Removed deprecated LegitPathRouter implementation
+    - Added mergeLegitRouteFolders() utility for merging route configurations
+  - Virtual File System Restructuring
+    - Moved CompositeSubFsAdapter to subsystems/git/virtualFiles/
+    - Removed deprecated virtual files: gitStatusVirtualFile, gitCompareVirtualFile
+    - Disabled gitBranchTipVirtualFile (marked as TODO)
+    - Removed getThreadName utility operation
+  - New SimpleMemorySubFs Implementation
+    - Added base-simple-sub-fs.ts - new abstract base class for simple in-memory filesystem adapters
+    - Added SimpleMemorySubFs.ts - concrete implementation with full test coverage
+    - Added toDirEntry.ts utility for directory entry conversion
+  - Enhanced Route Configuration
+    - openLegitFs() now accepts routeOverrides parameter for customizing virtual file routes
+    - Git storage moved from function parameter to adapter properties
+    - Simplified route configuration structure in legitfs.ts
+  - Exports Cleanup
+    - Removed exports for PassThroughSubFs (deprecated)
+    - Updated exports to reflect new file structure
+    - Added exports for new simple subsystem implementations
+  - Bug Fixes
+    - Fixed stale file handler bug in NFS layer
+    - Improved error messages with path context
+
+  Bug Fixes
+  - NFS Connection Management
+    - Fixed NFS shutdown to ensure no outstanding connections remain
+    - Added proper file handle cleanup with close() calls after write operations
+    - Improved error messages with path information for commit failures
+  - Write Operation Improvements
+    - File handles now properly closed after stable writes (stableHow !== 0)
+    - Better resource cleanup to prevent connection leaks
+
 ## 0.4.5
 
 ### Patch Changes
