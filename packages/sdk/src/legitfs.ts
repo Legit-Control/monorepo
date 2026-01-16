@@ -505,33 +505,62 @@ export async function openLegitFs({
      *
      * @param legitArchieve a zlib compressed legit repo
      */
-    loadArchive: async (legitArchieve: Uint8Array): Promise<void> => {
+    loadArchive: async ({
+      legitArchive: legitArchive,
+      clearExisting = false,
+    }: {
+      legitArchive: Uint8Array;
+      clearExisting?: boolean;
+    }): Promise<void> => {
       // Decompress the archive
-      const decompressed = pako.inflate(legitArchieve);
+      const decompressed = pako.inflate(legitArchive);
       const text = new TextDecoder().decode(decompressed);
       const manifest = JSON.parse(text) as ArchiveManifest;
 
       // Get existing refs before we start modifying
       const existingRefsMap = new Map<string, string>();
-      try {
-        const existingBranches = await git.listBranches({
-          fs: storageFs,
-          dir: gitRoot,
-        });
-        for (const branch of existingBranches) {
-          const oid = await git.resolveRef({
+      if (!clearExisting) {
+        try {
+          const existingBranches = await git.listBranches({
             fs: storageFs,
             dir: gitRoot,
-            ref: branch,
           });
-          existingRefsMap.set(branch, oid);
+          for (const branch of existingBranches) {
+            const oid = await git.resolveRef({
+              fs: storageFs,
+              dir: gitRoot,
+              ref: branch,
+            });
+            existingRefsMap.set(branch, oid);
+          }
+        } catch (e) {
+          // Ignore if no branches exist yet
         }
-      } catch (e) {
-        // Ignore if no branches exist yet
+      } else {
+        // clear existing .git folder
+        const gitFolderPath = `${gitRoot}/.git`;
+        const entries = await storageFs.promises.readdir(gitFolderPath, {
+          withFileTypes: true,
+        });
+
+        for (const entry of entries) {
+          const fullPath = `${gitFolderPath}/${entry.name}`;
+
+          if (entry.isDirectory()) {
+            await storageFs.promises.rm(fullPath, {
+              recursive: true,
+              force: true,
+            });
+          } else if (entry.isFile()) {
+            await storageFs.promises.unlink(fullPath);
+          }
+        }
       }
 
       // Process each file in the archive
-      for (const [relativePath, base64Content] of Object.entries(manifest.files)) {
+      for (const [relativePath, base64Content] of Object.entries(
+        manifest.files
+      )) {
         const fullPath = `${gitRoot}/.git/${relativePath}`;
 
         // Skip config files as per spec
@@ -543,13 +572,19 @@ export async function openLegitFs({
         const content = Buffer.from(base64Content, 'base64');
 
         // Special handling for refs/heads/
-        if (relativePath.startsWith('refs/heads/') || relativePath.startsWith('refs/tags/')) {
+        if (
+          relativePath.startsWith('refs/heads/') ||
+          relativePath.startsWith('refs/tags/')
+        ) {
           const refName = relativePath.replace(/^refs\/(heads|tags)\//, '');
 
           // Check if this is a new ref or an existing one
           if (!existingRefsMap.has(refName)) {
             // New ref - just write it
-            await storageFs.promises.mkdir(fullPath.split('/').slice(0, -1).join('/'), { recursive: true });
+            await storageFs.promises.mkdir(
+              fullPath.split('/').slice(0, -1).join('/'),
+              { recursive: true }
+            );
             await storageFs.promises.writeFile(fullPath, content);
           } else {
             // Existing ref - check if we can fast-forward
@@ -573,20 +608,29 @@ export async function openLegitFs({
                 // Cannot fast-forward - create conflict branch
                 const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
                 const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
-                await storageFs.promises.mkdir(conflictRefPath.split('/').slice(0, -1).join('/'), { recursive: true });
+                await storageFs.promises.mkdir(
+                  conflictRefPath.split('/').slice(0, -1).join('/'),
+                  { recursive: true }
+                );
                 await storageFs.promises.writeFile(conflictRefPath, content);
               }
             } catch (e) {
               // If we can't verify, assume it's not fast-forwardable and create conflict
               const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
               const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
-              await storageFs.promises.mkdir(conflictRefPath.split('/').slice(0, -1).join('/'), { recursive: true });
+              await storageFs.promises.mkdir(
+                conflictRefPath.split('/').slice(0, -1).join('/'),
+                { recursive: true }
+              );
               await storageFs.promises.writeFile(conflictRefPath, content);
             }
           }
         } else {
           // For non-ref files, just write them directly
-          await storageFs.promises.mkdir(fullPath.split('/').slice(0, -1).join('/'), { recursive: true });
+          await storageFs.promises.mkdir(
+            fullPath.split('/').slice(0, -1).join('/'),
+            { recursive: true }
+          );
           await storageFs.promises.writeFile(fullPath, content);
         }
       }
@@ -604,19 +648,27 @@ export async function openLegitFs({
       };
 
       // Recursively read all files in .git folder
-      async function readDirectoryRecursive(dirPath: string, relativePath: string = '') {
-        const entries = await storageFs.promises.readdir(dirPath, { withFileTypes: true });
+      async function readDirectoryRecursive(
+        dirPath: string,
+        relativePath: string = ''
+      ) {
+        const entries = await storageFs.promises.readdir(dirPath, {
+          withFileTypes: true,
+        });
 
         for (const entry of entries) {
           const fullPath = `${dirPath}/${entry.name}`;
-          const entryRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+          const entryRelativePath = relativePath
+            ? `${relativePath}/${entry.name}`
+            : entry.name;
 
           if (entry.isDirectory()) {
             await readDirectoryRecursive(fullPath, entryRelativePath);
           } else if (entry.isFile()) {
             // Read as binary (Buffer/Uint8Array) and encode as base64
             const content = await storageFs.promises.readFile(fullPath);
-            manifest.files[entryRelativePath] = Buffer.from(content).toString('base64');
+            manifest.files[entryRelativePath] =
+              Buffer.from(content).toString('base64');
           }
         }
       }
@@ -636,8 +688,7 @@ export async function openLegitFs({
       const compressed = pako.deflate(data);
 
       return compressed;
-    }
-
+    },
   });
 
   return legitfs;

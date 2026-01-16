@@ -122,7 +122,9 @@ describe('saveArchive and loadArchive', () => {
       });
 
       // Load archive into new repo
-      await newLegitfs.loadArchive(archive);
+      await newLegitfs.loadArchive({
+        legitArchive: archive,
+      });
 
       // Verify branches were restored
       const restoredBranches = await isogit.listBranches({
@@ -172,7 +174,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive);
+      await newLegitfs.loadArchive({ legitArchive: archive });
 
       // Verify both branches exist
       const branches = await isogit.listBranches({
@@ -211,7 +213,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive1);
+      await newLegitfs.loadArchive({ legitArchive: archive1 });
 
       const branchesAfterFirstLoad = await isogit.listBranches({
         fs: newLegitfs._storageFs,
@@ -219,7 +221,7 @@ describe('saveArchive and loadArchive', () => {
       });
 
       // Load second archive - should add new refs
-      await newLegitfs.loadArchive(archive2);
+      await newLegitfs.loadArchive({ legitArchive: archive2 });
 
       const branchesAfterSecondLoad = await isogit.listBranches({
         fs: newLegitfs._storageFs,
@@ -272,7 +274,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive1);
+      await newLegitfs.loadArchive({ legitArchive: archive1 });
 
       // Diverge the main branch in new repo
       await newLegitfs.promises.writeFile(
@@ -287,7 +289,7 @@ describe('saveArchive and loadArchive', () => {
       });
 
       // Load second archive - main cannot be fast-forwarded
-      await newLegitfs.loadArchive(archive2);
+      await newLegitfs.loadArchive({ legitArchive: archive2 });
 
       // Verify that main was NOT updated (stays at diverged commit)
       const currentMainCommit = await isogit.resolveRef({
@@ -362,7 +364,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive1);
+      await newLegitfs.loadArchive({ legitArchive: archive1 });
 
       const featureAfterFirstLoad = await isogit.resolveRef({
         fs: newLegitfs._storageFs,
@@ -372,7 +374,7 @@ describe('saveArchive and loadArchive', () => {
       expect(featureAfterFirstLoad).toBe(featureCommit1);
 
       // Load second archive - feature should be fast-forwarded
-      await newLegitfs.loadArchive(archive2);
+      await newLegitfs.loadArchive({ legitArchive: archive2 });
 
       const featureAfterSecondLoad = await isogit.resolveRef({
         fs: newLegitfs._storageFs,
@@ -380,6 +382,105 @@ describe('saveArchive and loadArchive', () => {
         ref: 'feature',
       });
       expect(featureAfterSecondLoad).toBe(featureCommit2);
+    });
+
+    it('should clear existing .git folder when clearExisting is true', async () => {
+      // Create initial repo with some content and save archive
+      await legitfs.promises.writeFile(
+        `${repoPath}/.legit/branches/main/original.txt`,
+        'Original content'
+      );
+
+      const archive1 = await legitfs.saveArchive();
+      const originalCommit = await isogit.resolveRef({
+        fs: legitfs._storageFs,
+        dir: repoPath,
+        ref: 'main',
+      });
+
+      // Create a second repo with different content
+      const memfs2 = createFsFromVolume(
+        Volume.fromNestedJSON({
+          '/repo': {
+            'different.txt': 'Different content',
+            '.git': {},
+          },
+        })
+      );
+
+      await isogit.init({
+        fs: memfs2,
+        dir: '/repo',
+        defaultBranch: 'main',
+      });
+      await isogit.add({ fs: memfs2, dir: '/repo', filepath: 'different.txt' });
+      await isogit.commit({
+        fs: memfs2,
+        dir: '/repo',
+        message: 'Different initial commit',
+        author: { name: 'Test', email: 'test@example.com' },
+      });
+
+      const legitfs2 = await openLegitFs({
+        // @ts-ignore -- fix type
+        storageFs: memfs2,
+        gitRoot: '/repo',
+        anonymousBranch: 'main',
+      });
+
+      // Verify the second repo has its own content
+      const beforeLoadContent = await legitfs2.promises.readFile(
+        '/repo/.legit/branches/main/different.txt',
+        'utf-8'
+      );
+      expect(beforeLoadContent).toBe('Different content');
+
+      const beforeLoadBranches = await isogit.listBranches({
+        fs: legitfs2._storageFs,
+        dir: '/repo',
+      });
+      expect(beforeLoadBranches).toContain('main');
+
+      // Load archive with clearExisting=true
+      // This should replace the entire .git folder, removing existing refs
+      await legitfs2.loadArchive({
+        legitArchive: archive1,
+        clearExisting: true,
+      });
+
+      // After loading with clearExisting=true:
+      // 1. The original "different.txt" should NOT be accessible (it was in the replaced repo)
+      // 2. The archived content should be accessible
+      // 3. Only the archived refs should exist (no refs from the repo before loading)
+
+      const afterLoadContent = await legitfs2.promises.readFile(
+        '/repo/.legit/branches/main/original.txt',
+        'utf-8'
+      );
+      expect(afterLoadContent).toBe('Original content');
+
+      // The commit should match the archived commit
+      const afterLoadCommit = await isogit.resolveRef({
+        fs: legitfs2._storageFs,
+        dir: '/repo',
+        ref: 'main',
+      });
+      expect(afterLoadCommit).toBe(originalCommit);
+
+      const branchesAfterLoad = await isogit.listBranches({
+        fs: legitfs2._storageFs,
+        dir: '/repo',
+      });
+      expect(branchesAfterLoad).toContain('main');
+      expect(branchesAfterLoad.length).toBe(1); // Only main branch from archive
+
+      // The different.txt file from the original repo should not exist
+      await expect(
+        legitfs2.promises.readFile(
+          '/repo/.legit/branches/main/different.txt',
+          'utf-8'
+        )
+      ).rejects.toThrow();
     });
   });
 
@@ -407,7 +508,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive);
+      await newLegitfs.loadArchive({ legitArchive: archive });
 
       const restoredContent = await newLegitfs.promises.readFile(
         `${repoPath}/.legit/branches/main/a.txt`,
@@ -442,7 +543,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive);
+      await newLegitfs.loadArchive({ legitArchive: archive });
 
       // Verify folder structure is preserved
       const restoredEntries = await newLegitfs.promises.readdir(
@@ -476,7 +577,7 @@ describe('saveArchive and loadArchive', () => {
         anonymousBranch: 'anonymous',
       });
 
-      await newLegitfs.loadArchive(archive);
+      await newLegitfs.loadArchive({ legitArchive: archive });
 
       const restoredLog = await isogit.log({
         fs: newLegitfs._storageFs,
