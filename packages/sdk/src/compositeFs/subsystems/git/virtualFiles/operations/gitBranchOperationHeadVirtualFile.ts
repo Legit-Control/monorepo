@@ -86,20 +86,16 @@ export function createBranchOperationHeadAdapter({
           } as any;
         }
 
-        let headCommit: string;
+        let headCommit = await tryResolveRef(
+          gitStorageFs,
+          gitRoot,
+          operationBranchName
+        );
 
-        try {
-          headCommit = await git.resolveRef({
-            fs: gitStorageFs,
-            dir: gitRoot,
-            ref: operationBranchName!,
-          });
-        } catch {
-          headCommit = await git.resolveRef({
-            fs: gitStorageFs,
-            dir: gitRoot,
-            ref: `refs/heads/${operationBranchName}`,
-          });
+        if (!headCommit) {
+          throw new Error(
+            `Operation Branch ${operationBranchName} for base branch ${pathParams.branchName} does not exist`
+          );
         }
 
         const commit = await git.readCommit({

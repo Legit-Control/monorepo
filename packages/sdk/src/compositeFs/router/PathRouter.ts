@@ -484,7 +484,7 @@ export class PathRouter {
           value = value.slice(1);
         }
 
-        params[currentCompiledRoute.paramNames[i]!] = decodeURIComponent(value);
+        params[currentCompiledRoute.paramNames[i]!] = value;
       }
 
       priorityMatched = currentCompiledRoute.priority;

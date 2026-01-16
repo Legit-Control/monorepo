@@ -3,6 +3,7 @@ import git from '@legit-sdk/isomorphic-git';
 import { resolveOperationBranchName } from './resolveOperationBranchName.js';
 import { getCurrentBranch } from '../getCurrentBranch.js';
 import { CompositeSubFsAdapter } from '../CompositeSubFsAdapter.js';
+import { tryResolveRef } from '../utils.js';
 
 export type Operation = {
   oid: string;
@@ -90,39 +91,35 @@ export function createBranchOperationsAdapter({
         pathParams.branchName
       );
 
-      let headCommit: string;
+      const branches = await git.listBranches({
+        fs: gitStorageFs,
+        dir: gitRoot,
+      });
+
+      let headCommit: string | undefined;
       let hasOperations = false;
 
       if (operationBranchName) {
-        try {
-          headCommit = await git.resolveRef({
-            fs: gitStorageFs,
-            dir: gitRoot,
-            ref: operationBranchName,
-          });
-          hasOperations = true;
-        } catch {
-          try {
-            headCommit = await git.resolveRef({
-              fs: gitStorageFs,
-              dir: gitRoot,
-              ref: `refs/heads/${operationBranchName}`,
-            });
-            hasOperations = true;
-          } catch {
-            throw new Error(
-              `Base Branch ${pathParams.branchName} for operations does not exis`
-            );
-          }
+        headCommit = await tryResolveRef(
+          gitStorageFs,
+          gitRoot,
+          operationBranchName
+        );
+
+        if (headCommit === undefined) {
+          throw new Error(
+            `Base Branch ${pathParams.branchName} for operations does not exis`
+          );
         }
+
+        hasOperations = headCommit !== undefined;
       } else {
-        try {
-          headCommit = await git.resolveRef({
-            fs: gitStorageFs,
-            dir: gitRoot,
-            ref: `refs/heads/${pathParams.branchName}`,
-          });
-        } catch {
+        headCommit = await tryResolveRef(
+          gitStorageFs,
+          gitRoot,
+          pathParams.branchName
+        );
+        if (headCommit === undefined) {
           throw new Error(
             `Base Branch ${pathParams.branchName} for operations does not exis`
           );
@@ -198,40 +195,42 @@ export function createBranchOperationsAdapter({
 
       if (operationBranchName) {
         // Resolve the operation branch ref
-        const operationBranchRef = await git.resolveRef({
-          fs: gitStorageFs,
-          dir: gitRoot,
-          ref: `refs/heads/${operationBranchName}`,
-        });
+        const operationBranchRef = await tryResolveRef(
+          gitStorageFs,
+          gitRoot,
+          operationBranchName
+        );
 
-        let isFirstOperation = false;
+        if (operationBranchRef !== undefined) {
+          let isFirstOperation = false;
 
-        // Walk through the commits in the operation branch
-        let oid: string | null = operationBranchRef;
-        while (oid && !isFirstOperation) {
-          const commit = await git.readCommit({
-            fs: gitStorageFs,
-            dir: gitRoot,
-            oid,
-          });
-          operations.push({
-            oid: commit.oid,
-            parentOids: commit.commit.parent,
-            message: commit.commit.message,
-            originBranchOid: 'unset',
-          });
+          // Walk through the commits in the operation branch
+          let oid: string | null = operationBranchRef;
+          while (oid && !isFirstOperation) {
+            const commit = await git.readCommit({
+              fs: gitStorageFs,
+              dir: gitRoot,
+              oid,
+            });
+            operations.push({
+              oid: commit.oid,
+              parentOids: commit.commit.parent,
+              message: commit.commit.message,
+              originBranchOid: 'unset',
+            });
 
-          // Get parent commit (first parent)
-          oid =
-            commit.commit.parent && commit.commit.parent.length > 0
-              ? commit.commit.parent[0]!
-              : null;
+            // Get parent commit (first parent)
+            oid =
+              commit.commit.parent && commit.commit.parent.length > 0
+                ? commit.commit.parent[0]!
+                : null;
 
-          if (
-            commit.commit.parent.length === 2 &&
-            commit.commit.parent[0] === commit.commit.parent[1]
-          ) {
-            isFirstOperation = true;
+            if (
+              commit.commit.parent.length === 2 &&
+              commit.commit.parent[0] === commit.commit.parent[1]
+            ) {
+              isFirstOperation = true;
+            }
           }
         }
       }

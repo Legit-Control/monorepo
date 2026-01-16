@@ -70,21 +70,13 @@ export function createBranchesListAdapter({
             dir: gitRoot,
           });
 
-          const branchesInfo = await Promise.all(
-            branches.map(async branch => {
-              const oid = await git.resolveRef({
-                fs: gitStorageFs,
-                dir: gitRoot,
-                ref: branch,
-              });
-              return toDirEntry({
-                parent: filePath,
-                name: encodeBranchNameForVfs(branch),
-                isDir: true,
-              });
-            })
-          );
-
+          const branchesInfo = branches.map(branch => {
+            return toDirEntry({
+              parent: filePath,
+              name: encodeBranchNameForVfs(branch),
+              isDir: true,
+            });
+          });
           return {
             type: 'directory',
             content: branchesInfo,

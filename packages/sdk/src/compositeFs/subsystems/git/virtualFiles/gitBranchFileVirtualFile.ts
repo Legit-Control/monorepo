@@ -441,6 +441,7 @@ export function createBranchFileAdapter({
             value: newCommitOid,
             force: true,
           });
+
         }
       },
 

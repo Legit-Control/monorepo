@@ -68,6 +68,10 @@ export class CompositeSubFsAdapter
     date: number;
     timezoneOffset: number;
   }> {
+    if (this.storageFs === undefined || this.storageFs === null) {
+      // @ts-expect-error -- this is a quick fix for non git adapters for now
+      return {};
+    }
     const name = await git.getConfig({
       fs: this.storageFs,
       dir: this.gitRoot,
