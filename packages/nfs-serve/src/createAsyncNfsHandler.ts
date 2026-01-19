@@ -1208,11 +1208,13 @@ export const createAsyncNfsHandler = (args: {
         if (err.code === 'ENOENT') {
           return {
             status: nfsstat3.ERR_STALE,
+            error: err,
           };
         }
 
         return {
           status: nfsstat3.ERR_SERVERFAULT,
+          error: err,
         };
       } finally {
         if (closeAfterRead) {
