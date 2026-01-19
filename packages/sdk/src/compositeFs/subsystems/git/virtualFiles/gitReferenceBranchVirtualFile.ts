@@ -88,6 +88,11 @@ export function createReferenceBranchAdapter({
         const { content } = args;
         const newBranchName = content.toString().trim();
 
+        // NOTE: NFS3 does truncate the file - we expect the file to be written fully anyway - ignor zero length wirtes
+        if (newBranchName.length === 0) {
+          return;
+        }
+
         // Check that the branch exists before setting it
 
         const ref = await tryResolveRef(gitStorageFs, gitRoot, newBranchName);

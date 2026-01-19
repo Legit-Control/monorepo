@@ -105,6 +105,11 @@ export function createApplyChangesAdapter({
         const targetBranch = await getReferenceBranch(gitRoot, gitStorageFs);
         const commitMessage = content.toString().trim();
 
+        // NOTE: NFS3 does truncate the file - we expect the file to be written fully anyway - ignor zero length wirtes
+        if (commitMessage.length === 0) {
+          return;
+        }
+
         const source = await tryResolveRef(gitStorageFs, gitRoot, sourceBranch);
 
         if (!source) {

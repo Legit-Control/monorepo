@@ -12,7 +12,7 @@ import * as net from 'net';
 import { exec } from 'child_process';
 import { Command } from 'commander';
 import { sessionDataPath } from './claudeVirtualSessionFileVirtualFile.js';
-s
+
 const settingsContent = JSON.stringify(
   {
     env: { CLAUDE_CONFIG_DIR: sessionDataPath },
@@ -423,7 +423,7 @@ async function main() {
       '.legit',
       'reference-branch'
     );
-    fsDisk.writeFileSync(targetBranchPath, currentBranch, 'utf-8');
+    fsDisk.writeFileSync(targetBranchPath, sessionName, 'utf-8');
 
     // use legit currentBranch to change the branch to the the claudesession branch
     const claudeBranch = `claude.${sessionName}`;
