@@ -234,6 +234,11 @@ export const createAsyncNfsHandler = (args: {
         const fileStats = await fsHandle.stat();
         const dirStats = await asyncFs.stat(dirPath);
 
+        await fsHandle.close();
+
+        // get rid of the fh reference
+        fileHandle.fsHandle.fh = undefined;
+
         return {
           status: nfsstat3.OK,
           handle: fileHandle.nfsHandle,
@@ -1084,8 +1089,8 @@ export const createAsyncNfsHandler = (args: {
         throw new Error('??');
       }
 
+      const filePath = fileHandleManager.getPathFromHandle(handle);
       if (fileHandle.fsHandle.fh === undefined) {
-        const path = fileHandleManager.getPathFromHandle(handle);
         throw new Error(
           'a commit expects a write which should have realized the file ? ' +
             path
@@ -1095,13 +1100,12 @@ export const createAsyncNfsHandler = (args: {
       const fsHandle = fileHandle.fsHandle.fh;
 
       await fsHandle.sync();
-
-      const stats = await fsHandle.stat();
-
       await fsHandle.close();
 
       // get rid of the fh reference
       fileHandle.fsHandle.fh = undefined;
+
+      const stats = await asyncFs.stat(filePath!);
 
       return {
         status: nfsstat3.OK,
