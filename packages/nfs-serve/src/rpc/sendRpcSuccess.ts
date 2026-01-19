@@ -1,11 +1,11 @@
-import * as net from "net";
-import { createRpcReply } from "./createRpcReply.js";
+import * as net from 'net';
+import { createRpcReply } from './createRpcReply.js';
 
 // Send an RPC error response
 export function sendRpcSuccess(
   socket: net.Socket,
   xid: number,
-  body: Buffer,
+  body: Buffer
 ): void {
   // Create an RPC reply with error
   const replyBuf = Buffer.alloc(16);
@@ -28,9 +28,9 @@ export function sendRpcSuccess(
 
   const fullReplyBuf = Buffer.concat([replyBuf, body]);
 
-  // console.log("body: ", body, "length: ", body.length);
-  // console.log("replyBuf: ", replyBuf, "length: ", replyBuf.length);
-  // console.log("fullReplyBuf: ", fullReplyBuf, "length: ", fullReplyBuf.length);
+  // // console.log("body: ", body, "length: ", body.length);
+  // // console.log("replyBuf: ", replyBuf, "length: ", replyBuf.length);
+  // // console.log("fullReplyBuf: ", fullReplyBuf, "length: ", fullReplyBuf.length);
   const reply = createRpcReply(xid, fullReplyBuf);
 
   // Send the reply

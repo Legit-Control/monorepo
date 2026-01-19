@@ -1,11 +1,11 @@
-import * as net from "net";
-import fs from "fs";
-import { createRpcReply } from "../../createRpcReply.js";
-import { sendNfsError } from "../sendNfsError.js";
-import { readHandle } from "./util/readHandle.js";
-import { createSuccessHeader } from "./util/createSuccessHeader.js";
-import { nfsstat3 } from "./errors.js";
-import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
+import * as net from 'net';
+import fs from 'fs';
+import { createRpcReply } from '../../createRpcReply.js';
+import { sendNfsError } from '../sendNfsError.js';
+import { readHandle } from './util/readHandle.js';
+import { createSuccessHeader } from './util/createSuccessHeader.js';
+import { nfsstat3 } from './errors.js';
+import { getAttributeBuffer } from './util/getAttributeBuffer.js';
 
 export type GetAttributesResult =
   | {
@@ -16,10 +16,10 @@ export type GetAttributesResult =
         | nfsstat3.ERR_SERVERFAULT;
       stats?: never;
     }
-  | { status: nfsstat3.OK; stats: fs.Stats & {fileId: bigint } };
+  | { status: nfsstat3.OK; stats: fs.Stats & { fileId: bigint } };
 
 export type GetAttributesHandler = (
-  handle: Buffer,
+  handle: Buffer
 ) => Promise<GetAttributesResult>;
 
 /**
@@ -42,19 +42,17 @@ export async function getAttributes(
   xid: number,
   socket: net.Socket,
   data: Buffer,
-  getAttributesHandler: GetAttributesHandler,
+  getAttributesHandler: GetAttributesHandler
 ): Promise<void> {
   try {
-    
-
     // Read the file handle from the data
     const handle = readHandle(data);
 
     const result = await getAttributesHandler(handle);
-    // console.log("GETATTR result:", result);
+    // // console.log("GETATTR result:", result);
 
     if (result.status !== 0) {
-      console.error("Error getting attributes:", result);
+      console.error('Error getting attributes:', result);
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -78,13 +76,13 @@ export async function getAttributes(
     const reply = createRpcReply(xid, replyBuf);
 
     // Send the reply with proper flushing
-    socket.write(reply, (err) => {
+    socket.write(reply, err => {
       if (err) {
         console.error(`Error sending GETATTR reply: ${err}`);
       }
     });
   } catch (err) {
-    console.error("Error handling GETATTR request:", err);
+    console.error('Error handling GETATTR request:', err);
     sendNfsError(socket, xid, 10006); // NFS3ERR_SERVERFAULT
   }
 }

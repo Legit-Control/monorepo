@@ -59,7 +59,7 @@ export async function symlink(
   symlinkHandler?: SymlinkHandler
 ): Promise<void> {
   try {
-    console.log('NFS SYMLINK procedure');
+    // console.log('NFS SYMLINK procedure');
 
     // Read the directory handle from the data
     const dirHandle = readHandle(data);
@@ -89,11 +89,11 @@ export async function symlink(
     // Read symlink data (the path that the symlink points to)
     const linkData = data.toString('utf8', offset, offset + linkDataLength);
 
-    console.log(
-      `SYMLINK request: dirHandle=${dirHandle.toString(
-        'hex'
-      )}, name=${name}, target=${linkData}`
-    );
+    // console.log(
+    //   `SYMLINK request: dirHandle=${dirHandle.toString(
+    //     'hex'
+    //   )}, name=${name}, target=${linkData}`
+    // );
 
     // Call the handler to create the symlink
     let result: SymlinkResult;
@@ -103,7 +103,7 @@ export async function symlink(
       result = await symlinkHandler(dirHandle, name, linkData);
     } else {
       // Fallback to default behavior
-      console.log('Using fallback SYMLINK implementation');
+      // console.log('Using fallback SYMLINK implementation');
       sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
       return;
     }
@@ -166,7 +166,7 @@ export async function symlink(
 
     // Send the reply
     socket.write(reply);
-    console.log(`Sent SYMLINK reply for ${name}`);
+    // console.log(`Sent SYMLINK reply for ${name}`);
   } catch (err) {
     console.error('Error handling SYMLINK request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

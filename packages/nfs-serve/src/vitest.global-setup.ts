@@ -24,7 +24,7 @@ declare module 'vitest' {
 }
 
 export default async function (project: TestProject) {
-  console.log('Setting up NFS test environment...');
+  // console.log('Setting up NFS test environment...');
   // Probe for 2 seconds if port is in use
 
   const portFree = await isPortFree(NFS_PORT);
@@ -38,7 +38,7 @@ export default async function (project: TestProject) {
     // we are in debugging mode
     debugging = true;
     NFS_PORT = 12346;
-    console.log('Assuming debugging mode - NFS server already running');
+    // console.log('Assuming debugging mode - NFS server already running');
   }
 
   const PROJECT_ROOT = path.resolve(__dirname);
@@ -112,7 +112,7 @@ export default async function (project: TestProject) {
   }
 
   return async () => {
-    console.log('Cleaning up NFS test environment...');
+    // console.log('Cleaning up NFS test environment...');
 
     try {
       // Unmount if mounted
@@ -126,10 +126,10 @@ export default async function (project: TestProject) {
       }
 
       // Ignore unmount errors
-      // console.log('Unmount error (expected if not mounted)');
+      // // console.log('Unmount error (expected if not mounted)');
     }
 
-    // console.log('NFS test environment cleanup complete');
+    // // console.log('NFS test environment cleanup complete');
   };
 }
 

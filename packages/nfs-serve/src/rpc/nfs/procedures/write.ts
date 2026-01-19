@@ -57,11 +57,11 @@ export async function write(
 ): Promise<void> {
   try {
     const now = new Date();
-    console.log(`[${now.toISOString()}] NFS WRITE procedure (XID: ${xid})`);
+    // console.log(`[${now.toISOString()}] NFS WRITE procedure (XID: ${xid})`);
 
     // Read the file handle from the data
     const handle = readHandle(data);
-    console.log(`File handle: ${handle.toString('hex')}`);
+    // console.log(`File handle: ${handle.toString('hex')}`);
 
     // Parse offset, stable, and count
     const handleLength = data.readUInt32BE(0);
@@ -166,9 +166,9 @@ export async function write(
     socket.write(reply);
 
     // Log success with details
-    console.log(
-      `Sent WRITE reply: ${result.bytesWritten} bytes written at offset ${writeOffset}, commit=${stableName}, XID=${xid}`
-    );
+    // console.log(
+    //   `Sent WRITE reply: ${result.bytesWritten} bytes written at offset ${writeOffset}, commit=${stableName}, XID=${xid}`
+    // );
   } catch (err) {
     console.error('Error handling WRITE request:', err);
     sendNfsError(socket, xid, 10006); // NFS3ERR_SERVERFAULT

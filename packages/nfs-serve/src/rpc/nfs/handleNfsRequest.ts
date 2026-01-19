@@ -1,31 +1,31 @@
-import * as net from "net";
-import { sendNfsError } from "./sendNfsError.js";
+import * as net from 'net';
+import { sendNfsError } from './sendNfsError.js';
 
 import {
   getAttributes,
   GetAttributesHandler,
-} from "./procedures/getAttributes.js";
-import { setattr, SetAttrHandler } from "./procedures/setattr.js";
-import { lookup, LookupHandler } from "./procedures/lookup.js";
-import { access, AccessHandler } from "./procedures/access.js";
-import { readlink, ReadlinkHandler } from "./procedures/readlink.js";
-import { read, ReadHandler } from "./procedures/read.js";
-import { write, WriteHandler } from "./procedures/write.js";
-import { create, CreateHandler } from "./procedures/create.js";
-import { mkdir, MkdirHandler } from "./procedures/mkdir.js";
-import { symlink, SymlinkHandler } from "./procedures/symlink.js";
-import { mknod, MknodHandler } from "./procedures/mknod.js";
-import { remove, RemoveHandler } from "./procedures/remove.js";
-import { rmdir, RmdirHandler } from "./procedures/rmdir.js";
-import { rename, RenameHandler } from "./procedures/rename.js";
-import { link, LinkHandler } from "./procedures/link.js";
-import { readdir, ReaddirHandler } from "./procedures/readdir.js";
-import { readdirplus, ReaddirplusHandler } from "./procedures/readdirplus.js";
-import { fsstat, FSStatHandler } from "./procedures/fsstat.js";
-import { fsinfo, FSInfoHandler } from "./procedures/fsinfo.js";
-import { pathconf, PathconfHandler } from "./procedures/pathconf.js";
-import { commit, CommitHandler } from "./procedures/commit.js";
-import { sendRpcSuccess } from "../sendRpcSuccess.js";
+} from './procedures/getAttributes.js';
+import { setattr, SetAttrHandler } from './procedures/setattr.js';
+import { lookup, LookupHandler } from './procedures/lookup.js';
+import { access, AccessHandler } from './procedures/access.js';
+import { readlink, ReadlinkHandler } from './procedures/readlink.js';
+import { read, ReadHandler } from './procedures/read.js';
+import { write, WriteHandler } from './procedures/write.js';
+import { create, CreateHandler } from './procedures/create.js';
+import { mkdir, MkdirHandler } from './procedures/mkdir.js';
+import { symlink, SymlinkHandler } from './procedures/symlink.js';
+import { mknod, MknodHandler } from './procedures/mknod.js';
+import { remove, RemoveHandler } from './procedures/remove.js';
+import { rmdir, RmdirHandler } from './procedures/rmdir.js';
+import { rename, RenameHandler } from './procedures/rename.js';
+import { link, LinkHandler } from './procedures/link.js';
+import { readdir, ReaddirHandler } from './procedures/readdir.js';
+import { readdirplus, ReaddirplusHandler } from './procedures/readdirplus.js';
+import { fsstat, FSStatHandler } from './procedures/fsstat.js';
+import { fsinfo, FSInfoHandler } from './procedures/fsinfo.js';
+import { pathconf, PathconfHandler } from './procedures/pathconf.js';
+import { commit, CommitHandler } from './procedures/commit.js';
+import { sendRpcSuccess } from '../sendRpcSuccess.js';
 
 // Handle NFS program requests
 export async function handleNfsRequest(
@@ -55,16 +55,16 @@ export async function handleNfsRequest(
     setattr: SetAttrHandler;
     symlink: SymlinkHandler;
     write: WriteHandler;
-  },
+  }
 ): Promise<void> {
   // Get procedure name for better logging
   const procedureName = getProcedureName(procedure);
-  console.log(`Procedure: ${procedureName} (${procedure})`);
+  // console.log(`Procedure: ${procedureName} (${procedure})`);
 
   switch (procedure) {
     case 0: // NULL
       const returnBuffer = Buffer.alloc(8).fill(0);
-      // console.log(
+      // // console.log(
       //   "returnBuffer: ",
       //   returnBuffer,
       //   "length: ",
@@ -158,43 +158,43 @@ export async function handleNfsRequest(
       break;
 
     default:
-      console.log(`Unsupported NFS procedure: ${procedure}`);
+      // console.log(`Unsupported NFS procedure: ${procedure}`);
       sendNfsError(socket, xid, 10004); // NFS3ERR_NOTSUPP
   }
 
-  console.log(`Procedure: ${procedureName} (${procedure}) - finished`);
+  // console.log(`Procedure: ${procedureName} (${procedure}) - finished`);
 }
 
 // Helper function to get readable procedure names
 function getProcedureName(procedure: number): string {
   const procedureNames = [
-    "NULL",
-    "GETATTR",
-    "SETATTR",
-    "LOOKUP",
-    "ACCESS",
-    "READLINK",
-    "READ",
-    "WRITE",
-    "CREATE",
-    "MKDIR",
-    "SYMLINK",
-    "MKNOD",
-    "REMOVE",
-    "RMDIR",
-    "RENAME",
-    "LINK",
-    "READDIR",
-    "READDIRPLUS",
-    "FSSTAT",
-    "FSINFO",
-    "PATHCONF",
-    "COMMIT",
+    'NULL',
+    'GETATTR',
+    'SETATTR',
+    'LOOKUP',
+    'ACCESS',
+    'READLINK',
+    'READ',
+    'WRITE',
+    'CREATE',
+    'MKDIR',
+    'SYMLINK',
+    'MKNOD',
+    'REMOVE',
+    'RMDIR',
+    'RENAME',
+    'LINK',
+    'READDIR',
+    'READDIRPLUS',
+    'FSSTAT',
+    'FSINFO',
+    'PATHCONF',
+    'COMMIT',
   ];
 
   return procedure < procedureNames.length
-    ? procedureNames[procedure] || "UNKNOWN"
-    : "UNKNOWN";
+    ? procedureNames[procedure] || 'UNKNOWN'
+    : 'UNKNOWN';
 }
 
 // Helper function to extract extra info from NFS data buffers for detailed logging
@@ -203,7 +203,7 @@ export function extractNfsDebugInfo(procedure: number, data: Buffer): string {
   try {
     // Default behavior - just return procedure name
     if (!data || data.length < 4) {
-      return "";
+      return '';
     }
 
     // Extract handle length and handle itself
@@ -214,7 +214,7 @@ export function extractNfsDebugInfo(procedure: number, data: Buffer): string {
 
     // Get handle as hex
     const handle = data.slice(4, 4 + handleLength);
-    const handleHex = handle.toString("hex");
+    const handleHex = handle.toString('hex');
 
     // Special handling for common procedures
     switch (procedure) {
@@ -223,9 +223,9 @@ export function extractNfsDebugInfo(procedure: number, data: Buffer): string {
           const nameLength = data.readUInt32BE(4 + handleLength);
           if (data.length >= 4 + handleLength + 4 + nameLength) {
             const name = data.toString(
-              "utf8",
+              'utf8',
               4 + handleLength + 4,
-              4 + handleLength + 4 + nameLength,
+              4 + handleLength + 4 + nameLength
             );
             return `Looking up: ${name}`;
           }

@@ -23,9 +23,10 @@ export type ReadResult =
       data?: never;
       stats?: never;
       eof?: never;
+      error?: Error;
     }
   | {
-      status: number;
+      status: 0;
       data: Buffer;
       stats: fs.Stats & { fileId: bigint };
       eof: boolean;
@@ -56,7 +57,7 @@ export async function read(
 ): Promise<void> {
   try {
     const now = new Date();
-    console.log(`[${now.toISOString()}] NFS READ procedure (XID: ${xid})`);
+    // console.log(`[${now.toISOString()}] NFS READ procedure (XID: ${xid})`);
 
     // Read the file handle from the data
     const handle = readHandle(data);
@@ -73,16 +74,17 @@ export async function read(
     const readCount = data.readUInt32BE(offset);
     offset += 4;
 
-    console.log(
-      `READ request: handle=${handle.toString(
-        'hex'
-      )}, offset=${readOffset}, count=${readCount} bytes`
-    );
+    // console.log(
+    //   `READ request: handle=${handle.toString(
+    //     'hex'
+    //   )}, offset=${readOffset}, count=${readCount} bytes`
+    // );
 
     const result = await readHandler(handle, readOffset, readCount);
 
     if (result.status !== 0) {
-      console.error('Error reading file:', result);
+      console.error('Error reading file:', result.error);
+      
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -117,9 +119,9 @@ export async function read(
     // Use our utility function to properly pad the data for XDR compliance
     const { buffer: paddedDataBuf } = createPaddedXdrData(result.data);
 
-    console.log(
-      `Read ${bytesRead} bytes, padded to ${paddedDataBuf.length} bytes`
-    );
+    // console.log(
+    //   `Read ${bytesRead} bytes, padded to ${paddedDataBuf.length} bytes`
+    // );
 
     // Combine all parts
     const replyBuf = Buffer.concat([
@@ -138,7 +140,7 @@ export async function read(
 
     // Send the reply
     socket.write(reply);
-    console.log(`Sent READ reply: ${bytesRead} bytes`);
+    // console.log(`Sent READ reply: ${bytesRead} bytes`);
   } catch (err) {
     console.error('Error handling READ request:', err);
     sendNfsError(socket, xid, 10006); // NFS3ERR_SERVERFAULT

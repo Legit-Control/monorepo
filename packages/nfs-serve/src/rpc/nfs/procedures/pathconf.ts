@@ -1,11 +1,11 @@
-import * as net from "net";
-import * as fs from "fs";
-import { createRpcReply } from "../../createRpcReply.js";
-import { sendNfsError } from "../sendNfsError.js";
-import { readHandle } from "./util/readHandle.js";
-import { createSuccessHeader } from "./util/createSuccessHeader.js";
-import { nfsstat3 } from "./errors.js";
-import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
+import * as net from 'net';
+import * as fs from 'fs';
+import { createRpcReply } from '../../createRpcReply.js';
+import { sendNfsError } from '../sendNfsError.js';
+import { readHandle } from './util/readHandle.js';
+import { createSuccessHeader } from './util/createSuccessHeader.js';
+import { nfsstat3 } from './errors.js';
+import { getAttributeBuffer } from './util/getAttributeBuffer.js';
 
 export type PathconfResult =
   | {
@@ -51,10 +51,10 @@ export async function pathconf(
   xid: number,
   socket: net.Socket,
   data: Buffer,
-  pathconfHandler?: PathconfHandler,
+  pathconfHandler?: PathconfHandler
 ): Promise<void> {
   try {
-    console.log("NFS PATHCONF procedure");
+    // console.log("NFS PATHCONF procedure");
 
     // Read the file handle from the data
     const handle = readHandle(data);
@@ -67,13 +67,13 @@ export async function pathconf(
       result = await pathconfHandler(handle);
     } else {
       // Fallback to default behavior - just return not supported
-      console.log("Using fallback PATHCONF implementation");
+      // console.log("Using fallback PATHCONF implementation");
       sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
       return;
     }
 
     if (result.status !== 0) {
-      console.error("Error getting pathconf info:", result);
+      console.error('Error getting pathconf info:', result);
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -135,9 +135,9 @@ export async function pathconf(
 
     // Send the reply
     socket.write(reply);
-    console.log("Sent PATHCONF reply");
+    // console.log("Sent PATHCONF reply");
   } catch (err) {
-    console.error("Error handling PATHCONF request:", err);
+    console.error('Error handling PATHCONF request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);
   }
 }

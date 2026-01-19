@@ -1,11 +1,11 @@
-import * as net from "net";
-import * as fs from "fs";
-import { createRpcReply } from "../../createRpcReply.js";
-import { sendNfsError } from "../sendNfsError.js";
-import { readHandle } from "./util/readHandle.js";
-import { createSuccessHeader } from "./util/createSuccessHeader.js";
-import { nfsstat3 } from "./errors.js";
-import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
+import * as net from 'net';
+import * as fs from 'fs';
+import { createRpcReply } from '../../createRpcReply.js';
+import { sendNfsError } from '../sendNfsError.js';
+import { readHandle } from './util/readHandle.js';
+import { createSuccessHeader } from './util/createSuccessHeader.js';
+import { nfsstat3 } from './errors.js';
+import { getAttributeBuffer } from './util/getAttributeBuffer.js';
 
 /**
  * Errors:
@@ -16,7 +16,7 @@ import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
  */
 
 export type CommitResult =
-  | { status: nfsstat3.OK; statsAfter: fs.Stats & {fileId: bigint } }
+  | { status: nfsstat3.OK; statsAfter: fs.Stats & { fileId: bigint } }
   | {
       status: nfsstat3.ERR_STALE | nfsstat3.ERR_NOENT | nfsstat3.ERR_ISDIR;
       statsAfter?: never;
@@ -66,10 +66,10 @@ export async function commit(
   xid: number,
   socket: net.Socket,
   data: Buffer,
-  commitHandler: CommitHandler,
+  commitHandler: CommitHandler
 ): Promise<void> {
   try {
-    console.log("NFS COMMIT procedure");
+    // console.log("NFS COMMIT procedure");
 
     // Read the file handle from the data
     const handle = readHandle(data);
@@ -77,7 +77,7 @@ export async function commit(
     const result = await commitHandler({ handle });
 
     if (result.status !== 0) {
-      console.error("Error committing data:", result);
+      console.error('Error committing data:', result);
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -121,7 +121,7 @@ export async function commit(
     // Send the reply
     socket.write(reply);
   } catch (err) {
-    console.error("Error handling COMMIT request:", err);
+    console.error('Error handling COMMIT request:', err);
     sendNfsError(socket, xid, 10006); // NFS3ERR_SERVERFAULT
   }
 }

@@ -71,7 +71,7 @@ export async function readdir(
 ): Promise<void> {
   try {
     const now = new Date();
-    console.log(`[${now.toISOString()}] NFS READDIR procedure (XID: ${xid})`);
+    // console.log(`[${now.toISOString()}] NFS READDIR procedure (XID: ${xid})`);
 
     // Read the directory handle
     const handle = readHandle(data);
@@ -92,7 +92,7 @@ export async function readdir(
     const count = data.readUInt32BE(offset);
     offset += 4;
 
-    console.log(`Cookie: ${cookie}, count: ${count}`);
+    // console.log(`Cookie: ${cookie}, count: ${count}`);
 
     // Get directory entries from handler or use fallback
     let result: ReaddirResult;
@@ -102,7 +102,7 @@ export async function readdir(
       result = await readdirHandler(handle, cookie, cookieVerifier, count);
     } else {
       // Fallback to default behavior
-      console.log("Using fallback READDIR implementation");
+      // console.log("Using fallback READDIR implementation");
       sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
       return;
     }
@@ -195,11 +195,11 @@ export async function readdir(
     // Send it
     socket.write(reply);
 
-    console.log(
-      `Sent READDIR reply with ${entryBuffers.length} entries, EOF=${
-        eofFlag ? "true" : "false"
-      }`,
-    );
+    // console.log(
+    //   `Sent READDIR reply with ${entryBuffers.length} entries, EOF=${
+    //     eofFlag ? "true" : "false"
+    //   }`,
+    // );
   } catch (err) {
     console.error(`Error in READDIR: ${err}`);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

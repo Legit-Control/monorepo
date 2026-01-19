@@ -57,7 +57,7 @@ export async function access(
   accessHandler: AccessHandler,
 ): Promise<void> {
   try {
-    console.log("NFS ACCESS procedure");
+    // console.log("NFS ACCESS procedure");
 
     // Read the file handle from the data
     const handle = readHandle(data);
@@ -68,11 +68,11 @@ export async function access(
 
     // Read access mask (4 bytes)
     const requestedAccess = data.readUInt32BE(offset);
-    console.log(
-      `ACCESS request: handle=${handle.toString(
-        "hex",
-      )}, requestedAccess=${requestedAccess}`,
-    );
+    // console.log(
+    //   `ACCESS request: handle=${handle.toString(
+    //     "hex",
+    //   )}, requestedAccess=${requestedAccess}`,
+    // );
 
     const result = await accessHandler(handle, requestedAccess);
 

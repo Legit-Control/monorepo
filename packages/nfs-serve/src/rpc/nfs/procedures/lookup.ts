@@ -51,7 +51,7 @@ export async function lookup(
   lookupHandler: LookupHandler,
 ): Promise<void> {
   try {
-    console.log("NFS LOOKUP procedure");
+    // console.log("NFS LOOKUP procedure");
 
     // Read the directory handle
     const dirHandle = readHandle(data);
@@ -71,7 +71,7 @@ export async function lookup(
     }
 
     const name = data.toString("utf8", offset, offset + nameLength).normalize('NFC');
-    console.log(`Looking up name: ${name}`);
+    // console.log(`Looking up name: ${name}`);
 
     const result = await lookupHandler(dirHandle, name);
 
@@ -141,22 +141,22 @@ export async function lookup(
 
     // Create and send the RPC reply
     const reply = createRpcReply(xid, replyBuf);
-    console.log(`Lookup reply size: ${reply.length} bytes`);
+    // console.log(`Lookup reply size: ${reply.length} bytes`);
 
     // Ensure proper flushing of data by using callback
     socket.write(reply, (err) => {
       if (err) {
         console.error(`Error sending LOOKUP reply: ${err}`);
       } else {
-        console.log(
-          `LOOKUP reply successfully flushed for ${name} xid: ${xid}`,
-        );
+        // console.log(
+        //   `LOOKUP reply successfully flushed for ${name} xid: ${xid}`,
+        // );
       }
     });
 
-    console.log(
-      `Sent LOOKUP reply for ${name} (${result.fileHandle.toString("hex")})`,
-    );
+    // console.log(
+    //   `Sent LOOKUP reply for ${name} (${result.fileHandle.toString("hex")})`,
+    // );
   } catch (err) {
     console.error(`Error in LOOKUP: ${err}`);
     sendNfsError(socket, xid, 10006); // NFS3ERR_SERVERFAULT

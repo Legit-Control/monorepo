@@ -1,37 +1,37 @@
-import * as net from "net";
-import * as path from "path";
+import * as net from 'net';
+import * as path from 'path';
 
-import { createRpcReply } from "./rpc/createRpcReply.js";
-import { sendRpcError } from "./rpc/sendRpcError.js";
-import { handleNfsRequest } from "./rpc/nfs/handleNfsRequest.js";
+import { createRpcReply } from './rpc/createRpcReply.js';
+import { sendRpcError } from './rpc/sendRpcError.js';
+import { handleNfsRequest } from './rpc/nfs/handleNfsRequest.js';
 import {
   handleMountRequest,
   MountHandler,
-} from "./rpc/mount/handleMountRequest.js";
-import { CommitHandler } from "./rpc/nfs/procedures/commit.js";
-import { GetAttributesHandler } from "./rpc/nfs/procedures/getAttributes.js";
-import { LookupHandler } from "./rpc/nfs/procedures/lookup.js";
-import { ReadHandler } from "./rpc/nfs/procedures/read.js";
-import { SetAttrHandler } from "./rpc/nfs/procedures/setattr.js";
-import { WriteHandler } from "./rpc/nfs/procedures/write.js";
-import { AccessHandler } from "./rpc/nfs/procedures/access.js";
-import { CreateHandler } from "./rpc/nfs/procedures/create.js";
-import { FSInfoHandler } from "./rpc/nfs/procedures/fsinfo.js";
-import { FSStatHandler } from "./rpc/nfs/procedures/fsstat.js";
-import { LinkHandler } from "./rpc/nfs/procedures/link.js";
-import { MkdirHandler } from "./rpc/nfs/procedures/mkdir.js";
-import { MknodHandler } from "./rpc/nfs/procedures/mknod.js";
-import { PathconfHandler } from "./rpc/nfs/procedures/pathconf.js";
-import { ReaddirHandler } from "./rpc/nfs/procedures/readdir.js";
-import { ReaddirplusHandler } from "./rpc/nfs/procedures/readdirplus.js";
-import { ReadlinkHandler } from "./rpc/nfs/procedures/readlink.js";
-import { RemoveHandler } from "./rpc/nfs/procedures/remove.js";
-import { RenameHandler } from "./rpc/nfs/procedures/rename.js";
-import { RmdirHandler } from "./rpc/nfs/procedures/rmdir.js";
-import { SymlinkHandler } from "./rpc/nfs/procedures/symlink.js";
+} from './rpc/mount/handleMountRequest.js';
+import { CommitHandler } from './rpc/nfs/procedures/commit.js';
+import { GetAttributesHandler } from './rpc/nfs/procedures/getAttributes.js';
+import { LookupHandler } from './rpc/nfs/procedures/lookup.js';
+import { ReadHandler } from './rpc/nfs/procedures/read.js';
+import { SetAttrHandler } from './rpc/nfs/procedures/setattr.js';
+import { WriteHandler } from './rpc/nfs/procedures/write.js';
+import { AccessHandler } from './rpc/nfs/procedures/access.js';
+import { CreateHandler } from './rpc/nfs/procedures/create.js';
+import { FSInfoHandler } from './rpc/nfs/procedures/fsinfo.js';
+import { FSStatHandler } from './rpc/nfs/procedures/fsstat.js';
+import { LinkHandler } from './rpc/nfs/procedures/link.js';
+import { MkdirHandler } from './rpc/nfs/procedures/mkdir.js';
+import { MknodHandler } from './rpc/nfs/procedures/mknod.js';
+import { PathconfHandler } from './rpc/nfs/procedures/pathconf.js';
+import { ReaddirHandler } from './rpc/nfs/procedures/readdir.js';
+import { ReaddirplusHandler } from './rpc/nfs/procedures/readdirplus.js';
+import { ReadlinkHandler } from './rpc/nfs/procedures/readlink.js';
+import { RemoveHandler } from './rpc/nfs/procedures/remove.js';
+import { RenameHandler } from './rpc/nfs/procedures/rename.js';
+import { RmdirHandler } from './rpc/nfs/procedures/rmdir.js';
+import { SymlinkHandler } from './rpc/nfs/procedures/symlink.js';
 
 // Base directory for our NFS server
-export const BASE_DIR = path.resolve(process.cwd(), "testmount");
+export const BASE_DIR = path.resolve(process.cwd(), 'testmount');
 
 async function handleRecord(
   socket: net.Socket,
@@ -60,7 +60,7 @@ async function handleRecord(
     setattr: SetAttrHandler;
     symlink: SymlinkHandler;
     write: WriteHandler;
-  },
+  }
 ): Promise<void> {
   let processedPosition = 0;
   // Here we would handle the complete record
@@ -81,15 +81,15 @@ async function handleRecord(
       const possibleProgram = data.readUInt32BE(12);
       if (possibleProgram === 100000) {
         // PMAP_PROG
-        console.log("Detected possible portmapper request");
+        // console.log("Detected possible portmapper request");
         handlePortmapRequest(socket, requestXid, data);
         return;
       }
     }
 
-    console.error("Could not parse as RPC call");
+    console.error('Could not parse as RPC call');
     // Dump the entire buffer for debugging
-    console.error(`Full buffer contents: ${data.toString("hex")}`);
+    console.error(`Full buffer contents: ${data.toString('hex')}`);
     return;
   }
 
@@ -103,7 +103,7 @@ async function handleRecord(
   const procedure = data.readUInt32BE(processedPosition);
   processedPosition += 4;
 
-  // console.log(
+  // // console.log(
   //   `RPC Call: Version=${rpcVersion}, Program=${program}, Version=${version}, Procedure=${procedure}`,
   // );
 
@@ -122,12 +122,12 @@ async function handleRecord(
   const procData = data.slice(processedPosition);
   processedPosition += procData.length;
 
-  // console.log(
+  // // console.log(
   //   `Procedure-specific data length: ${procData.length} bytes ` +
   //     offset,
   // );
 
-  // console.log("\n\nHandling NFS request:");
+  // // console.log("\n\nHandling NFS request:");
 
   // Handle MOUNT program
   if (program === 100005 && version === 3) {
@@ -139,7 +139,7 @@ async function handleRecord(
   }
   // Unsupported program
   else {
-    console.log(`Unsupported program/version: ${program}/${version}`);
+    // console.log(`Unsupported program/version: ${program}/${version}`);
     // Send a program unavailable error
     sendRpcError(socket, requestXid, 1, 3);
   }
@@ -180,7 +180,7 @@ export const createNfs3Server = (handler: {
       let buffer = Buffer.alloc(0);
       let fragmentAccumulator: Buffer[] = [];
 
-      console.log('Client connected');
+      // console.log('Client connected');
 
       // Add socket to connections set
       connections.add(socket);
@@ -205,7 +205,7 @@ export const createNfs3Server = (handler: {
         isProcessingQueue = false;
       };
 
-      socket.on("data", (data) => {
+      socket.on('data', data => {
         buffer = Buffer.concat([buffer, data]);
 
         let i = 0;
@@ -238,7 +238,7 @@ export const createNfs3Server = (handler: {
 
       // Handle client disconnect
       socket.on('end', () => {
-        console.log('Client disconnected');
+        // console.log('Client disconnected');
       });
 
       // Handle error events
@@ -248,13 +248,13 @@ export const createNfs3Server = (handler: {
 
       // Handle timeout events
       socket.on('timeout', () => {
-        console.log('Socket timeout - closing connection');
+        // console.log('Socket timeout - closing connection');
         socket.end();
       });
 
       // Handle close events
       socket.on('close', hadError => {
-        console.log(`Socket closed ${hadError ? 'with' : 'without'} error`);
+        // console.log(`Socket closed ${hadError ? 'with' : 'without'} error`);
         // Remove socket from connections set
         connections.delete(socket);
       });
@@ -271,7 +271,7 @@ export const createNfs3Server = (handler: {
   // Add custom closeAllConnections method since it might not be available in all Node.js builds
   if (!(server as any).closeAllConnections) {
     (server as any).closeAllConnections = () => {
-      console.log(`Closing ${connections.size} active connections`);
+      // console.log(`Closing ${connections.size} active connections`);
       for (const socket of connections) {
         try {
           socket.destroy();
@@ -289,7 +289,7 @@ export const createNfs3Server = (handler: {
 
   return server as typeof server & {
     closeAllConnections: () => void;
-  };;
+  };
 };
 
 // Handle portmap program requests
@@ -298,7 +298,7 @@ function handlePortmapRequest(
   xid: number,
   data: Buffer
 ): void {
-  console.log('Handling portmap request');
+  // console.log('Handling portmap request');
 
   try {
     // Try to extract procedure
@@ -307,7 +307,7 @@ function handlePortmapRequest(
       procedure = data.readUInt32BE(20);
     }
 
-    console.log(`Portmap procedure: ${procedure}`);
+    // console.log(`Portmap procedure: ${procedure}`);
 
     // Create RPC accepted reply header
     const replyHeader = Buffer.alloc(24);
@@ -326,7 +326,7 @@ function handlePortmapRequest(
       case 3: // GETPORT
         // Extract program, version, protocol
         if (data.length < 40) {
-          console.error("Incomplete GETPORT request");
+          console.error('Incomplete GETPORT request');
           // Send error
           replyHeader.writeUInt32BE(1, 12); // Accept status (1 = prog unavail)
           socket.write(createRpcReply(xid, replyHeader));
@@ -350,9 +350,9 @@ function handlePortmapRequest(
         const version = data.readUInt32BE(offset + 4);
         const protocol = data.readUInt32BE(offset + 8);
 
-        console.log(
-          `GETPORT request for program ${program}, version ${version}, protocol ${protocol}`,
-        );
+        // console.log(
+        //   `GETPORT request for program ${program}, version ${version}, protocol ${protocol}`,
+        // );
 
         let port = 0;
 
@@ -365,7 +365,7 @@ function handlePortmapRequest(
           port = 2049;
         }
 
-        console.log(`Returning port ${port} for program ${program}`);
+        // console.log(`Returning port ${port} for program ${program}`);
 
         // Create GETPORT reply
         const portBuf = Buffer.alloc(4);
@@ -391,13 +391,13 @@ function handlePortmapRequest(
         break;
 
       default:
-        console.log(`Unsupported portmap procedure: ${procedure}`);
+        // console.log(`Unsupported portmap procedure: ${procedure}`);
         // Send error
         replyHeader.writeUInt32BE(1, 12); // Accept status (1 = prog unavail)
         socket.write(createRpcReply(xid, replyHeader));
     }
   } catch (err) {
-    console.error("Error handling portmap request:", err);
+    console.error('Error handling portmap request:', err);
     // Send generic error
     const errorReply = Buffer.alloc(24);
     errorReply.writeUInt32BE(0, 0); // Accepted

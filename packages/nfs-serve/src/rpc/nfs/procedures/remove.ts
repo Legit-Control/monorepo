@@ -54,7 +54,7 @@ export async function remove(
   removeHandler?: RemoveHandler
 ): Promise<void> {
   try {
-    console.log('NFS REMOVE procedure');
+    // console.log('NFS REMOVE procedure');
 
     // Read the directory handle from the data
     const handle = readHandle(data);
@@ -72,9 +72,9 @@ export async function remove(
       .toString('utf8', offset, offset + nameLength)
       .normalize('NFC');
 
-    console.log(
-      `REMOVE request: dirHandle=${handle.toString('hex')}, name=${name}`
-    );
+    // console.log(
+    //   `REMOVE request: dirHandle=${handle.toString('hex')}, name=${name}`
+    // );
 
     // Get the removal result from handler or use fallback
     let result: RemoveResult;
@@ -85,7 +85,7 @@ export async function remove(
       
     } else {
       // Fallback to default behavior
-      console.log('Using fallback REMOVE implementation');
+      // console.log('Using fallback REMOVE implementation');
       sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
       return;
     }
@@ -108,7 +108,7 @@ export async function remove(
     wccDataPreBuf.writeUInt32BE(1, 0); // pre-operation attributes: yes
     const dirAttrBeforBuf = getWccAttributeBuffer(result.dirStatsBeforeChange);
 
-    console.log('dirAttrBeforBuf', dirAttrBeforBuf);
+    // console.log('dirAttrBeforBuf', dirAttrBeforBuf);
 
     // Directory post-operation attributes
     const dirPostOpAttrBuf = Buffer.alloc(4);
@@ -132,7 +132,7 @@ export async function remove(
 
     // Send the reply
     socket.write(reply);
-    console.log(`Sent REMOVE reply for ${name}`);
+    // console.log(`Sent REMOVE reply for ${name}`);
   } catch (err) {
     console.error('Error handling REMOVE request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

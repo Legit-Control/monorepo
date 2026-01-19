@@ -64,7 +64,7 @@ export async function link(
   linkHandler: LinkHandler
 ): Promise<void> {
   try {
-    console.log('NFS LINK procedure');
+    // console.log('NFS LINK procedure');
 
     // Read the file handle from the data
     const fileHandle = readHandle(data);
@@ -86,11 +86,11 @@ export async function link(
       .toString('utf8', offset, offset + nameLength)
       .normalize('NFC');
 
-    console.log(
-      `LINK request: fileHandle=${fileHandle.toString(
-        'hex'
-      )}, dirHandle=${dirHandle.toString('hex')}, name=${name}`
-    );
+    // console.log(
+    //   `LINK request: fileHandle=${fileHandle.toString(
+    //     'hex'
+    //   )}, dirHandle=${dirHandle.toString('hex')}, name=${name}`
+    // );
 
     const result = await linkHandler(fileHandle, dirHandle, name);
 
@@ -145,7 +145,7 @@ export async function link(
         console.error(`Error sending LINK reply: ${err}`);
       }
     });
-    console.log('Sent LINK reply');
+    // console.log('Sent LINK reply');
   } catch (err) {
     console.error('Error handling LINK request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

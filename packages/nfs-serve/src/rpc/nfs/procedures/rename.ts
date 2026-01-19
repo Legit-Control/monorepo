@@ -69,11 +69,11 @@ export async function rename(
 ): Promise<void> {
   // try {
   const now = new Date();
-  console.log(`[${now.toISOString()}] NFS RENAME procedure (XID: ${xid})`);
+  // console.log(`[${now.toISOString()}] NFS RENAME procedure (XID: ${xid})`);
 
   // Read the source directory handle from the data
   const fromDirHandle = readHandle(data);
-  console.log(`From directory handle: ${fromDirHandle.toString('hex')}`);
+  // console.log(`From directory handle: ${fromDirHandle.toString('hex')}`);
 
   // Extract the source name
   const fromHandleLength = data.readUInt32BE(0);
@@ -96,7 +96,7 @@ export async function rename(
 
   // Read destination directory handle
   const toDirHandle = data.slice(offset, offset + toDirHandleLength);
-  console.log(`To directory handle: ${toDirHandle.toString('hex')}`);
+  // console.log(`To directory handle: ${toDirHandle.toString('hex')}`);
   offset += toDirHandleLength;
 
   // Read destination name length
@@ -106,7 +106,7 @@ export async function rename(
   // Read destination name
   const toName = data.toString('utf8', offset, offset + toNameLength);
 
-  console.log(`Renaming from "${fromName}" to "${toName}"`);
+  // console.log(`Renaming from "${fromName}" to "${toName}"`);
 
   // Call the handler to perform the rename operation
   let result: RenameResult;
@@ -116,7 +116,7 @@ export async function rename(
     result = await renameHandler(fromDirHandle, fromName, toDirHandle, toName);
   } else {
     // Fallback to default behavior
-    console.log('Using fallback RENAME implementation');
+    // console.log('Using fallback RENAME implementation');
     sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
     return;
   }
@@ -181,9 +181,9 @@ export async function rename(
 
   // Send the reply
   socket.write(reply);
-  console.log(
-    `Sent RENAME reply for "${fromName}" to "${toName}" (XID: ${xid})`
-  );
+  // console.log(
+  //   `Sent RENAME reply for "${fromName}" to "${toName}" (XID: ${xid})`
+  // );
   // } catch (err) {
   //   console.error(`Error handling RENAME request: ${err}`);
   //   sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

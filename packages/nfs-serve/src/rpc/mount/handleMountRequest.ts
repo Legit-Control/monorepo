@@ -64,14 +64,14 @@ export async function handleMountRequest(
 ): Promise<void> {
   switch (procedure) {
     case 0: // NULL
-      console.log(`Procedure: NULL (${procedure})`);
+      // console.log(`Procedure: NULL (${procedure})`);
       // Create proper NULL reply with accepted status and empty verifier
       const nullReplyBuf = Buffer.alloc(8).fill(0);
       sendRpcSuccess(socket, xid, nullReplyBuf);
       break;
 
     case 1: // MNT
-      console.log(`Procedure: MNT (${procedure})`);
+      // console.log(`Procedure: MNT (${procedure})`);
       try {
         await mount(xid, socket, data, handlers.mount);
         break;
@@ -81,7 +81,7 @@ export async function handleMountRequest(
       break;
 
     case 5: // EXPORT
-      console.log(`Procedure: EXPORT (${procedure})`);
+      // console.log(`Procedure: EXPORT (${procedure})`);
       try {
         // Create export reply - just a null export list for now
         const replyBuf = Buffer.alloc(4);
@@ -100,7 +100,7 @@ export async function handleMountRequest(
       break;
 
     default:
-      console.log(`Unsupported MOUNT procedure: ${procedure}`);
+      // console.log(`Unsupported MOUNT procedure: ${procedure}`);
       sendRpcError(socket, xid, 0, 2); // Proc unavailable
   }
 }

@@ -60,7 +60,7 @@ export async function mkdir(
   mkdirHandler: MkdirHandler
 ): Promise<void> {
   try {
-    console.log('NFS MKDIR procedure');
+    // console.log('NFS MKDIR procedure');
 
     // Read the parent directory handle from the data
     const parentHandle = readHandle(data);
@@ -91,11 +91,11 @@ export async function mkdir(
     // Skip other attributes (we don't handle them in this simple implementation)
     // In a real implementation, you'd read uid, gid, etc.
 
-    console.log(
-      `MKDIR request: parentHandle=${parentHandle.toString(
-        'hex'
-      )}, name=${name}, mode=${mode}`
-    );
+    // console.log(
+    //   `MKDIR request: parentHandle=${parentHandle.toString(
+    //     'hex'
+    //   )}, name=${name}, mode=${mode}`
+    // );
 
     // Call the handler to create the directory
     const result = await mkdirHandler(parentHandle, name, mode);
@@ -162,7 +162,7 @@ export async function mkdir(
         console.error(`Error sending MKDIR reply: ${err}`);
       }
     });
-    console.log('Sent MKDIR reply');
+    // console.log('Sent MKDIR reply');
   } catch (err) {
     console.error('Error handling MKDIR request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

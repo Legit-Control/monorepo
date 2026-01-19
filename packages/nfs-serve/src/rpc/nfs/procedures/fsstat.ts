@@ -1,11 +1,11 @@
-import * as net from "net";
-import * as fs from "fs";
-import { createRpcReply } from "../../createRpcReply.js";
-import { sendNfsError } from "../sendNfsError.js";
-import { readHandle } from "./util/readHandle.js";
-import { createSuccessHeader } from "./util/createSuccessHeader.js";
-import { nfsstat3 } from "./errors.js";
-import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
+import * as net from 'net';
+import * as fs from 'fs';
+import { createRpcReply } from '../../createRpcReply.js';
+import { sendNfsError } from '../sendNfsError.js';
+import { readHandle } from './util/readHandle.js';
+import { createSuccessHeader } from './util/createSuccessHeader.js';
+import { nfsstat3 } from './errors.js';
+import { getAttributeBuffer } from './util/getAttributeBuffer.js';
 
 export type FSStatResult =
   | {
@@ -25,7 +25,7 @@ export type FSStatResult =
     }
   | {
       status: number;
-      stats: fs.Stats & {fileId: bigint };
+      stats: fs.Stats & { fileId: bigint };
       tbytes: bigint;
       fbytes: bigint;
       abytes: bigint;
@@ -52,19 +52,19 @@ export async function fsstat(
   xid: number,
   socket: net.Socket,
   data: Buffer,
-  fsstatHandler: FSStatHandler,
+  fsstatHandler: FSStatHandler
 ): Promise<void> {
   try {
-    console.log("NFS FSSTAT procedure");
+    // console.log("NFS FSSTAT procedure");
 
     // Read the file handle from the data
     const handle = readHandle(data);
-    console.log(`FSSTAT request: handle=${handle.toString("hex")}`);
+    // console.log(`FSSTAT request: handle=${handle.toString("hex")}`);
 
     // Check if handle contains only zeros (invalid handle)
     const isZeroHandle = handle.every(byte => byte === 0);
     if (isZeroHandle) {
-      console.error("Invalid handle: contains only zeros");
+      console.error('Invalid handle: contains only zeros');
       sendNfsError(socket, xid, nfsstat3.ERR_BADHANDLE);
       return;
     }
@@ -72,7 +72,7 @@ export async function fsstat(
     const result = await fsstatHandler(handle);
 
     if (result.status !== 0) {
-      console.error("Error getting filesystem stats:", result);
+      console.error('Error getting filesystem stats:', result);
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -88,7 +88,7 @@ export async function fsstat(
     const postOpAttrBuf = Buffer.alloc(4);
     postOpAttrBuf.writeUInt32BE(1, 0); // attributes follow: yes
 
-    console.log("Post-op attributes follow", result.stats);
+    // console.log("Post-op attributes follow", result.stats);
     // Attributes buffer
     const attrBuf = getAttributeBuffer(result.stats);
 
@@ -101,7 +101,7 @@ export async function fsstat(
     offset += 4;
     statBlockBuf.writeUInt32BE(
       Number(result.tbytes & BigInt(0xffffffff)),
-      offset,
+      offset
     );
     offset += 4;
 
@@ -110,7 +110,7 @@ export async function fsstat(
     offset += 4;
     statBlockBuf.writeUInt32BE(
       Number(result.fbytes & BigInt(0xffffffff)),
-      offset,
+      offset
     );
     offset += 4;
 
@@ -119,7 +119,7 @@ export async function fsstat(
     offset += 4;
     statBlockBuf.writeUInt32BE(
       Number(result.abytes & BigInt(0xffffffff)),
-      offset,
+      offset
     );
     offset += 4;
 
@@ -128,7 +128,7 @@ export async function fsstat(
     offset += 4;
     statBlockBuf.writeUInt32BE(
       Number(result.tfiles & BigInt(0xffffffff)),
-      offset,
+      offset
     );
     offset += 4;
 
@@ -137,7 +137,7 @@ export async function fsstat(
     offset += 4;
     statBlockBuf.writeUInt32BE(
       Number(result.ffiles & BigInt(0xffffffff)),
-      offset,
+      offset
     );
     offset += 4;
 
@@ -146,7 +146,7 @@ export async function fsstat(
     offset += 4;
     statBlockBuf.writeUInt32BE(
       Number(result.afiles & BigInt(0xffffffff)),
-      offset,
+      offset
     );
     offset += 4;
 
@@ -166,14 +166,14 @@ export async function fsstat(
     const reply = createRpcReply(xid, replyBuf);
 
     // Send the reply
-    socket.write(reply, (err) => {
+    socket.write(reply, err => {
       if (err) {
         console.error(`Error sending FSSTAT reply: ${err}`);
       }
     });
-    console.log("Sent FSSTAT reply");
+    // console.log("Sent FSSTAT reply");
   } catch (err) {
-    console.error("Error handling FSSTAT request:", err);
+    console.error('Error handling FSSTAT request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);
   }
 }

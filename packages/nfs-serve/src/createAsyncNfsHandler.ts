@@ -85,7 +85,7 @@ export const createAsyncNfsHandler = (args: {
     mount: async _dirPath => {
       // NOTE _dirPath is the path used for mounting - for now only / later we can use this to specify the path to serve
 
-      console.log('Mount handler called');
+      // console.log('Mount handler called');
 
       // Check if the directory exists
       if (!(await fileExists(fileHandleManager.rootPath))) {
@@ -114,18 +114,18 @@ export const createAsyncNfsHandler = (args: {
           status: 70, // NFS3ERR_STALE
         };
       }
-      console.log(`Directory path: ${dirPath}`);
+      // console.log(`Directory path: ${dirPath}`);
 
       // Construct the full path
       const filePath = path.join(dirPath, name);
-      console.log(`Full path: ${filePath}`);
+      // console.log(`Full path: ${filePath}`);
 
       try {
-        console.log(`stats path: ${dirPath}`);
+        // console.log(`stats path: ${dirPath}`);
         // Get the directory's attributes
         const dirStats = await asyncFs.stat(dirPath);
 
-        console.log(`stats path: ${filePath}`);
+        // console.log(`stats path: ${filePath}`);
         // Get the file's attributes
         const fileStats = await asyncFs.stat(filePath);
 
@@ -156,8 +156,8 @@ export const createAsyncNfsHandler = (args: {
       }
     },
 
-    create: async (parentHandle, name, _mode, exclusive, _verf) => {
-      console.log('Create handler called');
+    create: async (parentHandle, name, mode, attributesOrVerifier) => {
+      // console.log('Create handler called');
       // Get the directory path from the handle
       const dirPath = fileHandleManager.getPathFromHandle(parentHandle);
       if (!dirPath) {
@@ -249,7 +249,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     access: async (handle, check) => {
-      console.log('Access handler called');
+      // console.log('Access handler called');
       // Get the path from the handle
       const filePath = fileHandleManager.getPathFromHandle(handle);
       if (!filePath) {
@@ -278,7 +278,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     fsinfo: async handle => {
-      console.log('FSInfo handler called');
+      // console.log('FSInfo handler called');
       // Get the path from the handle
       const filePath = fileHandleManager.getPathFromHandle(handle);
       if (!filePath) {
@@ -316,7 +316,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     fsstat: async handle => {
-      console.log('FSStat handler called');
+      // console.log('FSStat handler called');
       // Get the path from the handle
       const filePath = fileHandleManager.getPathFromHandle(handle);
       if (!filePath) {
@@ -353,7 +353,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     link: async (handle, dirHandle, name) => {
-      console.log('Link handler called');
+      // console.log('Link handler called');
       // Get source file path
       const filePath = fileHandleManager.getPathFromHandle(handle);
       if (!filePath) {
@@ -429,7 +429,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     mkdir: async (dirHandle, name, mode) => {
-      console.log('Mkdir handler called');
+      // console.log('Mkdir handler called');
       // Get the directory path from the handle
       const parentPath = fileHandleManager.getPathFromHandle(dirHandle);
       if (!parentPath) {
@@ -482,7 +482,7 @@ export const createAsyncNfsHandler = (args: {
       };
 
       // NOTE We leave this in for future reference when we want to support special files
-      // console.log("Mknod handler called");
+      // // console.log("Mknod handler called");
       // // Currently, only regular files are supported
       // if (type !== 1) {
       //   console.error(`Unsupported node type: ${type}`);
@@ -546,7 +546,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     pathconf: async handle => {
-      console.log('Pathconf handler called');
+      // console.log('Pathconf handler called');
       // Get the path from the handle
       const filePath = fileHandleManager.getPathFromHandle(handle);
       if (!filePath) {
@@ -586,7 +586,7 @@ export const createAsyncNfsHandler = (args: {
 
       // NOTE We leave this in for future reference when we want to support readdir
 
-      // console.log("Readdir handler called");
+      // // console.log("Readdir handler called");
       // // Get the directory path from the handle
       // const dirPath = fileHandleManager.getPathFromHandle(handle);
       // if (!dirPath) {
@@ -665,7 +665,7 @@ export const createAsyncNfsHandler = (args: {
     readdirplus: async (
       handle /*, cookie, cookieVerf, dirCount, maxCount*/
     ) => {
-      console.log('Readdirplus handler called');
+      // console.log('Readdirplus handler called');
       // Get the directory path from the handle
       const dirPath = fileHandleManager.getPathFromHandle(handle);
       if (!dirPath) {
@@ -722,7 +722,7 @@ export const createAsyncNfsHandler = (args: {
         );
         const dotStats = await asyncFs.stat(dirPath);
 
-        console.log('building dir Entries.........');
+        // console.log('building dir Entries.........');
         dirEntries.unshift({
           name: '.',
           // cookie: BigInt(0),
@@ -730,7 +730,7 @@ export const createAsyncNfsHandler = (args: {
           stats: toStatWithFileId(dotStats, dotHandle!.nfsHandle),
         });
 
-        // console.log("building dir Entries.........", dirEntries);
+        // // console.log("building dir Entries.........", dirEntries);
 
         for (const name of entries) {
           const entryPath = path.join(dirPath, name);
@@ -782,7 +782,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     readlink: async handle => {
-      console.log('Readlink handler called');
+      // console.log('Readlink handler called');
       // Get the path from the handle
       const filePath = fileHandleManager.getPathFromHandle(handle);
       if (!filePath) {
@@ -827,7 +827,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     remove: async (dirHandle, name) => {
-      console.log('Remove handler called');
+      // console.log('Remove handler called');
       // Get the directory path from the handle
       const dirPath = fileHandleManager.getPathFromHandle(dirHandle);
       if (!dirPath) {
@@ -899,7 +899,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     rename: async (fromDirHandle, fromName, toDirHandle, toName) => {
-      console.log('Rename handler called');
+      // console.log('Rename handler called');
       // Get the source directory path
       const fromDirPath = fileHandleManager.getPathFromHandle(fromDirHandle);
       if (!fromDirPath) {
@@ -965,7 +965,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     rmdir: async (dirHandle, name) => {
-      console.log('Rmdir handler called');
+      // console.log('Rmdir handler called');
       // Get the directory path from the handle
       const parentPath = fileHandleManager.getPathFromHandle(dirHandle);
       if (!parentPath) {
@@ -1028,7 +1028,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     symlink: async (dirHandle, name, symlink, _mode) => {
-      console.log('Symlink handler called');
+      // console.log('Symlink handler called');
       // Get the directory path from the handle
       const dirPath = fileHandleManager.getPathFromHandle(dirHandle);
       if (!dirPath) {
@@ -1078,7 +1078,7 @@ export const createAsyncNfsHandler = (args: {
     },
 
     commit: async ({ handle }) => {
-      console.log('Commit handler called');
+      // console.log('Commit handler called');
       const fileHandle = fileHandleManager.getHandle(handle);
       if (fileHandle === undefined) {
         throw new Error('??');
@@ -1402,9 +1402,9 @@ export const createAsyncNfsHandler = (args: {
           await fsHandle.close();
         }
 
-        console.log(
-          `Successfully wrote ${bytesWritten} bytes to ${fsHandle} at offset ${offset}`
-        );
+        // console.log(
+        //   `Successfully wrote ${bytesWritten} bytes to ${fsHandle} at offset ${offset}`
+        // );
 
         return {
           status: nfsstat3.OK,

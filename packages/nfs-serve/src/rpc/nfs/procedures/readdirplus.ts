@@ -75,9 +75,9 @@ export async function readdirplus(
 ): Promise<void> {
   try {
     const now = new Date();
-    console.log(
-      `[${now.toISOString()}] NFS READDIRPLUS procedure (XID: ${xid})`,
-    );
+    // console.log(
+    //   `[${now.toISOString()}] NFS READDIRPLUS procedure (XID: ${xid})`,
+    // );
 
     // Read the directory handle
     const handle = readHandle(data);
@@ -102,9 +102,9 @@ export async function readdirplus(
     const maxcount = data.readUInt32BE(offset);
     offset += 4;
 
-    console.log(
-      `Cookie: ${cookie}, dircount: ${dircount}, maxcount: ${maxcount}`,
-    );
+    // console.log(
+    //   `Cookie: ${cookie}, dircount: ${dircount}, maxcount: ${maxcount}`,
+    // );
 
     // Get directory entries from handler or use fallback
     let result = await readdirplusHandler(
@@ -223,11 +223,11 @@ export async function readdirplus(
     // Send it
     socket.write(reply);
 
-    console.log(
-      `Sent READDIRPLUS reply with ${entryBuffers.length} entries, EOF=${
-        result.eof ? "true" : "false"
-      }`,
-    );
+    // console.log(
+    //   `Sent READDIRPLUS reply with ${entryBuffers.length} entries, EOF=${
+    //     result.eof ? "true" : "false"
+    //   }`,
+    // );
   } catch (err) {
     console.error(`Error in READDIRPLUS: ${err}`);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

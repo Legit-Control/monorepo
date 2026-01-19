@@ -1,14 +1,14 @@
-import * as net from "net";
-import * as fs from "fs";
-import { createRpcReply } from "../../createRpcReply.js";
-import { sendNfsError } from "../sendNfsError.js";
-import { readHandle } from "./util/readHandle.js";
+import * as net from 'net';
+import * as fs from 'fs';
+import { createRpcReply } from '../../createRpcReply.js';
+import { sendNfsError } from '../sendNfsError.js';
+import { readHandle } from './util/readHandle.js';
 import {
   createPaddedXdrString,
   createSuccessHeader,
-} from "./util/createSuccessHeader.js";
-import { nfsstat3 } from "./errors.js";
-import { getAttributeBuffer } from "./util/getAttributeBuffer.js";
+} from './util/createSuccessHeader.js';
+import { nfsstat3 } from './errors.js';
+import { getAttributeBuffer } from './util/getAttributeBuffer.js';
 
 export type ReadlinkResult =
   | {
@@ -23,7 +23,7 @@ export type ReadlinkResult =
       path?: never;
       stats?: never;
     }
-  | { status: 0; path: string; stats: fs.Stats & {fileId: bigint } };
+  | { status: 0; path: string; stats: fs.Stats & { fileId: bigint } };
 
 export type ReadlinkHandler = (handle: Buffer) => Promise<ReadlinkResult>;
 
@@ -46,19 +46,19 @@ export async function readlink(
   xid: number,
   socket: net.Socket,
   data: Buffer,
-  readlinkHandler: ReadlinkHandler,
+  readlinkHandler: ReadlinkHandler
 ): Promise<void> {
   try {
-    console.log("NFS READLINK procedure");
+    // console.log("NFS READLINK procedure");
 
     // Read the file handle from the data
     const handle = readHandle(data);
-    console.log(`READLINK request: handle=${handle.toString("hex")}`);
+    // console.log(`READLINK request: handle=${handle.toString("hex")}`);
 
     const result = await readlinkHandler(handle);
 
     if (result.status !== 0) {
-      console.error("Error reading symbolic link:", result);
+      console.error('Error reading symbolic link:', result);
       sendNfsError(socket, xid, result.status);
       return;
     }
@@ -96,14 +96,14 @@ export async function readlink(
     const reply = createRpcReply(xid, replyBuf);
 
     // Send the reply
-    socket.write(reply, (err) => {
+    socket.write(reply, err => {
       if (err) {
         console.error(`Error sending READLINK reply: ${err}`);
       }
     });
-    console.log("Sent READLINK reply");
+    // console.log("Sent READLINK reply");
   } catch (err) {
-    console.error("Error handling READLINK request:", err);
+    console.error('Error handling READLINK request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);
   }
 }

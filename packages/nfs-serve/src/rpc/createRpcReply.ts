@@ -26,21 +26,21 @@ export function createRpcReply(xid: number, data: Buffer): Buffer {
   recordMarker.writeUInt32BE(recordMarkValue, 0);
 
   // // Debug log for record marker
-  // console.log(
+  // // console.log(
   //   `Record marker: 0x${recordMarkValue.toString(16)}, length: ${length}, last fragment: true`,
   // );
 
   // Combine record marker and RPC message
   const result = Buffer.concat([recordMarker, rpcMessage]);
-  // console.log(
+  // // console.log(
   //   `Reply size: ${result.length} bytes, XID: ${xid}, rpcMessage length: ${rpcMessage.length}`,
   // );
 
   // Log the first 32 bytes of the reply for debugging
   // if (result.length > 32) {
-  //   console.log(`Reply start: ${result.slice(0, 32).toString("hex")}`);
+  //   // console.log(`Reply start: ${result.slice(0, 32).toString("hex")}`);
   // } else {
-  //   console.log(`Reply full: ${result.toString("hex")}`);
+  //   // console.log(`Reply full: ${result.toString("hex")}`);
   // }
 
   return result;

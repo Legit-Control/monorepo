@@ -58,7 +58,7 @@ export async function rmdir(
   rmdirHandler?: RmdirHandler
 ): Promise<void> {
   try {
-    console.log('NFS RMDIR procedure');
+    // console.log('NFS RMDIR procedure');
 
     // Read the parent directory handle from the data
     const parentHandle = readHandle(data);
@@ -76,11 +76,11 @@ export async function rmdir(
       .toString('utf8', offset, offset + nameLength)
       .normalize('NFC');
 
-    console.log(
-      `RMDIR request: parentHandle=${parentHandle.toString(
-        'hex'
-      )}, name=${name}`
-    );
+    // console.log(
+      // `RMDIR request: parentHandle=${parentHandle.toString(
+    //     'hex'
+    //   )}, name=${name}`
+    // );
 
     // Call the handler to remove the directory
     let result: RmdirResult;
@@ -90,7 +90,7 @@ export async function rmdir(
       result = await rmdirHandler(parentHandle, name);
     } else {
       // Fallback to default behavior
-      console.log('Using fallback RMDIR implementation');
+      // console.log('Using fallback RMDIR implementation');
       sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
       return;
     }
@@ -135,7 +135,7 @@ export async function rmdir(
 
     // Send the reply
     socket.write(reply);
-    console.log(`Sent RMDIR reply for ${name}`);
+    // console.log(`Sent RMDIR reply for ${name}`);
   } catch (err) {
     console.error('Error handling RMDIR request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

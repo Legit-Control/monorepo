@@ -60,7 +60,7 @@ export async function mknod(
   mknodHandler?: MknodHandler
 ): Promise<void> {
   try {
-    console.log('NFS MKNOD procedure');
+    // console.log('NFS MKNOD procedure');
 
     // Read the parent directory handle from the data
     const parentHandle = readHandle(data);
@@ -134,11 +134,11 @@ export async function mknod(
       }
     }
 
-    console.log(
-      `MKNOD request: parentHandle=${parentHandle.toString(
-        'hex'
-      )}, name=${name}, type=${type}, mode=${mode.toString(8)}`
-    );
+    // console.log(
+    //   `MKNOD request: parentHandle=${parentHandle.toString(
+    //     'hex'
+    //   )}, name=${name}, type=${type}, mode=${mode.toString(8)}`
+    // );
 
     let result: MknodResult;
 
@@ -147,7 +147,7 @@ export async function mknod(
       result = await mknodHandler(parentHandle, name, type, mode, rdev);
     } else {
       // Fallback implementation
-      console.log('Using fallback MKNOD implementation');
+      // console.log('Using fallback MKNOD implementation');
       sendNfsError(socket, xid, nfsstat3.ERR_NOTSUPP);
       return;
     }
@@ -214,7 +214,7 @@ export async function mknod(
         console.error(`Error sending MKNOD reply: ${err}`);
       }
     });
-    console.log('Sent MKNOD reply');
+    // console.log('Sent MKNOD reply');
   } catch (err) {
     console.error('Error handling MKNOD request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);
