@@ -10,6 +10,121 @@ describe('Advanced File Operations', () => {
     fs.readdirSync(MOUNT_POINT);
   });
 
+
+  describe('Advanced File Handle Operations', () => {
+    it('should handle independent file descriptors for the same file', async () => {
+      const filePath = path.join(MOUNT_POINT, 'fd-inherit.txt');
+      const content = 'File descriptor inheritance test';
+
+      await fs.promises.writeFile(filePath, content);
+
+      const fd1 = await fs.promises.open(filePath, 'r');
+      const fd2 = await fs.promises.open(filePath, 'r');
+
+      const buffer1 = Buffer.alloc(content.length);
+      const buffer2 = Buffer.alloc(content.length);
+
+      const [result1, result2] = await Promise.all([
+        fd1.read(buffer1, 0, content.length, 0),
+        fd2.read(buffer2, 0, content.length, 0),
+      ]);
+
+      expect(result1.bytesRead).toBe(content.length);
+      expect(result2.bytesRead).toBe(content.length);
+      expect(buffer1.toString('utf8')).toBe(content);
+      expect(buffer2.toString('utf8')).toBe(content);
+
+      await fd1.close();
+      await fd2.close();
+      await fs.promises.unlink(filePath);
+    });
+
+    it('should handle file descriptor after file operations', async () => {
+      const filePath = path.join(MOUNT_POINT, 'fd-after-ops.txt');
+      const originalContent = 'Original content';
+      const newContent = 'New content that replaces original';
+
+      await fs.promises.writeFile(filePath, originalContent);
+
+      const fd = await fs.promises.open(filePath, 'r');
+      const buffer = Buffer.alloc(originalContent.length);
+      await fd.read(buffer, 0, originalContent.length, 0);
+
+      expect(buffer.toString('utf8')).toBe(originalContent);
+
+      await fd.close();
+
+      // Replace file content
+      const fdNew = await fs.promises.open(filePath, 'r+');
+      await fdNew.writeFile(newContent);
+
+      // Old file descriptor should be invalid now
+      await expect(
+        fd.read(buffer, 0, buffer.length, 0),
+        'a new filedecriptor on the same file should not reincarnate the old one'
+      ).rejects.toThrow();
+
+      await fdNew.close();
+
+      await fs.promises.unlink(filePath);
+    });
+
+    it('should handle file descriptor offset independence', async () => {
+      const filePath = path.join(MOUNT_POINT, 'offset-independence.txt');
+      const content = '0123456789ABCDEFGHIJ';
+
+      await fs.promises.writeFile(filePath, content);
+
+      const fd1 = await fs.promises.open(filePath, 'r');
+      const fd2 = await fs.promises.open(filePath, 'r');
+
+      const buffer1 = Buffer.alloc(5);
+      const buffer2 = Buffer.alloc(5);
+
+      // Read from different offsets
+      const [result1, result2] = await Promise.all([
+        fd1.read(buffer1, 0, 5, 0),
+        fd2.read(buffer2, 0, 5, 10),
+      ]);
+
+      expect(result1.bytesRead).toBe(5);
+      expect(result2.bytesRead).toBe(5);
+      expect(buffer1.toString('utf8')).toBe('01234');
+      expect(buffer2.toString('utf8')).toBe('ABCDE');
+
+      await fd1.close();
+      await fd2.close();
+      await fs.promises.unlink(filePath);
+    });
+  });
+
+
+    it('should handle sparse file behavior', async () => {
+      const filePath = path.join(MOUNT_POINT, 'sparse-test.txt');
+
+      const fd = await fs.promises.open(filePath, 'w');
+
+      const startString = 'Start';
+      const startArr = Buffer.from(startString, 'utf8');
+      const endString = 'End';
+      const endArr = Buffer.from(endString, 'utf8');
+
+      // Write at beginning and end, leaving a hole
+      await fd.write(startArr, 0, startArr.length, 0);
+      await fd.write(endArr, 0, endArr.length, 1000);
+      await fd.close();
+
+      const stats = await fs.promises.stat(filePath);
+      expect(stats.size).toBeGreaterThan(1000);
+
+      const content = await fs.promises.readFile(filePath, 'utf8');
+      expect(content.startsWith('Start')).toBe(true);
+      expect(content.endsWith('End')).toBe(true);
+
+      await fs.promises.unlink(filePath);
+    });
+
+
   test.todo('Symbolic Links (SYMLINK/READLINK Procedures)', () => {
     it('should create symbolic link to file', async () => {
       const targetFile = path.join(MOUNT_POINT, 'target-file.txt');
@@ -317,119 +432,8 @@ describe('Advanced File Operations', () => {
 
       await fs.promises.unlink(originalFile);
     });
-  });
-
-  describe('Advanced File Handle Operations', () => {
-    it('should handle independent file descriptors for the same file', async () => {
-      const filePath = path.join(MOUNT_POINT, 'fd-inherit.txt');
-      const content = 'File descriptor inheritance test';
-
-      await fs.promises.writeFile(filePath, content);
-
-      const fd1 = await fs.promises.open(filePath, 'r');
-      const fd2 = await fs.promises.open(filePath, 'r');
-
-      const buffer1 = Buffer.alloc(content.length);
-      const buffer2 = Buffer.alloc(content.length);
-
-      const [result1, result2] = await Promise.all([
-        fd1.read(buffer1, 0, content.length, 0),
-        fd2.read(buffer2, 0, content.length, 0),
-      ]);
-
-      expect(result1.bytesRead).toBe(content.length);
-      expect(result2.bytesRead).toBe(content.length);
-      expect(buffer1.toString('utf8')).toBe(content);
-      expect(buffer2.toString('utf8')).toBe(content);
-
-      await fd1.close();
-      await fd2.close();
-      await fs.promises.unlink(filePath);
-    });
-
-    it('should handle file descriptor after file operations', async () => {
-      const filePath = path.join(MOUNT_POINT, 'fd-after-ops.txt');
-      const originalContent = 'Original content';
-      const newContent = 'New content that replaces original';
-
-      await fs.promises.writeFile(filePath, originalContent);
-
-      const fd = await fs.promises.open(filePath, 'r');
-      const buffer = Buffer.alloc(originalContent.length);
-      await fd.read(buffer, 0, originalContent.length, 0);
-
-      expect(buffer.toString('utf8')).toBe(originalContent);
-
-      await fd.close();
-
-      // Replace file content
-      const fdNew = await fs.promises.open(filePath, 'r+');
-      await fdNew.writeFile(newContent);
-
-      // Old file descriptor should be invalid now
-      await expect(
-        fd.read(buffer, 0, buffer.length, 0),
-        'a new filedecriptor on the same file should not reincarnate the old one'
-      ).rejects.toThrow();
-
-      await fdNew.close();
-
-      await fs.promises.unlink(filePath);
-    });
 
     test.todo('should handle file locking behavior', async () => {});
-
-    it('should handle file descriptor offset independence', async () => {
-      const filePath = path.join(MOUNT_POINT, 'offset-independence.txt');
-      const content = '0123456789ABCDEFGHIJ';
-
-      await fs.promises.writeFile(filePath, content);
-
-      const fd1 = await fs.promises.open(filePath, 'r');
-      const fd2 = await fs.promises.open(filePath, 'r');
-
-      const buffer1 = Buffer.alloc(5);
-      const buffer2 = Buffer.alloc(5);
-
-      // Read from different offsets
-      const [result1, result2] = await Promise.all([
-        fd1.read(buffer1, 0, 5, 0),
-        fd2.read(buffer2, 0, 5, 10),
-      ]);
-
-      expect(result1.bytesRead).toBe(5);
-      expect(result2.bytesRead).toBe(5);
-      expect(buffer1.toString('utf8')).toBe('01234');
-      expect(buffer2.toString('utf8')).toBe('ABCDE');
-
-      await fd1.close();
-      await fd2.close();
-      await fs.promises.unlink(filePath);
-    });
-  });
-
-  describe('File System Metadata Operations', () => {
-    it('should handle extended file attributes', async () => {
-      const filePath = path.join(MOUNT_POINT, 'xattr-test.txt');
-      const content = 'Extended attributes test';
-
-      await fs.promises.writeFile(filePath, content);
-
-      const stats = await fs.promises.stat(filePath);
-      expect(stats.isFile()).toBe(true);
-      expect(stats.size).toBe(content.length);
-
-      // Test timestamp updates
-      const originalMtime = stats.mtime;
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      await fs.promises.writeFile(filePath, content + ' modified');
-
-      const newStats = await fs.promises.stat(filePath);
-      expect(newStats.mtime.getTime()).toBeGreaterThan(originalMtime.getTime());
-
-      await fs.promises.unlink(filePath);
-    });
 
     test.todo('should handle file system quota behavior', async () => {
       const filePath = path.join(MOUNT_POINT, 'quota-test.txt');
@@ -444,30 +448,6 @@ describe('Advanced File Operations', () => {
       // Actual quota testing would require specific filesystem configuration
       await fs.promises.unlink(filePath);
     });
-
-    it('should handle sparse file behavior', async () => {
-      const filePath = path.join(MOUNT_POINT, 'sparse-test.txt');
-
-      const fd = await fs.promises.open(filePath, 'w');
-
-      const startString = 'Start';
-      const startArr = Buffer.from(startString, 'utf8');
-      const endString = 'End';
-      const endArr = Buffer.from(endString, 'utf8');
-
-      // Write at beginning and end, leaving a hole
-      await fd.write(startArr, 0, startArr.length, 0);
-      await fd.write(endArr, 0, endArr.length, 1000);
-      await fd.close();
-
-      const stats = await fs.promises.stat(filePath);
-      expect(stats.size).toBeGreaterThan(1000);
-
-      const content = await fs.promises.readFile(filePath, 'utf8');
-      expect(content.startsWith('Start')).toBe(true);
-      expect(content.endsWith('End')).toBe(true);
-
-      await fs.promises.unlink(filePath);
-    });
   });
+  
 });

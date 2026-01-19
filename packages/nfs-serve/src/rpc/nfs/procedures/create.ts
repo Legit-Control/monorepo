@@ -6,6 +6,8 @@ import { readHandle } from './util/readHandle.js';
 import { createSuccessHeader } from './util/createSuccessHeader.js';
 import { nfsstat3 } from './errors.js';
 import { getAttributeBuffer } from './util/getAttributeBuffer.js';
+import { readAttributes, SetAttrParams } from './util/readAttributes.js';
+import { off } from 'process';
 
 export type CreateResult =
   | {
@@ -37,8 +39,7 @@ export type CreateHandler = (
   parentHandle: Buffer,
   name: string,
   mode: number,
-  exclusive: boolean,
-  verf?: Buffer
+  attributesOrVerifier: SetAttrParams | Buffer
 ) => Promise<CreateResult>;
 
 /**
@@ -63,7 +64,7 @@ export async function create(
   createHandler: CreateHandler
 ): Promise<void> {
   try {
-    console.log('NFS CREATE procedure');
+    // console.log('NFS CREATE procedure');
 
     // Read the parent directory handle from the data
     const parentHandle = readHandle(data);
@@ -86,51 +87,42 @@ export async function create(
 
     // Read file attributes or create verifier depending on mode
     let mode = 0o644; // Default mode for regular files
-    let exclusive = false;
-    let verf: Buffer | undefined;
+
+    let attributesOrVerifier: SetAttrParams | Buffer;
 
     if (createMode === 0) {
       // UNCHECKED
+      // means that the file should be created without checking
+      // for the existence of a duplicate file in the same
+      // directory. In this case, how.obj_attributes is a sattr3
+      // describing the initial attributes for the file.
+      //
       // Read mode from sattr3
-      const setMode = data.readUInt32BE(offset);
-      offset += 4;
-      if (setMode === 1) {
-        mode = data.readUInt32BE(offset);
-        offset += 4;
-      }
 
-      // Skip other attributes (we don't handle them in this simple implementation)
-      // In a real implementation, you'd read uid, gid, size, etc.
+      const readAttr = readAttributes(data, offset);
+      offset = readAttr.offset;
+      attributesOrVerifier = readAttr.attrs;
     } else if (createMode === 1) {
       // GUARDED
-      // Similar to UNCHECKED but with additional safeguards
-      const setMode = data.readUInt32BE(offset);
-      offset += 4;
-      if (setMode === 1) {
-        mode = data.readUInt32BE(offset);
-        offset += 4;
-      }
+      // checks if the file exists - if it does - fail - also ask get the attributes
+
+      const readAttr = readAttributes(data, offset);
+      offset = readAttr.offset;
+      attributesOrVerifier = readAttr.attrs;
     } else if (createMode === 2) {
       // EXCLUSIVE
-      exclusive = true;
-      verf = Buffer.alloc(8);
-      data.copy(verf, 0, offset, offset + 8);
-      offset += 8;
+      // TODO read the verifier
+      throw new Error('EXCLUSIVE create mode not implemented yet');
+    } else {
+      throw new Error('Invalid create mode');
     }
-
-    console.log(
-      `CREATE request: parentHandle=${parentHandle.toString(
-        'hex'
-      )}, name=${name}, mode=${mode}, exclusive=${exclusive}`
-    );
 
     // Call the handler to create the file
     const result = await createHandler(
       parentHandle,
       name,
       mode,
-      exclusive,
-      verf
+      attributesOrVerifier
     );
 
     if (result.status !== 0) {
@@ -195,7 +187,7 @@ export async function create(
         console.error(`Error sending CREATE reply: ${err}`);
       }
     });
-    console.log('Sent CREATE reply');
+    // console.log('Sent CREATE reply');
   } catch (err) {
     console.error('Error handling CREATE request:', err);
     sendNfsError(socket, xid, nfsstat3.ERR_SERVERFAULT);

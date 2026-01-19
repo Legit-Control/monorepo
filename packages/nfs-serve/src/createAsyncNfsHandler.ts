@@ -31,6 +31,7 @@ import { createFileHandleManager } from './createFileHandleManager.js';
 
 import { Buffer } from 'node:buffer';
 import { FileHandle } from 'node:fs/promises';
+import { SetAttrParams } from './rpc/nfs/procedures/util/readAttributes.js';
 
 /**
  * Takes an promise based fs and provides the handers neded by the NFS server
@@ -171,7 +172,8 @@ export const createAsyncNfsHandler = (args: {
 
       // Check if the file already exists
       if (await fileExists(filePath)) {
-        if (exclusive) {
+        if (mode > 0) {
+          // TODO also take mode 3 into account! and check the file against the verifier if it exists
           console.error(`File already exists: ${filePath}`);
           return {
             status: nfsstat3.ERR_EXIST,
@@ -179,14 +181,54 @@ export const createAsyncNfsHandler = (args: {
         }
       }
 
+      const attributes = attributesOrVerifier as SetAttrParams;
+
       try {
         const fsHandle = await asyncFs.open(filePath, 'wx');
+        const fileStatsBefore = await fsHandle.stat();
         // Create an empty file with specified mode
         // await asyncFs.writeFile(filePath, "");
         // await asyncFs.chmod(filePath, mode);
 
         // add a new nfsFilehandle
         const fileHandle = fileHandleManager.addFileHandle(parentHandle, name);
+
+        // Apply attribute changes as needed
+        if (attributes.mode !== undefined) {
+          // console.log(`Changing mode to ${attributes.mode}`);
+          await fsHandle.chmod(attributes.mode);
+        }
+
+        // if (attributes.uid !== undefined || attributes.gid !== undefined) {
+        //   // console.log(
+        //     `Changing owner to uid=${attributes.uid}, gid=${attributes.gid}`,
+        //   );
+        //   await unionFs.chown(
+        //     filePath,
+        //     attributes.uid !== undefined ? attributes.uid : -1,
+        //     attributes.gid !== undefined ? attributes.gid : -1,
+        //   );
+        // }
+
+        if (attributes.size !== undefined) {
+          // console.log(`Truncating file to size ${attributes.size}`);
+          // Get stats before truncating
+
+          // Perform the truncation
+          await fsHandle.truncate(Number(attributes.size));
+        }
+
+        if (attributes.atime !== undefined || attributes.mtime !== undefined) {
+          // console.log(
+          //   `Setting times: atime=${attributes.atime}, mtime=${attributes.mtime}`
+          // );
+
+          // Use current time for any unspecified time
+          const atime = attributes.atime || fileStatsBefore.atime;
+          const mtime = attributes.mtime || fileStatsBefore.mtime;
+
+          await fsHandle.utimes(atime, mtime);
+        }
 
         // Get file stats
         const fileStats = await fsHandle.stat();

@@ -34,6 +34,27 @@ describe('Basic File Operations', () => {
       await fs.promises.unlink(filePath);
     });
 
+    it('file size should be refelected after writeFile', async () => {
+      const filePath = path.join(MOUNT_POINT, 'data-file.txt');
+      const content = 'Hello';
+
+      await fs.promises.writeFile(filePath, content);
+      const readContent = await fs.promises.readFile(filePath, 'utf8');
+
+      expect(readContent).toBe(content);
+
+      const stats = await fs.promises.stat(filePath);
+      expect(stats.size).toBe(content.length);
+
+      const shorterContent = 'Hi';
+
+      await fs.promises.writeFile(filePath, shorterContent);
+      const shorterStats = await fs.promises.stat(filePath);
+      expect(shorterStats.size).toBe(shorterContent.length);
+
+      await fs.promises.unlink(filePath);
+    });
+
     it('should create file in subdirectory', async () => {
       const subDir = path.join(MOUNT_POINT, 'subdir');
       const filePath = path.join(subDir, 'nested-file.txt');
