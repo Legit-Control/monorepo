@@ -13,12 +13,11 @@ import { exec } from 'child_process';
 import { Command } from 'commander';
 import { sessionDataPath } from './claudeVirtualSessionFileVirtualFile.js';
 
+const legitBranchPrefix = 'legit-code.';
+
 const settingsContent = JSON.stringify(
   {
     env: { CLAUDE_CONFIG_DIR: sessionDataPath },
-    permissions: {
-      deny: ['Read(.legit/**)'],
-    },
   },
   null,
   2
@@ -76,14 +75,31 @@ function promptForCommitMessage() {
   });
 }
 
-function spawnSubProcess(cwd, cmd, parameters = []) {
+function displayLegitCodeArt() {
+  const orange = '\x1b[38;5;208m';
+  const reset = '\x1b[0m';
+  console.log(`${orange}
+ ██╗     ███████╗ ██████╗ ██╗████████╗     ██████╗ ██████╗ ██████╗ ███████╗
+ ██║     ██╔════╝██╔════╝ ██║╚══██╔══╝    ██╔════╝██╔═══██╗██╔══██╗██╔════╝
+ ██║     █████╗  ██║  ███╗██║   ██║       ██║     ██║   ██║██║  ██║█████╗
+ ██║     ██╔══╝  ██║   ██║██║   ██║       ██║     ██║   ██║██║  ██║██╔══╝
+ ███████╗███████╗╚██████╔╝██║   ██║       ╚██████╗╚██████╔╝██████╔╝███████╗
+ ╚══════╝╚══════╝ ╚═════╝ ╚═╝   ╚═╝        ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
+${reset}`);
+  console.log(`
+Claude CLI wrapper that stores your AI coding sessions directly in your git repository's history.
+Each session becomes a branch, allowing you to review, apply, or discard changes before merging them to your main branch.
+`);
+}
+
+function spawnSubProcess(cwd, cmd, parameters = [], silent = false) {
   return new Promise((resolve, reject) => {
     // console.log(`\nSpawn process process... ` + cmd + ' in ' + cwd, `--settings="${settingsContent}"`);
 
     // Execute the command through shell (handles command parsing automatically)
     const child = spawn(cmd, parameters, {
       cwd: cwd,
-      stdio: 'inherit',
+      stdio: silent ? 'ignore' : 'inherit',
       shell: false,
     });
 
@@ -106,11 +122,11 @@ function spawnSubProcess(cwd, cmd, parameters = []) {
   });
 }
 
-function startNfsServerWorker(servePoint, port, logFile, debugBrk = true) {
+function startNfsServerWorker(servePoint, port, logFile, debugBrk = false) {
   // console.log(`\nStarting NFS server worker...`);
   // console.log(`Serve point: ${servePoint}`);
   // console.log(`Initial port: ${port}`);
-  console.log(`Log file: ${logFile}`);
+  // console.log(`Log file: ${logFile}`);
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -127,24 +143,17 @@ function startNfsServerWorker(servePoint, port, logFile, debugBrk = true) {
 
   const workerScript = path.join(__dirname, 'nfs-server-worker.js');
 
+  let args = [workerScript, servePoint, port.toString()];
   if (debugBrk) {
     console.log(`Waiting for debugger`);
+    args = ['--inspect-brk', workerScript, servePoint, port.toString()];
   }
 
-  const child = spawn(
-    process.execPath,
-    [
-      debugBrk ? '--inspect-brk' : '--inspect',
-      workerScript,
-      servePoint,
-      port.toString(),
-    ],
-    {
-      cwd: process.cwd(),
-      stdio: ['inherit', 'pipe', 'pipe'],
-      detached: false,
-    }
-  );
+  const child = spawn(process.execPath, args, {
+    cwd: process.cwd(),
+    stdio: ['inherit', 'pipe', 'pipe'],
+    detached: false,
+  });
 
   let serverReadyResolver;
   let serverReadyRejecter;
@@ -196,14 +205,14 @@ function startNfsServerWorker(servePoint, port, logFile, debugBrk = true) {
     } else {
       console.error(`NFS server worker failed with exit code ${code}`);
       // Log the entire log file contents
-      try {
-        const logContents = fsDisk.readFileSync(logFile, 'utf-8');
-        console.error('\n--- NFS Server Log Contents ---');
-        console.error(logContents);
-        console.error('--- End of Log ---\n');
-      } catch (readErr) {
-        console.error(`Failed to read log file: ${readErr.message}`);
-      }
+      // try {
+      //   const logContents = fsDisk.readFileSync(logFile, 'utf-8');
+      //   console.error('\n--- NFS Server Log Contents ---');
+      //   console.error(logContents);
+      //   console.error('--- End of Log ---\n');
+      // } catch (readErr) {
+      //   console.error(`Failed to read log file: ${readErr.message}`);
+      // }
     }
 
     logWithTimestamp(message);
@@ -270,6 +279,49 @@ function mountNfsShare(mountPoint, port) {
   });
 }
 
+function killProcess(process) {
+  return new Promise((resolve, reject) => {
+    let timeout;
+    let killed = false;
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+    };
+
+    const on_close = (code) => {
+      cleanup();
+      if (!killed) {
+        killed = true;
+        console.log('Process stopped successfully');
+      }
+      resolve();
+    };
+
+    const on_error = (err) => {
+      cleanup();
+      if (!killed) {
+        killed = true;
+        console.error('Error stopping process:', err.message);
+      }
+      reject(err);
+    };
+
+    // Set a timeout to forcefully kill if SIGTERM doesn't work
+    timeout = setTimeout(() => {
+      if (!killed) {
+        console.log('Process did not stop gracefully, using force...');
+        process.kill('SIGKILL');
+      }
+    }, 5000);
+
+    process.once('close', on_close);
+    process.once('error', on_error);
+
+    // Try graceful shutdown first
+    process.kill('SIGTERM');
+  });
+}
+
 function unmountNfsShare(mountPoint) {
   return new Promise((resolve, reject) => {
     console.log(`Unmounting NFS share at ${mountPoint}...`);
@@ -292,10 +344,74 @@ function unmountNfsShare(mountPoint) {
         return;
       }
 
-      console.log(`${mountPoint} unmounted successfully`);
+      // console.log(`${mountPoint} unmounted successfully`);
       resolve();
     });
   });
+}
+
+async function checkPreconditions(repoPath) {
+  const platform = process.platform;
+
+  // Check 1: Operating system
+  if (platform !== 'darwin') {
+    const osName =
+      platform === 'linux'
+        ? 'Linux'
+        : platform === 'win32'
+          ? 'Windows'
+          : platform;
+    if (platform === 'linux') {
+      console.error(`\n❌ Error: legit-code currently only supports macOS.`);
+      console.error(`\nWe detected you are running on ${osName}.`);
+      console.error(`\n📋 We plan to support other operating systems!`);
+      console.error(`   Please upvote or track our progress here:`);
+      console.error(`   https://github.com/Legit-Control/monorepo/issues/61\n`);
+      process.exit(1);
+    } else if (platform === 'win32') {
+      console.error(`\n❌ Error: legit-code currently only supports macOS.`);
+      console.error(`\nWe detected you are running on ${osName}.`);
+      console.error(`\n📋 We plan to support other operating systems!`);
+      console.error(`   Please upvote or track our progress here:`);
+      console.error(`   https://github.com/Legit-Control/monorepo/issues/62\n`);
+      process.exit(1);
+    } else {
+      console.error(`\n❌ Error: legit-code currently only supports macOS.`);
+      console.error(`\nWe detected you are running on ${osName}.`);
+      console.error(`\n📋 We would love to support other operating systems!`);
+      console.error(`   Please file an issue here:`);
+      console.error(`   https://github.com/Legit-Control/monorepo/issues\n`);
+      process.exit(1);
+    }
+  }
+
+  // Check 2: Claude CLI installed
+  try {
+    await spawnSubProcess(process.cwd(), 'claude', ['--version'], true);
+  } catch (error) {
+    console.error(`\n❌ Error: Claude CLI not found.`);
+    console.error(
+      `\nlegit-code currently requires the Claude CLI to be installed.`
+    );
+    console.error(`\nPlease install Claude first:`);
+    console.error(`   https://claude.ai/download \n`);
+    console.error(`   Please discuss here:  \n`);
+    console.error(`   https://github.com/Legit-Control/monorepo/issues/63 \n`);
+    process.exit(1);
+  }
+
+  // Check 3: Git repository
+  const gitPath = path.join(repoPath, '.git');
+  if (!fsDisk.existsSync(gitPath)) {
+    console.error(`\n❌ Error: Not a git repository.`);
+    console.error(`\nlegit-code can only run in the root of a git repository.`);
+    console.error(`\n📝 To initialize a new repository, run:`);
+    console.error(`\n   git init --initial-branch=main`);
+    console.error(`   echo "# My project" > README.md`);
+    console.error(`   git add README.md`);
+    console.error(`   git commit -m "Initial commit"\n`);
+    process.exit(1);
+  }
 }
 
 async function main() {
@@ -328,6 +444,11 @@ async function main() {
       '--log-file <path>',
       'Path to NFS server log file (default: .git/nfs-server.log)',
       '.git/nfs-server.log'
+    )
+    .option(
+      '--debugger <boolean>',
+      'Enable debugger on NFS server worker',
+      false
     );
 
   const options = program.parse().opts();
@@ -339,6 +460,11 @@ async function main() {
     options.port = await findAvailablePort(13617);
   }
 
+  // Check all preconditions before proceeding
+  await checkPreconditions(options.repoPath);
+
+  displayLegitCodeArt();
+
   let nfsServerProcess;
 
   try {
@@ -346,7 +472,8 @@ async function main() {
     nfsServerProcess = startNfsServerWorker(
       options.repoPath,
       parseInt(options.port),
-      options.logFile
+      options.logFile,
+      options.debugger
     );
     // console.log(
     //   `NFS server worker started. Logs will be written to ${options.logFile}`
@@ -385,16 +512,17 @@ async function main() {
       claudeBranches = branches
         .filter(
           branch =>
-            branch.startsWith('claude.') && !branch.endsWith('-operation')
+            branch.startsWith(legitBranchPrefix) &&
+            !branch.endsWith('-operation')
         )
-        .map(branch => branch.replace('claude.', ''));
-      console.log(`Found ${claudeBranches.length} existing Claude sessions`);
+        .map(branch => branch.replace(legitBranchPrefix, ''));
+      // console.log(`Found ${claudeBranches.length} existing Claude sessions`);
 
       const answer = await inquirer.prompt([
         {
           type: 'list',
           name: 'sessionChoice',
-          message: 'Select session option:',
+          message: 'Select an existing Sesssion or create a new one:\n',
           choices: ['* New Session *', ...claudeBranches],
         },
       ]);
@@ -426,7 +554,7 @@ async function main() {
     fsDisk.writeFileSync(targetBranchPath, sessionName, 'utf-8');
 
     // use legit currentBranch to change the branch to the the claudesession branch
-    const claudeBranch = `claude.${sessionName}`;
+    const claudeBranch = `${legitBranchPrefix}${sessionName}`;
     fsDisk.writeFileSync(currentBranchPath, claudeBranch, 'utf-8');
 
     const cb = fsDisk.readFileSync(currentBranchPath, 'utf-8');
@@ -437,7 +565,7 @@ async function main() {
       args.push('--resume', '00000000-0000-0000-0000-000000000000');
     }
     // Run the command in the mounted directory
-    console.log('spawn subprocess ...', args);
+    // console.log('spawn subprocess ...', args);
     await spawnSubProcess(options.mountPath, options.spawn, args);
 
     // After successful completion, prompt for commit message
@@ -455,10 +583,23 @@ async function main() {
     ]);
 
     if (answer.sessionChoice == 'Discard changes') {
-      // TODO implment discard changes
-      // find the commit in the change branch that was is a merge reference commit (two parents)
-      // discard all commits till than by setting the head to it
-      // if the commit is part of the target branch - discard the whole branch.
+      // Delete the session branch and its operation branch
+      const branchesPath = path.join(options.mountPath, '.legit', 'branches');
+      const legitSessionBranchPath = `${legitBranchPrefix}${sessionName}`;
+
+      const legitOperationBranchPath = `${legitBranchPrefix}${sessionName}-operation`;
+
+      console.error(`\n❌ Error: Discarding not implemented yet\n\n`);
+      console.error(` We would love to support discarding sessions soon!`);
+      console.error(` Please upvote or track our progress here:`);
+      console.error(`   https://github.com/Legit-Control/monorepo/issues/64\n`);
+
+      console.error(
+        `\n To cleanup in the meatime - just drop the session branches:`
+      );
+      console.error(
+        `  git branch -d ${sessionName} ${legitSessionBranchPath} ${legitOperationBranchPath}\n\n`
+      );
     } else if (answer.sessionChoice.startsWith('Apply changes to')) {
       // for now just apply the tree of the current branch to the target branch
       const commitMessagePrompt = await inquirer.prompt([
@@ -483,8 +624,7 @@ async function main() {
     await unmountNfsShare(options.mountPath);
 
     // Clean up NFS server worker
-    console.log('Stopping NFS server worker...');
-    nfsServerProcess.process.kill();
+    await killProcess(nfsServerProcess.process);
   } catch (error) {
     console.error('\nMount process failed:', error.message);
 
@@ -498,15 +638,14 @@ async function main() {
     // Clean up NFS server worker on error
     if (nfsServerProcess) {
       console.log('Stopping NFS server worker due to error...');
-      nfsServerProcess.process.kill();
+      await killProcess(nfsServerProcess.process);
     }
 
     process.exit(1);
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
+// Always run main for CLI tool
+main();
 
 export { promptForCommitMessage, spawnSubProcess as runMountProcess };

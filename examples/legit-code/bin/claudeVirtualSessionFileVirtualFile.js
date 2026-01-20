@@ -432,6 +432,7 @@ export function createClaudeVirtualSessionFileAdapter({
 
               let textualDesscription = '';
 
+              let skip = false;
               if (parsed.type === 'user') {
                 // Check if this is a tool result (AI action result) or actual user input
                 const content = parsed.message?.content;
@@ -445,7 +446,7 @@ export function createClaudeVirtualSessionFileAdapter({
                     typeof toolResult.content === 'string'
                       ? toolResult.content
                       : JSON.stringify(toolResult.content);
-                  textualDesscription = `👾 Tool Result (${parsed.toolUseResult?.type || 'unknown'}): ${resultContent}\n\n---\n\n`;
+                  textualDesscription = `👾 Tool Result (${parsed.toolUseResult?.type || 'unknown'})\n\n---\n\n`;
                 } else {
                   // This is actual user input
                   const userMessage =
@@ -462,24 +463,29 @@ export function createClaudeVirtualSessionFileAdapter({
                 if (assistantContent?.type === 'text') {
                   description = assistantContent.text;
                 } else if (assistantContent?.type === 'tool_use') {
-                  description = `Used tool: ${assistantContent.name} with input: ${JSON.stringify(assistantContent.input)}`;
+                  description = `Used tool: ${assistantContent.name} `;
                 } else {
-                  description = 'Assistant response';
+                  description = 'Thinking...';
                 }
 
                 textualDesscription = `👾 ${description}\n\n---\n\n`;
               } else if (parsed.type === 'file-history-snapshot') {
+                skip = true;
                 textualDesscription = `System: File history snapshot for message ${parsed.messageId}\n\n---\n\n`;
               } else {
                 textualDesscription = `System: ${parsed.type || 'unknown action'}\n\n---\n\n`;
               }
 
-              console.log('operation wrtingin test to file with desscription:');
-              await userSpaceFs.promises.writeFile(
-                gitRoot + '/.legit/operation',
+              if (!skip) {
+                console.log(
+                  'operation wrtingin test to file with desscription:'
+                );
+                await userSpaceFs.promises.writeFile(
+                  gitRoot + '/.legit/operation',
 
-                textualDesscription + ' \n\n ' + lastLine
-              );
+                  textualDesscription + ' \n\n ' + lastLine
+                );
+              }
             }
           } else {
             await claudeMemFs.promises.writeFile(filePath, content);
