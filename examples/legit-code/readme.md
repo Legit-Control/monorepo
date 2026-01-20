@@ -1,235 +1,126 @@
-Legit Claude: 
+# Legit Code
 
-Store Your AI Conversations Next to Your Code
+**Store Your AI Conversations Next to Your Code**
 
-`legit-claude` is a CLI wrapper around claude that stores your claude conversations next to your code - right in your Repository.
+`legit-code` is a CLI wrapper around Claude that stores your Claude conversations next to your code—right in your repository. Every AI interaction becomes a Git commit, preserving the full context of your development decisions.
 
-# Motivation
+## Installation
 
-I lost my last position as Staff of Engeneering because of AI - kind of. 
-The Founder was based in New york while I was working from Berlin. 
+**Option 1: Use without installing (via npx)**
 
-AI really gave a boost regarding throughput - but Timezone killed the productivety.
+```bash
+npx legit-code
+```
 
-Every Morning I was looking at huge Piles of changes thoughout the code base.
-While AI helped a lot to summarize what was done - One impoartant piece of information was missing... 
+**Option 2: Install globally (npm install -g)**
 
-THE WHY. Why was a Problem Solved in a particular way and more importantly - what alternatives have been considered.
+```bash
+npm install -g legit-code
+legit-code
+```
 
-The craftmen ship of software development is not to solve a Problem - its to know which solution should be taken. 
+## Usage
 
-In Software ther is not the one solution its more choosing among manz options with different tradeoffs. 
+Simply run:
 
-Ai can be an incredible sparring partner to brainstorm and helps a lot to navigate the problem space. And the outcome of such sessions often produce suprisingly elegant solutions.
+```bash
+legit-code
+```
 
-Such ideation processes finally leads to a result - a pr with wonderfull "crafted" new iteration of your code, your new architecture, your new design that solution that turned all the tests green and works just great... for now. 
-But this is only the tip of the iceberg - the results are missing all the failed attemts the rejected alternatives. All the process torwards your result is burried in the conversation with the ai. While suche information used to exist in PR discussion among the the team or at least stick in the architects head - the rappid nature of "vibe" coding screams for an alternative.
+This will:
+- Create or continue a session branch
+- Set up the Claude conversation tracking branches
+- Start Claude in the mounted environment
 
-After some time of reflection on my previous job I think the small time overlap could have been used way better if the reasoning for a result would have been accessible to the team. 
+If multiple sessions exist, you'll be prompted to select one.
 
-# The probelem
+### Session Management
 
-When you work with AI coding assistants, your converstation are valuable information you want to keep:
+After your AI session ends, Legit Code prompts you to:
 
-- Your Messages/Propts - precice Problem description
-- Conversation and discussions with the AI the lead to decision rationale for architectural choices
-- Iterative refinements that shaped the final code
-- Learning moments from the AI's explanations
+- **Apply changes** — Apply changes to your main session branch with a descriptive commit
+- **Discard changes** — Revert to the starting state
+- **Continue later** — Preserve the work-in-progress
 
-This context is typically lost when the chat session ends, making it difficult to:
+## What It Does
 
-- Reconstruct why certain decisions were made
-- Share the full development context with teammates
-- Review and learn from past AI interactions
-- Maintain an audit trail of AI-assisted development
-- Give Future AI Session context for contnious improvments
+Legit Code automatically stores your Claude conversations in Git, turning every AI interaction into version-controlled commits. This preserves:
 
-We solved this for agentic communication in our first Demo App (Legit Chat) - https://www.legitcontrol.com/docs/concepts/chat-app
-While I was working on Legit SDK I was curious if i could dogfood the SDK to approach the problem in a similiar way for claude cli as well.
+- **Your prompts** — precise problem descriptions
+- **AI responses** — decision rationale and explanations
+- **Code changes** — the actual implementation
+- **Conversation history** — complete context for future reference
 
-# The Approach
+## How It Works
 
-Add claudes conversation history to your Git repository, turning every AI interaction into a commit.
+### Three Branches Per Session
 
-- Your prompt as the commit message
-- AI responses stored in commit metadata
-- Code changes as the actual diff
-- Session context preserved in the branch structure
+When you start a new session, Legit creates three branches:
 
-## Where and how does it store conversations?
+1. **Session Branch** (`Feature-A`) — Your normal feature branch
+2. **Claude Session Branch** (`claude/Feature-a`) — Commits for every file change Claude makes
+3. **Claude Conversation Branch** (`claude/Feature-a-operations`) — All prompts, tool calls, and responses (1:1 mapping to Claude's session file)
 
-When you start a new session Legit creates three branches. 
+### NFS Mounting Technology
 
-1. Session Branch - "Feature-A": Think of it like your normal feature branch.
+Legit Code uses Network File System (NFS) mounting to intercept Claude's session file operations:
 
-2. Claude Session Branch - "claude/Feature-a": This branch contains a commit for every change claude applies to a file in the repo
+1. Spawns an NFS server backed by [LegitFS](https://www.legitcontrol.com/docs/concepts/filesystem-api)
+2. Mounts the repository locally (current folder + `-nfs`)
+3. Starts Claude within the mounted folder
 
-3. Claude conversation branch - "claude/Feature-a-operations": This branch stores all prompts, all toolcalls, all answers. A commit for every state of claud's sessions. It maps 1:1 to a commit per row in claudes sesseion file (*.jsonl). 
+By configuring Claude (via `CLAUDE_CONFIG_DIR`) to write to the LegitFS-managed folder, every read and write operation on Claude's `jsonl` session files is intercepted and stored as Git commits.
 
-## How do you get the History from and into Claude cli?
+## Features & Use Cases
 
-Claude stores its sessions localy - usually under the folder `~/.claude/local` inside of jsonl files.
-Each line of the `jsonl` file represents an operation inside of claude - this can be a prompt by the user, a tool call or a response. The Location can be configured by changing `CLAUDE_CONFIG_DIR`.
+- **Complete conversation history** — Every prompt and response preserved in Git, searchable and auditable
+- **Session isolation** — Each AI session gets its own branch, keeping experimental work separate
+- **Change management** — Choose which suggestions to keep, apply with meaningful commits, or revert cleanly
+- **Team collaboration** — Share AI conversations through Git branches and review teammates' decision-making process
 
-This is legit comes into play:
+- **Code review & audit** — Trace every change back to its originating prompt and understand implementation decisions
+- **Workflow integration** — Works with existing tools, transparent file system integration, no workflow changes required
 
-When you start legit-claude it:
-1. spawnss an NFS serverm baked by legit fs LegitFS (https://www.legitcontrol.com/docs/concepts/filesystem-api) pointing to the current working directory (your project folder). 
-2. Mounts the legitfs bakeds nfs localy (current folder + -nfs) and 
-3. starts claude within the mounted folder
+## Viewing Stored Conversations
 
-By configuring claude (via CLAUDE_CONFIG_DIR) to write to a folder managed by LegitFS the virtual file system controls every read and write - also every fs operation on claudes `jsonl` session files.
+All conversations are stored in Git branches. To view them:
 
-When claude write a new line to the session `jsonl` file it actually writes into a virtual file.
-You can think of it as a "web server that serves the file" - in this case via the filesytem.
+```bash
+# View all branches with conversation history
+git log --all --decorate --oneline --graph
+```
 
-When claude add a new file to the session's jsonl we utilize legit's operation file to store that line as a commit in your git repo. 
+**For better visualization**, consider using:
 
-When claude reads the session - for example to continue it, legit just projects the payload from the commits back into the session file. 
+- **[git-graph](https://github.com/git-bahn/git-graph)** — Command-line tool for clearer Git history graphs
+  ```bash
+  brew install git-graph # or: cargo install git-graph
+  git-graph
+  ```
 
+- **[Sourcetree](https://www.sourcetreeapp.com/)** — Free Git GUI for Mac and Windows with visual branch diagrams
 
-2. Conversational Commits
+## Technical Details
 
-Every interaction with Claude becomes a commit:
+### Legit Framework Integration
 
-# Your prompt becomes the commit
+Legit Code uses the Legit SDK for version-controlled file systems:
 
-git commit -m "Add authentication middleware to protect API endpoints"
+- **Core SDK** (`@legit-sdk/core`) — Version control engine
+- **NFS Server** (`@legit-sdk/nfs-serve`) — Exposes repository over NFS
 
-# Claude's response and suggested changes are captured
 
-# The actual file modifications represent the implemented solution
+## Requirements
 
-3. Session Management
+- Node.js (v14 or higher)
+- macOS (for NFS mounting support)
+- Git repository initialized in your project directory
+- Claude CLI installed and configured
 
-After your AI session ends, Legit Claude prompts you to:
 
-- Apply changes to your main session branch with a descriptive commit
-- Discard changes and revert to the starting state
-- Continue later and preserve the work-in-progress
+## Related Projects
 
-4. NFS Mount Technology
+- [Legit Chat](https://www.legitcontrol.com/docs/concepts/chat-app) — Agentic communication with conversation history
+- [Legit SDK](https://www.legitcontrol.com/docs) — Version-controlled file systems
 
-The tool uses Network File System mounting:
 
-- Spins up an NFS server exposing your Legit repository (legit-mount.js:329-340)
-- Mounts the repository locally using macOS NFS client (legit-mount.js:342-343)
-- Provides transparent file access while tracking all operations
-
-Features
-
-Complete Conversation History
-
-- Every prompt and response preserved in Git history
-- Searchable through standard Git tools
-- Audit trail of AI-assisted development
-
-Session Isolation
-
-- Each AI session gets its own branch
-- Experimental work doesn't affect your main codebase
-- Switch between different development threads
-
-Change Management
-
-- Choose which AI suggestions to keep
-- Apply changes with meaningful commit messages
-- Revert unwanted suggestions cleanly
-
-Team Collaboration
-
-- Share AI conversations through Git branches
-- Review teammates' AI interactions and decisions
-- Learn from collective AI-assisted development
-
-Developer Workflow Integration
-
-- Works with existing tools
-- Transparent file system integration
-- No changes to existing workflow
-
-Installation & Usage
-
-# Install the legit-claude CLI tool
-
-npm install -g legit-claude
-
-# Start a new AI session in your repository
-
-legit-claude --new-session
-
-# Continue an existing session
-
-legit-claude
-
-# Use a specific command instead of claude
-
-legit-claude --spawn "claude-code"
-
-Technical Implementation
-
-Legit Framework Integration
-
-Legit Claude uses the Legit SDK for version-controlled file systems:
-
-- Core SDK (@legit-sdk/core) provides the version control engine
-- NFS Server (@legit-sdk/nfs-serve) exposes the repository over NFS
-- In-memory filesystem (memfs) for efficient file operations
-
-Session Management (legit-mount.js:351-414)
-
-The tool handles session creation and selection:
-// Read available claude sessions from branches
-const branches = fsDisk.readdirSync(branchesPath);
-const claudeBranches = branches
-.filter(branch => branch.startsWith('claude.') && !branch.endsWith('-operation'))
-.map(branch => branch.replace('claude.', ''));
-
-Change Application (legit-mount.js:437-452)
-
-Changes are applied through Legit's built-in operations:
-// Write commit message to trigger change application
-fsDisk.writeFileSync(legitPath + '/apply-changes', commitMessage, 'utf-8');
-
-Use Cases
-
-Personal Development
-
-- Maintain a searchable history of your problem-solving process
-- Reconstruct reasoning for complex implementations
-- Track learning progress with AI assistance
-
-Team Collaboration
-
-- Share AI-driven insights with teammates
-- Review and discuss AI suggestions as a team
-- Build collective knowledge from AI interactions
-
-Learning & Documentation
-
-- Create tutorials from real AI conversations
-- Document decision-making processes
-- Build a knowledge base of solved problems
-
-Code Review & Audit
-
-- Trace every change back to its originating prompt
-- Understand implementation decisions
-- Maintain compliance through complete change tracking
-
-Get Started
-
-Transform your AI coding sessions from disposable chats into permanent development assets.
-
-npm install -g legit-claude
-legit-claude --new-session "my-first-session"
-
----
-
-This is a draft. Questions for refinement:
-
-1. What aspects need more detail? - Technical implementation, benefits, use cases?
-2. Is the tone appropriate? - More technical, more benefit-focused, or more tutorial-style?
-3. What's missing? - Important features, workflows, or integrations?
-4. Who should this target? - Individual developers, teams, managers?
-5. Should I add more examples? - Specific commands, workflows, or integrations?
