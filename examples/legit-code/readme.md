@@ -4,6 +4,8 @@
 
 `legit-code` is a CLI wrapper around Claude that stores your Claude conversations next to your code—right in your repository. Every AI interaction becomes a Git commit, preserving the full context of your development decisions.
 
+📹 **[Watch Demo Video](https://www.loom.com/share/e8178d35096c4be3a512d5dad37eeca6)**
+
 ## Installation
 
 **Option 1: Use without installing (via npx)**
