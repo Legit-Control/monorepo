@@ -13,6 +13,16 @@ const showcasePage = () => {
   // Descriptions are truncated to 138 characters in the card component
   const showcaseItems = [
     {
+      href: 'https://github.com/Legit-Control/monorepo/tree/main/examples/legit-code',
+      title: 'Legit Code',
+      description:
+        'CLI tool that stores Claude Code conversations in your Git repository',
+      image: '/showcase/legit-code.png',
+      date: 'Jan. 2026',
+      author: 'Legit Team',
+      tags: ['CLI Tool'],
+    },
+    {
       href: 'https://legit-assistant-form-example.vercel.app/',
       title: 'Assistant UI',
       description:

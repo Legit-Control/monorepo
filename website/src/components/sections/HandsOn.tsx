@@ -16,6 +16,15 @@ const data = {
   showcaseTitle: "See examples built with Legit SDK",
   showcaseItems: [
     {
+      href: 'https://github.com/Legit-Control/monorepo/tree/main/examples/legit-code',
+      title: 'Legit Code',
+      description:
+        'CLI tool that stores Claude Code conversations in your Git repository',
+      image: '/showcase/legit-code.png',
+      date: 'Jan. 2026',
+      author: 'Legit Team',
+    },
+    {
       href: "https://legit-assistant-form-example.vercel.app/",
       title: "Assistant UI",
       description: "Interactive example of Assistant UI + Legit where chat updates the form and shows live diffs directly in the conversation.",
@@ -28,14 +37,6 @@ const data = {
       title: "Legit React Starter",
       description: "React starter template powered by Legit SDK—edit files, track versions, view history, all built for fast, reactive dev workflows.",
       image: "/showcase/LegitReactStarter.png",
-      date: "Nov. 2025",
-      author: "Legit Team"
-    },
-    {
-      href: "https://replit.com/@jannes-blobel/Legit-x-Plate-Template",
-      title: "Replit x Legit x Plate",
-      description: "Boilerplate for running Legit and Plate on Replit with built-in versioning, editing, and project scaffolding.",
-      image: "/showcase/LegitPlateReplit.png",
       date: "Nov. 2025",
       author: "Legit Team"
     }
