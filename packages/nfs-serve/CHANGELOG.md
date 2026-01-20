@@ -1,5 +1,13 @@
 # @legit/nfs-serve
 
+## 0.3.1
+
+### Patch Changes
+
+- a3c356e: - Enhanced the create handler in createAsyncNfsHandler.ts to properly apply file attributes (mode, size, atime, mtime) during file creation, improving compatibility with NFS clients and file system semantics.
+  - reduces log noise
+  - Improved error reporting in directory reading operations to include the error object for better diagnostics.
+
 ## 0.3.0
 
 ### Minor Changes
