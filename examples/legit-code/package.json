@@ -1,6 +1,6 @@
 {
   "name": "legit-code",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "CLI tool to mount legit repositories",
   "type": "module",
   "main": "index.js",

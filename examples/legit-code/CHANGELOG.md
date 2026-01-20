@@ -1,5 +1,17 @@
 # legit-code
 
+## 0.0.7
+
+### Patch Changes
+
+- fixes readme
+
+## 0.0.6
+
+### Patch Changes
+
+- small change in readme
+
 ## 0.0.5
 
 ### Patch Changes

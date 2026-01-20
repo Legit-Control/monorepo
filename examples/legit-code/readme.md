@@ -7,6 +7,12 @@ Dont fear to close that terminal tap!
 
 Store (and share) your AI coding conversations in your Git repository - right next to your code.
 
+## Quickstart
+
+```bash
+npx legit-code
+```
+
 ## Watch it in action
 
 https://github.com/user-attachments/assets/02577b96-7415-4e17-a0d6-6c062b678811
@@ -72,6 +78,8 @@ You'll see:
 - Code changes in the diffs
 - The complete conversation timeline in the branch structure
 
+![Prompts in history](./changegraph.png)
+
 ## How It Works
 
 ### NFS Mounting
@@ -105,21 +113,6 @@ You'll be prompted to select from existing sessions, or you can create a new one
 - **Searchable history**: Use Git to find past solutions and discussions
 - **Review process**: See exactly how and why code was changed
 - **Learning tool**: Review your problem-solving process over time
-
-## Learn More
-
-- [Legit Framework Documentation](https://www.legitcontrol.com/docs)
-- [Legit Chat Demo App](https://www.legitcontrol.com/docs/concepts/chat-app)
-- [Technical Implementation Details](#) TODO: Add link to technical docs
-
-## Get Started Now
-
-```bash
-npm install -g legit-code
-legit-code
-```
-
-Transform your AI coding sessions from disposable chats into permanent development assets.
 
 ## Technical Details
 
