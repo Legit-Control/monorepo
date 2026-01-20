@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "workspaces": [
     "packages/*",
-    "packages/3rd-party/*"
+    "packages/3rd-party/*",
+    "examples/legit-code"
   ],
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

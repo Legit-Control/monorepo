@@ -1073,7 +1073,10 @@ describe('top level legit', () => {
       anonymousBranch: 'main',
       showKeepFiles: false,
     });
-    const branches = await legitfs.promises.readdir(`/`, 'utf-8');
-    expect(branches).toContain('.legit');
+    const rootFolder = await legitfs.promises.readdir(`/`, 'utf-8');
+    expect(rootFolder, '.legit folder is not listed anymore').not.toContain('.legit');
+
+    const legitFolder = await legitfs.promises.readdir(`/.legit`, 'utf-8');
+    expect(legitFolder).toContain('branches');
   });
 });

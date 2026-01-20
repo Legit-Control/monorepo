@@ -1,11 +1,11 @@
 {
-  "name": "legit-claude",
-  "version": "1.0.0",
+  "name": "legit-code",
+  "version": "0.0.1",
   "description": "CLI tool to mount legit repositories",
   "type": "module",
   "main": "index.js",
   "bin": {
-    "legit-claude": "./bin/legit-mount.js"
+    "legit-code": "./bin/legit-mount.js"
   },
   "scripts": {},
   "keywords": [
