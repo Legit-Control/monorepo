@@ -9,7 +9,7 @@ Store (and share) your AI coding conversations in your Git repository - right ne
 
 ## Watch it in action
 
-![Legit in action](./legit-code-walkthrough.mp4)
+https://github.com/user-attachments/assets/02577b96-7415-4e17-a0d6-6c062b678811
 
 ## What is Legit Code?
 
