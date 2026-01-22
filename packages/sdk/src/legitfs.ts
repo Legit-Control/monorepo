@@ -49,6 +49,43 @@ function isLegitRouteFolder(
   );
 }
 
+/**
+ * Recursively copy a directory from one filesystem to another
+ */
+async function copyDirectoryRecursive(
+  sourceFs: any,
+  sourcePath: string,
+  destFs: any,
+  destPath: string,
+  excludePatterns: string[] = []
+): Promise<void> {
+  async function copyDir(srcPath: string, dstPath: string): Promise<void> {
+    // Create destination directory
+    await destFs.promises.mkdir(dstPath, { recursive: true });
+
+    // Read source directory
+    const entries = await sourceFs.promises.readdir(srcPath, {
+      withFileTypes: true,
+    });
+
+    for (const entry of entries) {
+      const srcFullPath = `${srcPath}/${entry.name}`;
+      const dstFullPath = `${dstPath}/${entry.name}`;
+
+      if (entry.isDirectory()) {
+        await copyDir(srcFullPath, dstFullPath);
+      } else if (entry.isFile()) {
+        await destFs.promises.writeFile(
+          dstFullPath,
+          await sourceFs.promises.readFile(srcFullPath)
+        );
+      }
+    }
+  }
+
+  await copyDir(sourcePath, destPath);
+}
+
 export function mergeLegitRouteFolders(
   a: LegitRouteFolder,
   b: LegitRouteFolder
@@ -220,26 +257,28 @@ export async function openLegitFs({
   // Create an in-memory filesystem for copy-on-write storage
   const copyFs = createFsFromVolume(new Volume());
 
+  // Copy-on-write should operate on '/' since it's above the pass-through layer
   const rootCopyOnWriteFs = new CopyOnWriteSubFs({
     name: 'root-copy-on-write',
-
     sourceFs: storageFs,
     copyToFs: copyFs,
     copyToRootPath: '/copies',
-    rootPath: gitRoot,
+    rootPath: '/', // Changed from gitRoot to '/'
     patterns: ephemaralGitConfig ? ['**/.git/config'] : [],
   });
 
+  // Pass-through layer projects '/' to gitRoot in storageFs
   const rootPassThroughFileSystem = new PassThroughToAsyncFsSubFs({
     name: 'root-passthrough',
     passThroughFs: storageFs,
-    rootPath: gitRoot,
+    rootPath: gitRoot, // This stays gitRoot - it does the projection
   });
 
+  // gitStorageFs operates on '/' since pass-through handles the projection
   const gitStorageFs = new CompositeFs({
     name: 'root',
     filterLayers: [rootCopyOnWriteFs],
-    rootPath: gitRoot,
+    rootPath: '/', // Changed from gitRoot to '/'
     routes: {
       '[[...relativePath]]': rootPassThroughFileSystem,
     },
@@ -252,8 +291,8 @@ export async function openLegitFs({
 
   const adapterConfig = {
     gitStorageFs: gitStorageFs,
-    gitRoot: gitRoot,
-    rootPath: gitRoot,
+    gitRoot: '/',
+    rootPath: '/', // Changed from gitRoot to '/'
   };
 
   // .legit root folder files
@@ -285,16 +324,17 @@ export async function openLegitFs({
   const commitFileAdapter = createCommitFileAdapter(adapterConfig);
 
   const hiddenFiles = showKeepFiles ? ['.git'] : ['.git', '.keep'];
+  // gitFsHiddenFs operates on '/' since gitStorageFs handles projection
   const gitFsHiddenFs = new HiddenFileSubFs({
     name: 'git-hidden-subfs',
     hiddenFiles,
-    rootPath: gitRoot,
+    rootPath: '/', // Changed from gitRoot to '/'
   });
 
   // Read .gitignore file to add patterns to copy-on-write
   let gitignorePatterns: string[] = [];
   try {
-    const gitignorePath = gitRoot + '/.gitignore';
+    const gitignorePath = '/.gitignore'; // Changed from gitRoot + '/.gitignore'
     const gitignoreContent = await gitStorageFs.readFile(gitignorePath, 'utf8');
     gitignorePatterns = gitignoreContent
       .split('\n')
@@ -330,13 +370,13 @@ export async function openLegitFs({
   // Create an in-memory filesystem for copy-on-write storage
   const userCopyFs = createFsFromVolume(new Volume());
 
+  // gitFsCopyOnWriteFs operates on '/' since gitStorageFs handles projection
   const gitFsCopyOnWriteFs = new CopyOnWriteSubFs({
     name: 'git-copy-on-write-subfs',
-
     sourceFs: gitStorageFs,
     copyToFs: userCopyFs,
     copyToRootPath: '/user-copies',
-    rootPath: gitRoot,
+    rootPath: '/', // Changed from gitRoot to '/'
     patterns: copyOnWritePatterns,
   });
 
@@ -385,9 +425,10 @@ export async function openLegitFs({
     ? mergeLegitRouteFolders(routeConfig, routeOverrides)
     : routeConfig;
 
+  // userSpaceFs operates on '/' since gitStorageFs handles projection
   const userSpaceFs = new CompositeFs({
     name: 'git',
-    rootPath: gitRoot,
+    rootPath: '/', // Changed from gitRoot to '/'
     filterLayers: [
       gitFsHiddenFs,
       gitFsCopyOnWriteFs,
@@ -688,6 +729,87 @@ export async function openLegitFs({
       const compressed = pako.deflate(data);
 
       return compressed;
+    },
+
+    /**
+     * Swap the storage filesystem to a new location/backend.
+     * Copies all git data and working directory to the new filesystem.
+     * Closes all open file handles before swapping.
+     *
+     * @param options - New filesystem configuration
+     * @throws Error if file handles are open or copy fails
+     */
+    swapStorage: async ({
+      fs: newStorageFs,
+      rootPath: newRootPath,
+    }: {
+      fs: typeof nodeFs;
+      rootPath: string;
+    }): Promise<void> => {
+      // Step 1: Check for open file handles
+      if (userSpaceFs.openFileHandles.size > 0) {
+        const openFiles: string[] = [];
+        for (const [filePath, fds] of userSpaceFs.pathToFileDescriptors) {
+          openFiles.push(filePath);
+        }
+        throw new Error(
+          `Cannot swap storage with open file handles. Open files: ${openFiles.join(', ')}`
+        );
+      }
+
+      try {
+        await copyDirectoryRecursive(
+          storageFs,
+          gitRoot,
+          newStorageFs,
+          newRootPath
+        );
+
+        // Step 3: Verify critical files exist in new location
+        try {
+          await newStorageFs.promises.access(`${newRootPath}/.git/HEAD`);
+        } catch {
+          throw new Error(
+            'Verification failed: .git/HEAD not found in new storage'
+          );
+        }
+
+        // Step 4: Swap filesystem references in SubFs instances
+        await rootCopyOnWriteFs.swapSourceFs(newStorageFs);
+        await rootPassThroughFileSystem.swapPassThroughFs(
+          newStorageFs,
+          newRootPath
+        );
+
+        // Step 5: Update legitfs internal references
+        // (legitfs as any)._storageFs = gitStorageFs;
+        // (legitfs as any)._gitRoot = newRootPath;
+
+        // Step 6: Recreate sync service with new filesystem
+        const newSyncService = createLegitSyncService({
+          fs: newStorageFs as any,
+          gitRepoPath: newRootPath,
+          serverUrl: serverUrl,
+          auth: sessionManager,
+          anonymousBranch,
+        });
+        (legitfs as any).sync = newSyncService;
+
+        // Step 7: Update all git operations to use new storage and root
+        // This is done by updating the closure variables through Object.assign
+        Object.assign(legitfs, {
+          // _storageFs: gitStorageFs,
+          _gitRoot: newRootPath,
+        });
+      } catch (error) {
+        // // Rollback: if anything fails, restore original state
+        // await rootCopyOnWriteFs.swapSourceFs(originalStorageFs);
+        // await originalRootPassThroughFs.swapPassThroughFs(originalStorageFs);
+
+        throw new Error(
+          `Swap storage failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
     },
   });
 

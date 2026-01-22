@@ -73,6 +73,27 @@ export class CopyOnWriteSubFs extends BaseCompositeSubFs {
     this.ig.add(patterns);
   }
 
+  /**
+   * Swap the source filesystem to a new one.
+   * Closes all open file handles before swapping.
+   * Used by swapStorage to move to a new storage backend.
+   */
+  async swapSourceFs(newSourceFs: any): Promise<void> {
+    // Close all open file handles
+    for (const [fd, handle] of this.openFh) {
+      try {
+        await handle.close();
+      } catch (error) {
+        // Log but continue - we're cleaning up anyway
+        console.warn(`Failed to close file handle ${fd}:`, error);
+      }
+    }
+    this.openFh.clear();
+
+    // Swap the source filesystem
+    this.sourceFs = newSourceFs;
+  }
+
   private normalizeCopyPath(filePath: string | PathLike): string {
     const pathStr =
       typeof filePath === 'string' ? filePath : filePath.toString();
