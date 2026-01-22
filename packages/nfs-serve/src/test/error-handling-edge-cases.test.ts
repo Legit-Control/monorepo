@@ -313,8 +313,8 @@ describe('Error Handling & Edge Cases', () => {
       // Cleanup in reverse order
       await fs.promises.unlink(filePath);
       for (let i = maxDepth - 1; i >= 0; i--) {
-        currentPath = path.dirname(currentPath);
         await fs.promises.rmdir(currentPath);
+        currentPath = path.dirname(currentPath);
       }
     });
   });

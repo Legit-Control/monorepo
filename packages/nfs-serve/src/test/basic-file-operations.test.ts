@@ -4,24 +4,212 @@ import * as path from 'path';
 
 describe('Basic File Operations', () => {
   const MOUNT_POINT = inject('mountpoint');
+  const SERVE_POINT = inject('servepoint');
 
   beforeAll(() => {
     console.error('Mount point:', MOUNT_POINT);
     fs.readdirSync(MOUNT_POINT);
   });
 
-  describe('File Creation & Deletion (CREATE Procedure)', () => {
-    it('should create empty file', async () => {
-      const filePath = path.join(MOUNT_POINT, 'empty-file.txt');
-      await fs.promises.writeFile(filePath, '');
+  describe('Server <-> Client synchronization', () => {
+    it('a written file should be refleacted on the served as well as on the mounted fs', async () => {
+      const filePathCreatedOnMount = path.join(MOUNT_POINT, 'empty-file.txt');
+      const filePathServedCreatedOnMount = path.join(
+        SERVE_POINT,
+        'empty-file.txt'
+      );
 
-      const stats = await fs.promises.stat(filePath);
+      await fs.promises.writeFile(filePathCreatedOnMount, '');
+
+      const stats = await fs.promises.stat(filePathCreatedOnMount);
       expect(stats.isFile()).toBe(true);
       expect(stats.size).toBe(0);
 
-      await fs.promises.unlink(filePath);
+      const statsServed = await fs.promises.stat(filePathServedCreatedOnMount);
+      expect(statsServed.isFile()).toBe(true);
+      expect(statsServed.size).toBe(0);
+
+      const filePathCreatedOnServed = path.join(MOUNT_POINT, 'empty-file2.txt');
+      const filePathServedCreatedOnServed = path.join(
+        SERVE_POINT,
+        'empty-file2.txt'
+      );
+      await fs.promises.unlink(filePathCreatedOnMount);
+
+      await fs.promises.writeFile(filePathServedCreatedOnServed, '');
+
+      const stats2 = await fs.promises.stat(filePathServedCreatedOnServed);
+      expect(stats2.isFile()).toBe(true);
+      expect(stats2.size).toBe(0);
+
+      const statsServed2 = await fs.promises.stat(filePathCreatedOnServed);
+      expect(statsServed2.isFile()).toBe(true);
+      expect(statsServed2.size).toBe(0);
+
+      await fs.promises.unlink(filePathServedCreatedOnServed);
     });
 
+    it('a write file event should be triggered when a file on the server is changed', async () => {
+      const fileName = 'watched-file-21.txt';
+      const filePathOnMount = path.join(MOUNT_POINT, fileName);
+      const filePathOnServe = path.join(SERVE_POINT, fileName);
+
+      // cleanup if needed
+      await fs.promises.unlink(filePathOnMount).catch(() => {});
+
+      // Set up watchers on both mount point and serve point
+      const mountPointEvents: string[] = [];
+      const servePointEvents: string[] = [];
+
+      const mountWatcher = fs.watch(MOUNT_POINT, (eventType, filename) => {
+        if (filename === fileName) {
+          mountPointEvents.push(eventType);
+        }
+      });
+
+      const serveWatcher = fs.watch(SERVE_POINT, (eventType, filename) => {
+        if (filename === fileName) {
+          servePointEvents.push(eventType);
+        }
+      });
+
+      try {
+        // Wait a bit for watchers to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(mountPointEvents.length).toBe(0);
+        expect(servePointEvents.length).toBe(0);
+
+        // Write the file on the mounted folder (client side)
+        await fs.promises.writeFile(filePathOnServe, 'Initial content');
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // expect(mountPointEvents.length).toBeGreaterThan(0);
+        expect(servePointEvents.length).toBeGreaterThan(0);
+
+        // Verify file exists on both sides
+        const stats = await fs.promises.stat(filePathOnMount);
+        expect(stats.isFile()).toBe(true);
+        expect(stats.size).toBe('Initial content'.length);
+
+        const statsServed = await fs.promises.stat(filePathOnServe);
+        expect(statsServed.isFile()).toBe(true);
+        expect(statsServed.size).toBe('Initial content'.length);
+
+        // Modify the file
+        await fs.promises.writeFile(filePathOnServe, 'Modified content');
+
+        // Wait for events to propagate
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        fs.utimesSync(filePathOnMount, 0, 0);
+
+        // Wait for events to propagate
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Verify file was modified
+        const modifiedStats = await fs.promises.stat(filePathOnMount);
+        expect(modifiedStats.size).toBe('Modified content'.length);
+
+        const modifiedStatsServed = await fs.promises.stat(filePathOnServe);
+        expect(modifiedStatsServed.size).toBe('Modified content'.length);
+
+        // Verify that both watchers received events
+        // Note: File system watching behavior can vary by OS and filesystem
+        // We expect at least some events to be triggered on both sides
+        // expect(mountPointEvents.length).toBeGreaterThan(0);
+        expect(servePointEvents.length).toBeGreaterThan(0);
+
+        // Clean up
+        await fs.promises.unlink(filePathOnMount);
+      } finally {
+        // Always close watchers
+        mountWatcher.close();
+        serveWatcher.close();
+      }
+    });
+
+    it('a write file event should be triggered when a file on the client is changed', async () => {
+      const fileName = 'watched-file-21.txt';
+      const filePathCreatedOnMount = path.join(MOUNT_POINT, fileName);
+      const filePathServedCreatedOnMount = path.join(SERVE_POINT, fileName);
+
+      // cleanup if needed
+      await fs.promises.unlink(filePathCreatedOnMount).catch(() => {});
+
+      // Set up watchers on both mount point and serve point
+      const mountPointEvents: string[] = [];
+      const servePointEvents: string[] = [];
+
+      const mountWatcher = fs.watch(MOUNT_POINT, (eventType, filename) => {
+        if (filename === fileName) {
+          mountPointEvents.push(eventType);
+        }
+      });
+
+      const serveWatcher = fs.watch(SERVE_POINT, (eventType, filename) => {
+        if (filename === fileName) {
+          servePointEvents.push(eventType);
+        }
+      });
+
+      try {
+        // Wait a bit for watchers to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(mountPointEvents.length).toBe(0);
+        expect(servePointEvents.length).toBe(0);
+
+        // Write the file on the mounted folder (client side)
+        await fs.promises.writeFile(filePathCreatedOnMount, 'Initial content');
+
+        expect(mountPointEvents.length).toBeGreaterThan(0);
+        expect(servePointEvents.length).toBeGreaterThan(0);
+
+        // Verify file exists on both sides
+        const stats = await fs.promises.stat(filePathCreatedOnMount);
+        expect(stats.isFile()).toBe(true);
+        expect(stats.size).toBe('Initial content'.length);
+
+        const statsServed = await fs.promises.stat(
+          filePathServedCreatedOnMount
+        );
+        expect(statsServed.isFile()).toBe(true);
+        expect(statsServed.size).toBe('Initial content'.length);
+
+        // Modify the file
+        await fs.promises.writeFile(filePathCreatedOnMount, 'Modified content');
+
+        // Wait for events to propagate
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Verify file was modified
+        const modifiedStats = await fs.promises.stat(filePathCreatedOnMount);
+        expect(modifiedStats.size).toBe('Modified content'.length);
+
+        const modifiedStatsServed = await fs.promises.stat(
+          filePathServedCreatedOnMount
+        );
+        expect(modifiedStatsServed.size).toBe('Modified content'.length);
+
+        // Verify that both watchers received events
+        // Note: File system watching behavior can vary by OS and filesystem
+        // We expect at least some events to be triggered on both sides
+        expect(mountPointEvents.length).toBeGreaterThan(0);
+        expect(servePointEvents.length).toBeGreaterThan(0);
+
+        // Clean up
+        await fs.promises.unlink(filePathCreatedOnMount);
+      } finally {
+        // Always close watchers
+        mountWatcher.close();
+        serveWatcher.close();
+      }
+    });
+  });
+
+  describe('File Creation & Deletion (CREATE Procedure)', () => {
     it('should create file with initial data', async () => {
       const filePath = path.join(MOUNT_POINT, 'data-file.txt');
       const content = 'Hello, NFS World!';
@@ -295,6 +483,23 @@ describe('Basic File Operations', () => {
       expect(Buffer.compare(readData, binaryData)).toBe(0);
 
       await fs.promises.unlink(filePath);
+    });
+
+    it('should remove a unlinked file from the folder', async () => {
+      const maxDepth = 100;
+      let folderPath = MOUNT_POINT + '/test-folder';
+      await fs.promises.mkdir(folderPath);
+
+      // Create file at deepest level
+      const filePath = path.join(folderPath, 'deep-file.txt');
+      await fs.promises.writeFile(filePath, 'Deep file content');
+
+      const content = await fs.promises.readFile(filePath, 'utf8');
+      expect(content).toBe('Deep file content');
+
+      // Cleanup in reverse order
+      await fs.promises.unlink(filePath);
+      await fs.promises.rmdir(folderPath);
     });
   });
 

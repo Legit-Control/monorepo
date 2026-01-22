@@ -1402,14 +1402,6 @@ export const createAsyncNfsHandler = (args: {
         // Get updated file stats after write
         const newStats = await fsHandle.stat();
 
-        if (stableHow !== 0) {
-          await fsHandle.close();
-        }
-
-        // console.log(
-        //   `Successfully wrote ${bytesWritten} bytes to ${fsHandle} at offset ${offset}`
-        // );
-
         return {
           status: nfsstat3.OK,
           bytesWritten,
