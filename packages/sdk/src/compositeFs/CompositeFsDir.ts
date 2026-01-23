@@ -1,6 +1,6 @@
 import * as nodeFs from 'node:fs';
 import { CompositeFs } from './CompositeFs.js';
-import { IDirent } from 'memfs/lib/node/types/misc.js';
+import { IDirent } from '@jsonjoy.com/fs-node-utils';
 
 interface DirEntry {
   name: string;

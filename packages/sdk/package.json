@@ -62,9 +62,11 @@
     "vitest": "^3.1.1"
   },
   "dependencies": {
+    "@jsonjoy.com/fs-fsa-to-node": "^4.56.9",
+    "@jsonjoy.com/fs-node-utils": "^4.56.9",
     "@legit-sdk/isomorphic-git": "workspace:*",
     "ignore": "^7.0.4",
-    "memfs": "^4.14.0",
+    "memfs": "^4.56.9",
     "pako": "^2.1.0",
     "typescript": "^5.8.3"
   }

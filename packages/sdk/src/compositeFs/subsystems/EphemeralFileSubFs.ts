@@ -12,8 +12,8 @@ import {
   TFileHandleReadvResult,
   IStats,
   TTime,
-} from 'memfs/lib/node/types/misc.js';
-import { IStatOptions } from 'memfs/lib/node/types/options.js';
+} from '@jsonjoy.com/fs-node-utils';
+import { IStatOptions } from '@jsonjoy.com/fs-node-utils/lib/types/options.js';
 import type {
   IReadFileOptions,
   IWriteFileOptions,

@@ -8,12 +8,12 @@ import {
   TFileHandleWritevResult,
   TMode,
   TTime,
-} from 'memfs/lib/node/types/misc.js';
+} from '@jsonjoy.com/fs-node-utils';
 import {
   IAppendFileOptions,
   IReadableWebStreamOptions,
   IStatOptions,
-} from 'memfs/lib/node/types/options.js';
+} from  '@jsonjoy.com/fs-node-utils/lib/types/options.js';
 import { CompositeSubFs, FileHandleDelegate } from './CompositeSubFs.js';
 import { CompositeFs } from './CompositeFs.js';
 

@@ -9,11 +9,11 @@ import {
   TFileHandleReadResult,
   TFileHandleWriteResult,
   TTime,
-} from 'memfs/lib/node/types/misc.js';
+} from '@jsonjoy.com/fs-node-utils';
 import {
   IStatOptions,
   IWriteFileOptions,
-} from 'memfs/lib/node/types/options.js';
+} from '@jsonjoy.com/fs-node-utils/lib/types/options.js';
 import type {
   PathLike,
   IFileHandle,

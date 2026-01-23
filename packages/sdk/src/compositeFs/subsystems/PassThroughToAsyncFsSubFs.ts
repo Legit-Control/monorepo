@@ -14,8 +14,8 @@ import {
   TFileHandleReadvResult,
   IStats,
   TTime,
-} from 'memfs/lib/node/types/misc.js';
-import { IStatOptions } from 'memfs/lib/node/types/options.js';
+} from '@jsonjoy.com/fs-node-utils';
+import {} from '@jsonjoy.com/fs-node-utils';
 import { CompositeFs } from '../CompositeFs.js';
 import { CompositeFsDir } from '../CompositeFsDir.js';
 import type {
@@ -28,6 +28,7 @@ import type {
 } from '../../types/fs-types.js';
 import { CompositeSubFs } from '../CompositeSubFs.js';
 import { pathToString } from '../utils/path-helper.js';
+import { IStatOptions } from '@jsonjoy.com/fs-node-utils/lib/types/options.js';
 
 /**
  * FS utilized to provide pass-through access to the underlying filesystem

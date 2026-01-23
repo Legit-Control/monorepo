@@ -8,7 +8,7 @@ import { VirtualFileArgs } from './gitVirtualFiles.js';
 import { IFs } from 'memfs';
 
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
-import { IDirent } from 'memfs/lib/node/types/misc.js';
+import { IDirent } from '@jsonjoy.com/fs-node-utils';
 import { toDirEntry } from '../../../utils/toDirEntry.js';
 
 function getGitCacheFromArgs(args: VirtualFileArgs): any {

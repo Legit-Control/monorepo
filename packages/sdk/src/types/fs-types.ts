@@ -8,14 +8,14 @@ import type {
   PathLike,
   IDirent,
   TCallback,
-} from "memfs/lib/node/types/misc.js";
+} from '@jsonjoy.com/fs-node-utils';
 import type {
   IAppendFileOptions,
   IMkdirOptions,
   IReadFileOptions,
   IWriteFileOptions,
   IStatOptions,
-} from "memfs/lib/node/types/options.js";
+} from '@jsonjoy.com/fs-node-utils/lib/types/options.js';
 
 // Re-export memfs types
 export type {
@@ -41,7 +41,7 @@ export type OpenMode = string | number;
 export interface IReadFileFn {
   (
     path: PathLike | IFileHandle,
-    options?: IReadFileOptions | string,
+    options?: IReadFileOptions | string
   ): Promise<TDataOut>;
   (path: PathLike | IFileHandle, options: BufferEncoding): Promise<string>;
   (path: PathLike | IFileHandle): Promise<Buffer>;
@@ -52,7 +52,7 @@ export interface IWriteFileFn {
   (
     path: PathLike | IFileHandle,
     data: TData,
-    options?: IWriteFileOptions | string,
+    options?: IWriteFileOptions | string
   ): Promise<void>;
 }
 
@@ -75,7 +75,7 @@ export interface ICompositeFsDir extends IDir {
 // Type for CompositeSubFsDir that is compatible with both
 export type CompositeSubFsDir = Pick<
   IDir,
-  "path" | "close" | "read" | typeof Symbol.asyncIterator
+  'path' | 'close' | 'read' | typeof Symbol.asyncIterator
 >;
 
 // Define FileHandle type that includes fd

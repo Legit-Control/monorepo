@@ -11,8 +11,8 @@ import { ENOENTError } from '../../../errors/ENOENTError.js';
 import * as nodeFs from 'node:fs';
 import { CompositeFs } from '../../../CompositeFs.js';
 import { getCurrentBranch } from './getCurrentBranch.js';
-import Dirent from 'memfs/lib/node/Dirent.js';
-import { IDirent } from 'memfs/lib/node/types/misc.js';
+import Dirent from  '@jsonjoy.com/fs-node-utils/lib/types/options.js';
+import { IDirent } from '@jsonjoy.com/fs-node-utils';
 import { decodeBranchNameFromVfs } from './operations/nameEncoding.js';
 import { CompositeSubFsAdapter } from './CompositeSubFsAdapter.js';
 
@@ -441,7 +441,6 @@ export function createBranchFileAdapter({
             value: newCommitOid,
             force: true,
           });
-
         }
       },
 

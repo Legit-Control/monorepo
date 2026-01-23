@@ -4,7 +4,7 @@ import * as path from 'path';
 import CompositFsFileHandle from './CompositeFsFileHandle.js';
 import { CompositeSubFs } from './CompositeSubFs.js';
 import { CompositeFsDir } from './CompositeFsDir.js';
-import { IStats } from 'memfs/lib/node/types/misc.js';
+import { IStats } from '@jsonjoy.com/fs-node-utils';
 import { FsOperationLogger } from './utils/fs-operation-logger.js';
 import { PathRouter, LegitRouteFolder } from './router/PathRouter.js';
 

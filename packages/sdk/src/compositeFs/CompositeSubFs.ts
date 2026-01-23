@@ -6,11 +6,11 @@ import {
   TFileHandleWritevResult,
   TMode,
   TTime,
-} from 'memfs/lib/node/types/misc.js';
+} from '@jsonjoy.com/fs-node-utils';
 import {
   IStatOptions,
   IAppendFileOptions,
-} from 'memfs/lib/node/types/options.js';
+} from '@jsonjoy.com/fs-node-utils/lib/types/options.js';
 import type {
   CompositeSubFsDir,
   TData,
