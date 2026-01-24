@@ -1,8 +1,7 @@
 import * as nodeFs from 'node:fs';
 import { createLegitSyncService } from './sync/createLegitSyncService.js';
 import git from '@legit-sdk/isomorphic-git';
-import * as tar from 'tar-stream';
-import { Readable } from 'stream';
+import JSZip from 'jszip';
 
 import { CompositeFs } from './compositeFs/CompositeFs.js';
 import { CopyOnWriteSubFs } from './compositeFs/subsystems/CopyOnWriteSubFs.js';
@@ -44,26 +43,6 @@ function isLegitRouteFolder(
     value !== undefined &&
     !Array.isArray(value)
   );
-}
-
-/**
- * Collects a stream into a single Uint8Array
- */
-async function streamToUint8Array(stream: Readable): Promise<Uint8Array> {
-  const chunks: Buffer[] = [];
-
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk: Buffer) => {
-      chunks.push(chunk);
-    });
-
-    stream.on('end', () => {
-      const result = Buffer.concat(chunks);
-      resolve(new Uint8Array(result));
-    });
-
-    stream.on('error', reject);
-  });
 }
 
 /**
@@ -554,7 +533,7 @@ export async function openLegitFs({
     },
 
     /**
-     * This function takes a legit tar archive created with saveArchive and extracts it to storage fs.
+     * This function takes a legit zip archive created with saveArchive and extracts it to storage fs.
      *
      * Refs that can be fast forwarded should get updated - references that cannot be fast forwarded
      * create a ref named branchname-conflict-uuid.
@@ -562,7 +541,7 @@ export async function openLegitFs({
      *
      * The git config should get ignored for now
      *
-     * @param legitArchive a tar archive of a legit repo
+     * @param legitArchive a zip archive of a legit repo
      */
     loadArchive: async ({
       legitArchive: legitArchive,
@@ -615,139 +594,106 @@ export async function openLegitFs({
         }
       }
 
-      // Extract tar archive
-      const extract = tar.extract();
-      const filesMap = new Map<string, Buffer>();
+      // Load zip archive
+      const zip = await JSZip.loadAsync(legitArchive);
 
-      // Collect all files from the tar
-      return new Promise<void>((resolve, reject) => {
-        extract.on('entry', async (headers: any, stream: any, next: () => void) => {
-          const chunks: Buffer[] = [];
+      // Process all files in the zip
+      for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
+        // Skip directories in zip (they're created implicitly when files are added)
+        if (zipEntry.dir) {
+          continue;
+        }
 
-          stream.on('data', (chunk: Buffer) => {
-            chunks.push(chunk);
-          });
+        const fullPath = `${gitRoot}/.git/${relativePath}`;
 
-          stream.on('end', async () => {
-            const content = Buffer.concat(chunks);
-            const relativePath = headers.name;
+        // Skip config files as per spec
+        if (relativePath === 'config') {
+          continue;
+        }
 
-            // Store file for processing after extraction is complete
-            filesMap.set(relativePath, content);
+        // Read file content from zip
+        const content = await zipEntry.async('uint8array');
+        const contentBuffer = Buffer.from(content);
 
-            next();
-          });
+        // Special handling for refs/heads/
+        if (
+          relativePath.startsWith('refs/heads/') ||
+          relativePath.startsWith('refs/tags/')
+        ) {
+          const refName = relativePath.replace(/^refs\/(heads|tags)\//, '');
 
-          stream.on('error', (err: Error) => {
-            console.error(`Error extracting ${headers.name}:`, err);
-            next();
-          });
-        });
+          // Check if this is a new ref or an existing one
+          if (!existingRefsMap.has(refName)) {
+            // New ref - just write it
+            await storageFs.promises.mkdir(
+              fullPath.split('/').slice(0, -1).join('/'),
+              { recursive: true }
+            );
+            await storageFs.promises.writeFile(fullPath, contentBuffer);
+          } else {
+            // Existing ref - check if we can fast-forward
+            const existingOid = existingRefsMap.get(refName)!;
+            const newOid = contentBuffer.toString('utf-8').trim();
 
-        extract.on('finish', async () => {
-          try {
-            // Process all extracted files
-            for (const [relativePath, content] of filesMap.entries()) {
-              const fullPath = `${gitRoot}/.git/${relativePath}`;
+            try {
+              // Check if newOid is a descendant of existingOid (fast-forward check)
+              const isDescendant = await git.isDescendent({
+                fs: storageFs,
+                dir: gitRoot,
+                oid: newOid,
+                ancestor: existingOid,
+              });
 
-              // Skip config files as per spec
-              if (relativePath === 'config') {
-                continue;
-              }
-
-              // Special handling for refs/heads/
-              if (
-                relativePath.startsWith('refs/heads/') ||
-                relativePath.startsWith('refs/tags/')
-              ) {
-                const refName = relativePath.replace(/^refs\/(heads|tags)\//, '');
-
-                // Check if this is a new ref or an existing one
-                if (!existingRefsMap.has(refName)) {
-                  // New ref - just write it
-                  await storageFs.promises.mkdir(
-                    fullPath.split('/').slice(0, -1).join('/'),
-                    { recursive: true }
-                  );
-                  await storageFs.promises.writeFile(fullPath, content);
-                } else {
-                  // Existing ref - check if we can fast-forward
-                  const existingOid = existingRefsMap.get(refName)!;
-                  const newOid = content.toString('utf-8').trim();
-
-                  try {
-                    // Check if newOid is a descendant of existingOid (fast-forward check)
-                    const isDescendant = await git.isDescendent({
-                      fs: storageFs,
-                      dir: gitRoot,
-                      oid: newOid,
-                      ancestor: existingOid,
-                    });
-
-                    if (isDescendant || existingOid === newOid) {
-                      // Can fast-forward or already up to date
-                      await storageFs.promises.writeFile(fullPath, content);
-                    } else {
-                      // Cannot fast-forward - create conflict branch
-                      const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
-                      const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
-                      await storageFs.promises.mkdir(
-                        conflictRefPath.split('/').slice(0, -1).join('/'),
-                        { recursive: true }
-                      );
-                      await storageFs.promises.writeFile(conflictRefPath, content);
-                    }
-                  } catch (e) {
-                    // If we can't verify, assume it's not fast-forwardable and create conflict
-                    const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
-                    const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
-                    await storageFs.promises.mkdir(
-                      conflictRefPath.split('/').slice(0, -1).join('/'),
-                      { recursive: true }
-                    );
-                    await storageFs.promises.writeFile(conflictRefPath, content);
-                  }
-                }
+              if (isDescendant || existingOid === newOid) {
+                // Can fast-forward or already up to date
+                await storageFs.promises.writeFile(fullPath, contentBuffer);
               } else {
-                // For non-ref files, just write them directly
+                // Cannot fast-forward - create conflict branch
+                const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
+                const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
                 await storageFs.promises.mkdir(
-                  fullPath.split('/').slice(0, -1).join('/'),
+                  conflictRefPath.split('/').slice(0, -1).join('/'),
                   { recursive: true }
                 );
-                await storageFs.promises.writeFile(fullPath, content);
+                await storageFs.promises.writeFile(
+                  conflictRefPath,
+                  contentBuffer
+                );
               }
+            } catch (e) {
+              // If we can't verify, assume it's not fast-forwardable and create conflict
+              const conflictBranchName = `${refName}-conflict-${crypto.randomUUID()}`;
+              const conflictRefPath = `${gitRoot}/.git/refs/heads/${conflictBranchName}`;
+              await storageFs.promises.mkdir(
+                conflictRefPath.split('/').slice(0, -1).join('/'),
+                { recursive: true }
+              );
+              await storageFs.promises.writeFile(
+                conflictRefPath,
+                contentBuffer
+              );
             }
-
-            resolve();
-          } catch (error) {
-            reject(error);
           }
-        });
-
-        extract.on('error', reject);
-
-        // Pipe the archive data into the extractor
-        const buffer = Buffer.from(legitArchive);
-        const readable = new Readable({
-          read() {
-            this.push(buffer);
-            this.push(null);
-          },
-        });
-
-        readable.pipe(extract);
-      });
+        } else {
+          // For non-ref files, just write them directly
+          await storageFs.promises.mkdir(
+            fullPath.split('/').slice(0, -1).join('/'),
+            { recursive: true }
+          );
+          await storageFs.promises.writeFile(fullPath, contentBuffer);
+        }
+      }
     },
 
     /**
-     * Creates a legit archive - a tar archive of the legit repo (the .git folder in the storage fs)
+     * Creates a legit archive - a zip archive of the legit repo (the .git folder in the storage fs)
      *
-     * @returns A tar archive as a Uint8Array
+     * @returns A zip archive as a Uint8Array
      */
     saveArchive: async (): Promise<Uint8Array> => {
-      const pack = tar.pack();
+      const zip = new JSZip();
 
-      // Recursively read all files in .git folder and add to tar
+      // Recursively read all files in .git folder and add to zip
       async function readDirectoryRecursive(
         dirPath: string,
         relativePath: string = ''
@@ -763,16 +709,13 @@ export async function openLegitFs({
             : entry.name;
 
           if (entry.isDirectory()) {
-            // Add directory entry
-            pack.entry(
-              { name: entryRelativePath + '/', type: 'directory' },
-              () => {}
-            );
+            // Create folder in zip and recurse
+            zip.folder(entryRelativePath);
             await readDirectoryRecursive(fullPath, entryRelativePath);
           } else if (entry.isFile()) {
-            // Read file and add to tar
+            // Read file and add to zip
             const content = await storageFs.promises.readFile(fullPath);
-            pack.entry({ name: entryRelativePath }, content as Buffer, () => {});
+            zip.file(entryRelativePath, content);
           }
         }
       }
@@ -785,11 +728,10 @@ export async function openLegitFs({
         console.warn('Failed to read .git folder:', e);
       }
 
-      // Finalize the tar archive
-      pack.finalize();
+      // Generate the zip archive
+      const zipBuffer = await zip.generateAsync({ type: 'uint8array' });
 
-      // Convert stream to Uint8Array
-      return await streamToUint8Array(pack as unknown as Readable);
+      return zipBuffer;
     },
 
     /**
