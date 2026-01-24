@@ -1307,15 +1307,19 @@ export const createAsyncNfsHandler = (args: {
         }
 
         if (attributes.atime !== undefined || attributes.mtime !== undefined) {
-          // console.log(
-          //   `Setting times: atime=${attributes.atime}, mtime=${attributes.mtime}`
-          // );
+          if (
+            attributes.atime?.getTime() === 0 &&
+            attributes.mtime?.getTime() === 0
+          ) {
+            // magic set attribute to trigger sync on the client
+            // console.log('skipp');
+          } else {
+            // Use current time for any unspecified time
+            const atime = attributes.atime || statsBefore.atime;
+            const mtime = attributes.mtime || statsBefore.mtime;
 
-          // Use current time for any unspecified time
-          const atime = attributes.atime || statsBefore.atime;
-          const mtime = attributes.mtime || statsBefore.mtime;
-
-          await fsHandle.utimes(atime, mtime);
+            await fsHandle.utimes(atime, mtime);
+          }
         }
 
         // await fsHandle.datasync();
