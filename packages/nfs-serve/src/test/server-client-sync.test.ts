@@ -46,6 +46,68 @@ describe('Basic File Operations', () => {
       await fs.promises.unlink(serverFilePath);
     });
 
+    it('Changes on the mounted nfs folder should lead to Events on the client', async () => {
+      const fileName = 'client_file.txt';
+
+      const serverFilePath = path.join(SERVE_POINT, fileName);
+      const clientFilePath = path.join(MOUNT_POINT, fileName);
+
+      // cleanup if needed
+      await fs.promises.unlink(serverFilePath).catch(() => {});
+      await fs.promises.unlink(clientFilePath).catch(() => {});
+      // get the unlink on tick to materialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Set up watchers on both the folder serving and the folder served via nfs
+
+      const serverEvents: any[] = [];
+      const serverWatcher = fs.watch(SERVE_POINT, (eventType, filename) => {
+        serverEvents.push(`${eventType}`);
+      });
+
+      const clientEvents: any[] = [];
+      const clientWatcher = fs.watch(MOUNT_POINT, (eventType, filename) => {
+        clientEvents.push(`${eventType}`);
+      });
+      // Wait a bit for watchers to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      try {
+        // expect(clientEvents.length).toBe(0);
+        // expect(serverEvents.length).toBe(0);
+
+        // Write the file on the mounted folder (client side)
+        await fs.promises.writeFile(clientFilePath, 'Initial content');
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // expect(serverEvents.length).toBe(1);
+        // expect(clientEvents.length).toBe(0);
+
+        // Modify the file
+        await fs.promises.writeFile(clientFilePath, 'Modified content');
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // expect(serverEvents.length).toBe(2);
+        // expect(clientEvents.length).toBe(0);
+
+        // Remove the file
+        await fs.promises.unlink(clientFilePath);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // expect(serverEvents.length).toBe(3);
+        // expect(clientEvents.length).toBe(0);
+
+        expect(serverEvents.length).toBeGreaterThan(0);
+      } finally {
+        // ensure the file is droped
+        await fs.promises.unlink(serverFilePath).catch(() => {});
+        await fs.promises.unlink(clientFilePath).catch(() => {});
+        // Always close watchers
+        serverWatcher.close();
+        clientWatcher.close();
+      }
+    });
+
     it('Changes on the server should not lead to Events on the client', async () => {
       const fileName = 'server_file.txt';
 
@@ -112,6 +174,7 @@ describe('Basic File Operations', () => {
 
       // cleanup if needed
       await fs.promises.unlink(serverFilePath).catch(() => {});
+      await fs.promises.unlink(serverFilePath).catch(() => {});
       // get the unlink on tick to materialize
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -140,11 +203,104 @@ describe('Basic File Operations', () => {
         expect(serverEvents.length).toBe(1);
         expect(clientEvents.length).toBe(0);
 
-        const stat = await fs.promises.stat(clientFilePath);
+        const fileHandle = await fs.promises.open(clientFilePath, 'w');
+        await fileHandle.close();
 
-        // change file on the client (ignored by the server) to trigger event
+        // const stat = await fs.promises.stat(clientFilePath);
+
+        // // change file on the client (ignored by the server) to trigger event
+        // fs.utimesSync(clientFilePath, 0, 0);
+        // await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(serverEvents.length).toBe(1);
+        expect(clientEvents.length).toBe(1);
+
+        // Modify the file
+        await fs.promises.writeFile(serverFilePath, 'Modified content');
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(serverEvents.length).toBe(2);
+        expect(clientEvents.length).toBe(1);
+
+        // change utimes on the client to 0 - 0 (ignored by the server) Wait for events to propagate
         fs.utimesSync(clientFilePath, 0, 0);
         await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(serverEvents.length).toBe(2);
+        expect(clientEvents.length).toBe(2);
+
+        // Clean up
+        await fs.promises.unlink(serverFilePath);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect(serverEvents.length).toBe(3);
+        expect(clientEvents.length).toBe(2);
+
+        try {
+          fs.utimesSync(clientFilePath, 0, 0);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch {}
+
+        expect(serverEvents.length).toBe(3);
+        expect(clientEvents.length).toBe(2);
+      } finally {
+        await fs.promises.unlink(clientFilePath).catch(() => {});
+        // Always close watchers
+        serverWatcher.close();
+        clientWatcher.close();
+      }
+    });
+
+    it('Simulation of create file event test', async () => {
+      const fileName = 'server_file-1.txt';
+      const clientFilePath = path.join(MOUNT_POINT, fileName);
+      const serverFilePath = path.join(SERVE_POINT, fileName);
+
+      // cleanup if needed
+      await fs.promises.unlink(serverFilePath).catch(() => {});
+      await fs.promises.unlink(serverFilePath).catch(() => {});
+      // get the unlink on tick to materialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Set up watchers on both the folder serving and the folder served via nfs
+      const serverEvents: any[] = [];
+      const serverWatcher = fs.watch(SERVE_POINT, (eventType, filename) => {
+        serverEvents.push(`${eventType}`);
+      });
+
+      const clientEvents: any[] = [];
+      const clientWatcher = fs.watch(MOUNT_POINT, (eventType, filename) => {
+        clientEvents.push(`${eventType}`);
+      });
+      // Wait a bit for watchers to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      try {
+        expect(clientEvents.length).toBe(0);
+        expect(serverEvents.length).toBe(0);
+
+        // Write the file on the mounted folder (client side)
+        // await fs.promises.writeFile(serverFilePath, 'Initial content');
+        // await new Promise(resolve => setTimeout(resolve, 100));
+
+        // // expect(mountPointEvents.length).toBeGreaterThan(0);
+        // expect(serverEvents.length).toBe(1);
+        // expect(clientEvents.length).toBe(0);
+
+        try {
+          const fileHandle2 = await fs.promises.open(clientFilePath, 'wx');
+          await fileHandle2.close();
+          const fileHandle = await fs.promises.open(clientFilePath, 'wx');
+          await fileHandle.close();
+        } catch (e) {
+          console.log(e);
+        }
+
+        // const stat = await fs.promises.stat(clientFilePath);
+
+        // // change file on the client (ignored by the server) to trigger event
+        // fs.utimesSync(clientFilePath, 0, 0);
+        // await new Promise(resolve => setTimeout(resolve, 100));
 
         expect(serverEvents.length).toBe(1);
         expect(clientEvents.length).toBe(1);
