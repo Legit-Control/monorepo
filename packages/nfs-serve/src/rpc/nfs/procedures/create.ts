@@ -111,8 +111,10 @@ export async function create(
       attributesOrVerifier = readAttr.attrs;
     } else if (createMode === 2) {
       // EXCLUSIVE
-      // TODO read the verifier
-      throw new Error('EXCLUSIVE create mode not implemented yet');
+      // TODO read the verifier - this should be stored on the file to allow this call to be idempotent
+      const verifier = data.slice(offset, offset + 8);
+      offset += 8;
+      attributesOrVerifier = verifier;
     } else {
       throw new Error('Invalid create mode');
     }
@@ -121,7 +123,7 @@ export async function create(
     const result = await createHandler(
       parentHandle,
       name,
-      mode,
+      createMode,
       attributesOrVerifier
     );
 
