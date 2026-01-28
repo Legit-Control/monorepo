@@ -1,31 +1,52 @@
 import * as net from 'net';
 import { sendNfsError } from './sendNfsError.js';
+import { sendRpcSuccess } from '../sendRpcSuccess.js';
 
+// Import all procedures and handler types from barrel file
 import {
   getAttributes,
   GetAttributesHandler,
-} from './procedures/getAttributes.js';
-import { setattr, SetAttrHandler } from './procedures/setattr.js';
-import { lookup, LookupHandler } from './procedures/lookup.js';
-import { access, AccessHandler } from './procedures/access.js';
-import { readlink, ReadlinkHandler } from './procedures/readlink.js';
-import { read, ReadHandler } from './procedures/read.js';
-import { write, WriteHandler } from './procedures/write.js';
-import { create, CreateHandler } from './procedures/create.js';
-import { mkdir, MkdirHandler } from './procedures/mkdir.js';
-import { symlink, SymlinkHandler } from './procedures/symlink.js';
-import { mknod, MknodHandler } from './procedures/mknod.js';
-import { remove, RemoveHandler } from './procedures/remove.js';
-import { rmdir, RmdirHandler } from './procedures/rmdir.js';
-import { rename, RenameHandler } from './procedures/rename.js';
-import { link, LinkHandler } from './procedures/link.js';
-import { readdir, ReaddirHandler } from './procedures/readdir.js';
-import { readdirplus, ReaddirplusHandler } from './procedures/readdirplus.js';
-import { fsstat, FSStatHandler } from './procedures/fsstat.js';
-import { fsinfo, FSInfoHandler } from './procedures/fsinfo.js';
-import { pathconf, PathconfHandler } from './procedures/pathconf.js';
-import { commit, CommitHandler } from './procedures/commit.js';
-import { sendRpcSuccess } from '../sendRpcSuccess.js';
+  setattr,
+  SetAttrHandler,
+  lookup,
+  LookupHandler,
+  access,
+  AccessHandler,
+  readlink,
+  ReadlinkHandler,
+  read,
+  ReadHandler,
+  write,
+  WriteHandler,
+  create,
+  CreateHandler,
+  mkdir,
+  MkdirHandler,
+  symlink,
+  SymlinkHandler,
+  mknod,
+  MknodHandler,
+  remove,
+  RemoveHandler,
+  rmdir,
+  RmdirHandler,
+  rename,
+  RenameHandler,
+  link,
+  LinkHandler,
+  readdir,
+  ReaddirHandler,
+  readdirplus,
+  ReaddirplusHandler,
+  fsstat,
+  FSStatHandler,
+  fsinfo,
+  FSInfoHandler,
+  pathconf,
+  PathconfHandler,
+  commit,
+  CommitHandler,
+} from './procedures/index.js';
 
 // Handle NFS program requests
 export async function handleNfsRequest(

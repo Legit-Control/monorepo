@@ -1,37 +1,47 @@
 import * as path from 'path';
 import * as fsDisk from 'node:fs';
 
-import { AccessHandler } from './rpc/nfs/procedures/access.js';
-import { CommitHandler } from './rpc/nfs/procedures/commit.js';
-import { CreateHandler } from './rpc/nfs/procedures/create.js';
-import { FSInfoHandler } from './rpc/nfs/procedures/fsinfo.js';
-import { FSStatHandler } from './rpc/nfs/procedures/fsstat.js';
-import { GetAttributesHandler } from './rpc/nfs/procedures/getAttributes.js';
-import { LinkHandler, LinkResultErr } from './rpc/nfs/procedures/link.js';
-import { LookupHandler } from './rpc/nfs/procedures/lookup.js';
-import { MkdirHandler } from './rpc/nfs/procedures/mkdir.js';
-import { MknodHandler } from './rpc/nfs/procedures/mknod.js';
-import { PathconfHandler } from './rpc/nfs/procedures/pathconf.js';
-import { ReadHandler } from './rpc/nfs/procedures/read.js';
-import { ReaddirHandler, DirEntry } from './rpc/nfs/procedures/readdir.js';
-import {
+// NFS procedure handlers and types (barrel import)
+import type {
+  AccessHandler,
+  CommitHandler,
+  CreateHandler,
+  FSInfoHandler,
+  FSStatHandler,
+  GetAttributesHandler,
+  LinkHandler,
+  LookupHandler,
+  MkdirHandler,
+  MknodHandler,
+  PathconfHandler,
+  ReadHandler,
+  ReaddirHandler,
   ReaddirplusHandler,
-  DirEntryPlus,
-} from './rpc/nfs/procedures/readdirplus.js';
-import { ReadlinkHandler } from './rpc/nfs/procedures/readlink.js';
-import { RemoveHandler } from './rpc/nfs/procedures/remove.js';
-import { RenameHandler } from './rpc/nfs/procedures/rename.js';
-import { RmdirHandler } from './rpc/nfs/procedures/rmdir.js';
-import { SetAttrHandler } from './rpc/nfs/procedures/setattr.js';
-import { SymlinkHandler } from './rpc/nfs/procedures/symlink.js';
-import { WriteHandler } from './rpc/nfs/procedures/write.js';
-import { nfsstat3 } from './rpc/nfs/procedures/errors.js';
+  ReadlinkHandler,
+  RemoveHandler,
+  RenameHandler,
+  RmdirHandler,
+  SetAttrHandler,
+  SymlinkHandler,
+  WriteHandler,
+} from './rpc/nfs/procedures/index.js';
+
+import {
+  nfsstat3,
+  LinkResultErr,
+  type SetAttrParams,
+  type DirEntryPlus,
+} from './rpc/nfs/procedures/index.js';
+
+// Mount protocol
 import { MountHandler } from './rpc/mount/handleMountRequest.js';
+
+// File handle management
 import { createFileHandleManager } from './createFileHandleManager.js';
 
+// Node.js types
 import { Buffer } from 'node:buffer';
 import { FileHandle } from 'node:fs/promises';
-import { SetAttrParams } from './rpc/nfs/procedures/util/readAttributes.js';
 
 /**
  * Takes an promise based fs and provides the handers neded by the NFS server

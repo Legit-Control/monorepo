@@ -35,20 +35,35 @@ export type AccessHandler = (
 ) => Promise<AccessResult>;
 
 /**
- * Source: https://datatracker.ietf.org/doc/html/rfc1813#section-3.3.4
+ * NFS ACCESS Procedure (RFC 1813 Section 3.3.4)
  *
- * Procedure ACCESS determines the access rights that a user,
- * as identified by the credentials in the request, has with
- * respect to a file system object. The client encodes the
- * set of permissions that are to be checked in a bit mask.
- * The server checks the permissions encoded in the bit mask.
- * A status of NFS3_OK is returned along with a bit mask
- * encoded with the permissions that the client is allowed.
+ * This function implements the complete ACCESS procedure following the
+ * Self-Contained Procedure Pattern:
  *
- * @param xid the transaction ID
- * @param socket the socket to send the response to
- * @param data the data received from the client
- * @param accessHandler the handler to use for checking access
+ * PHASE 1: DECODE - Extract parameters from XDR-encoded buffer
+ * PHASE 2: EXECUTE - Call business logic handler
+ * PHASE 3: RESPOND - Encode result and write to socket
+ *
+ * RFC 1813 Specification:
+ * "Procedure ACCESS determines the access rights that a user, as identified
+ * by the credentials in the request, has with respect to a file system object.
+ * The client encodes the set of permissions that are to be checked in a bit mask.
+ * The server checks the permissions encoded in the bit mask. A status of NFS3_OK
+ * is returned along with a bit mask encoded with the permissions that the client
+ * is allowed."
+ *
+ * Buffer Layout (RFC 1813 Section 3.3.4):
+ *   [handle_length (4 bytes)] [handle (variable)] [access (4 bytes)]
+ *
+ * Response Layout:
+ *   [status (4 bytes)] [post_op_attr] [access (4 bytes)]
+ *
+ * @param xid - RPC transaction ID for response matching
+ * @param socket - TCP socket to send response to
+ * @param data - XDR-encoded request buffer
+ * @param accessHandler - Business logic handler (injected from createAsyncNfsHandler.ts)
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc1813#section-3.3.4
  */
 export async function access(
   xid: number,
@@ -57,49 +72,49 @@ export async function access(
   accessHandler: AccessHandler,
 ): Promise<void> {
   try {
-    // console.log("NFS ACCESS procedure");
+    // ========== PHASE 1: DECODE ==========
+    // Extract parameters from XDR-encoded request buffer
 
-    // Read the file handle from the data
+    // Read the file handle (variable-length field with length prefix)
     const handle = readHandle(data);
 
-    // Parse requested access mask
+    // Parse requested access mask (fixed-length field after handle)
     const handleLength = data.readUInt32BE(0);
     let offset = 4 + handleLength;
-
-    // Read access mask (4 bytes)
     const requestedAccess = data.readUInt32BE(offset);
-    // console.log(
-    //   `ACCESS request: handle=${handle.toString(
-    //     "hex",
-    //   )}, requestedAccess=${requestedAccess}`,
-    // );
 
+    // ========== PHASE 2: EXECUTE ==========
+    // Call business logic handler with extracted parameters
+    // Handler performs actual filesystem access check
     const result = await accessHandler(handle, requestedAccess);
 
+    // ========== PHASE 3: RESPOND ==========
+    // Encode result into XDR format and send response
+
+    // Check for error status
     if (result.status !== 0) {
       console.error("Error checking access:", result);
       sendNfsError(socket, xid, result.status);
       return;
     }
 
-    // Create proper RPC accepted reply header
-    const headerBuf = createSuccessHeader();
+    // Pack response into XDR format (RFC 1813 Section 3.3.4)
+    const headerBuf = createSuccessHeader();              // RPC accepted reply header
 
-    // Status (0 = success)
+    // Status (0 = NFS3_OK)
     const statusBuf = Buffer.alloc(4);
-    statusBuf.writeUInt32BE(0, 0); // NFS3_OK
+    statusBuf.writeUInt32BE(0, 0);
 
-    // Post-op attributes (we're skipping for simplicity)
+    // Post-operation attributes
     const postOpAttrBuf = Buffer.alloc(4);
-    postOpAttrBuf.writeUInt32BE(1, 0); // attributes follow: no
-
+    postOpAttrBuf.writeUInt32BE(1, 0);  // attributes follow: yes
     const postOpAttr = getAttributeBuffer(result.statsAfter);
 
-    // Access rights granted
+    // Access rights granted (bit mask)
     const accessRightsBuf = Buffer.alloc(4);
     accessRightsBuf.writeUInt32BE(result.access, 0);
 
-    // Combine all parts
+    // Combine all response parts
     const replyBuf = Buffer.concat([
       headerBuf,
       statusBuf,
@@ -108,10 +123,10 @@ export async function access(
       accessRightsBuf,
     ]);
 
-    // Create the full RPC reply
+    // Wrap in RPC reply message with XID
     const reply = createRpcReply(xid, replyBuf);
 
-    // Send the reply
+    // Send response to client
     socket.write(reply, (err) => {
       if (err) {
         console.error(`Error sending ACCESS reply: ${err}`);
