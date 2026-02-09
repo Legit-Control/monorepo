@@ -87,6 +87,10 @@ export const createAsyncNfsHandler = (args: {
       await asyncFs.access(filePath);
       return true;
     } catch (error) {
+      // @ts-expect-error
+      if (error.code === 'ERR_INVALID_ARG_TYPE') {
+        throw 'async fs seem to be synchronouse - make sure to pass the promises API of fs';
+      }
       return false;
     }
   }
