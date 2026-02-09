@@ -1,0 +1,38 @@
+{
+  "name": "@legit-sdk/gnfs",
+  "version": "0.0.7",
+  "description": "CLI tool to serve any filesystem via NFS on macOS",
+  "type": "module",
+  "main": "bin/start-server.js",
+  "bin": {
+    "gnfs": "bin/start-server.js"
+  },
+  "files": [
+    "bin/start-server.js",
+    "readme.md",
+    "package.json"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nfs",
+    "cli",
+    "mount",
+    "filesystem",
+    "virtual-fs",
+    "macos"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@legit-sdk/nfs-serve": "^0.3.2",
+    "commander": "^12.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
