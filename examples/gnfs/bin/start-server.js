@@ -234,11 +234,7 @@ async function main() {
       '--port <number>',
       'Port for NFS server (default: first free port starting from 13617)'
     )
-    .option(
-      '--log-file <path>',
-      'Path to NFS server log file',
-      'nfs-server.log'
-    );
+   ;
 
   const options = program.parse().opts();
   console.log('Starting virtual NFS server with options:', options);

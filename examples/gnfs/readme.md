@@ -50,7 +50,6 @@ gnfs --serve-path /path/to/directory \
 - `--serve-path <path>` (required): Folder to serve via NFS
 - `--mount-path <path>`: Where to mount the filesystem (default: `./virtual-nfs-mount`)
 - `--port <number>`: Port for NFS server (default: first free port starting from 13617)
-- `--log-file <path>`: Path to NFS server log file (default: `nfs-server.log`)
 
 ### Unmounting
 
