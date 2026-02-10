@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "packages/3rd-party/*",
-    "examples/legit-code"
+    "examples/legit-code",
+    "examples/gnfs"
   ],
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

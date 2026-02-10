@@ -68,6 +68,7 @@ in the root directory.
 Build the two packages:
 
 ```bash
+pnpm run --filter="@legit-sdk/isomorphic-git" build
 pnpm run --filter="@legit-sdk/core" build:dev
 pnpm run --filter="@legit-sdk/nfs-serve" build
 ```
