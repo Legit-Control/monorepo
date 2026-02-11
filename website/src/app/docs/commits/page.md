@@ -19,7 +19,7 @@ To create a commit, simply write a file to a branch:
 
 **Example :**
 
-```typescript
+```javascript
 // Creates new commit
 
 await legitFs.promises.writeFile(
