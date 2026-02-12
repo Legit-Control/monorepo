@@ -1,5 +1,5 @@
 # Legit Monorepo
-### Meet Legit SDK — fail-safe apps made simple!
+### Meet Legit SDK — fail-safe apps made simple.
 Legit SDK is built around **two core ideas**: fail-safe by design, and effortlessly simple to use.
 Fail-safe means giving your users the same superpowers you know from Git:
 - Roll back to any previous state
