@@ -15,11 +15,13 @@ npx legit-code
 
 ## Watch it in action
 
-https://github.com/user-attachments/assets/02577b96-7415-4e17-a0d6-6c062b678811
+
+[![recording_still](https://github.com/user-attachments/assets/542e9ae1-b140-4b7f-a682-bb6bff9cda43)](https://www.loom.com/share/e8178d35096c4be3a512d5dad37eeca6)
 
 ## What is Legit Code?
 
 `legit-code` is a CLI wrapper around Claude that automatically stores your AI conversations in your Git repository. Every prompt, every response, and every code change becomes part of your project's history - searchable, reviewable, and preserved forever.
+
 
 ## Prerequisites
 
