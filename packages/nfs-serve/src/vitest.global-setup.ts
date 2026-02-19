@@ -63,12 +63,24 @@ export default async function (project: TestProject) {
 
   if (!fs.existsSync(SERVE_POINT)) {
     fs.mkdirSync(SERVE_POINT, { recursive: true });
+  } else {
+    // Clean serve point before starting the server
+    const files = fs.readdirSync(SERVE_POINT);
+    for (const file of files) {
+      const filePath = path.join(SERVE_POINT, file);
+      const stat = fs.lstatSync(filePath);
+      if (stat.isDirectory()) {
+        fs.rmSync(filePath, { recursive: true, force: true });
+      } else {
+        fs.unlinkSync(filePath);
+      }
+    }
   }
 
   // if the test was killed (happens during development), we want to make sure
   // we remove orphaned mounts
   try {
-    const result = await execAsync(`umount ${MOUNT_POINT}`);
+    const result = await execAsync(`umount -f ${MOUNT_POINT}`);
   } catch {}
 
   if (runOnce) {
@@ -116,7 +128,7 @@ export default async function (project: TestProject) {
 
     try {
       // Unmount if mounted
-      await execAsync(`umount ${MOUNT_POINT}`);
+      await execAsync(`umount -f ${MOUNT_POINT}`);
     } catch (e) {
       const mountOutput = await execAsync('mount');
 

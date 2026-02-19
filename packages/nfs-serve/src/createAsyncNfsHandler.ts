@@ -84,7 +84,7 @@ export const createAsyncNfsHandler = (args: {
    */
   async function fileExists(filePath: string): Promise<boolean> {
     try {
-      await asyncFs.access(filePath);
+      await asyncFs.lstat(filePath);
       return true;
     } catch (error) {
       // @ts-expect-error
@@ -286,7 +286,7 @@ export const createAsyncNfsHandler = (args: {
         };
       }
 
-      const stats = await asyncFs.stat(filePath);
+      const stats = await asyncFs.lstat(filePath);
 
       // For now, just grant all requested access
       return {
@@ -838,7 +838,7 @@ export const createAsyncNfsHandler = (args: {
           stats: toStatWithFileId(stats, handle),
         };
       } catch (err) {
-        console.error(`Error reading symbolic link: ${err}`);
+        console.error(`Error reading symbolic link at ${filePath}: ${err}`);
         return {
           status: nfsstat3.ERR_IO,
         };
@@ -885,8 +885,8 @@ export const createAsyncNfsHandler = (args: {
       }
 
       // Check if it's a regular file
-      const stats = await asyncFs.stat(filePath);
-      if (!stats.isFile()) {
+      const stats = await asyncFs.lstat(filePath);
+      if (!stats.isFile() && !stats.isSymbolicLink()) {
         console.error(`Not a regular file: ${filePath}`);
         // throw access error if trying to delete a folder
         return {
@@ -1153,7 +1153,7 @@ export const createAsyncNfsHandler = (args: {
 
       // Check if the file exists
       try {
-        const stats = await asyncFs.stat(filePath);
+        const stats = await asyncFs.lstat(filePath);
 
         return {
           status: nfsstat3.OK,
@@ -1256,27 +1256,101 @@ export const createAsyncNfsHandler = (args: {
       if (fsHandle === undefined) {
         const path = fileHandleManager.getPathFromHandle(handle)!;
 
-        const pathStats = await asyncFs.stat(path);
-        if (pathStats.isDirectory()) {
-          // Throw if all attribute properties are undefined
-          if (
-            attributes.mode !== undefined &&
-            attributes.uid !== undefined &&
-            attributes.gid !== undefined &&
-            attributes.size !== undefined &&
-            attributes.atime !== undefined &&
-            attributes.mtime !== undefined
-          ) {
-            throw new Error('At least one attribute property must be defined');
+        // Use lstat to detect symlinks without following them
+        const pathStats = await asyncFs.lstat(path);
+
+        // Handle symlinks - modify the symlink itself, not the target
+        if (pathStats.isSymbolicLink()) {
+          // mode: Cannot set on symlinks - silently ignore (NFS behavior)
+          if (attributes.mode !== undefined) {
+            // Skip - symlinks don't support mode changes
           }
 
+          // size: Cannot set on symlinks - silently ignore
+          if (attributes.size !== undefined) {
+            // Skip - symlinks cannot be truncated
+          }
+
+          // uid/gid: Would require fs.lchown() (callback-based)
+          // Not available in promises API - skip
+          if (attributes.uid !== undefined || attributes.gid !== undefined) {
+            // Skip - lchown not available in promises API
+          }
+
+          // atime/mtime: USE lutimes() - this works on symlinks!
+          if (
+            attributes.atime !== undefined ||
+            attributes.mtime !== undefined
+          ) {
+            const atime = attributes.atime || pathStats.atime;
+            const mtime = attributes.mtime || pathStats.mtime;
+
+            await asyncFs.lutimes(path, atime, mtime);
+          }
+
+          // Return updated symlink stats
+          const statsAfter = await asyncFs.lstat(path);
           return {
             status: nfsstat3.OK,
-            stats: pathStats as any,
+            stats: toStatWithFileId(statsAfter, handle),
           };
         }
-        nfsHandle.fsHandle.fh = await asyncFs.open(path, 'a+');
-        fsHandle = nfsHandle.fsHandle.fh;
+
+        // Handle directories - use path-based operations
+        if (pathStats.isDirectory()) {
+          // Only return error if NO attributes are defined
+          if (
+            attributes.mode === undefined &&
+            attributes.uid === undefined &&
+            attributes.gid === undefined &&
+            attributes.size === undefined &&
+            attributes.atime === undefined &&
+            attributes.mtime === undefined
+          ) {
+            return {
+              status: nfsstat3.OK,
+              stats: toStatWithFileId(pathStats, handle),
+            };
+          }
+
+          // mode: Change directory permissions
+          if (attributes.mode !== undefined) {
+            await asyncFs.chmod(path, attributes.mode);
+          }
+
+          // uid/gid: Not implemented (would require chown)
+          if (attributes.uid !== undefined || attributes.gid !== undefined) {
+            // Skip - chown not implemented
+          }
+
+          // size: Cannot set on directories - silently ignore
+          if (attributes.size !== undefined) {
+            // Skip - directories don't support size changes
+          }
+
+          // atime/mtime: Change directory timestamps
+          if (
+            attributes.atime !== undefined ||
+            attributes.mtime !== undefined
+          ) {
+            const atime = attributes.atime || pathStats.atime;
+            const mtime = attributes.mtime || pathStats.mtime;
+            await asyncFs.utimes(path, atime, mtime);
+          }
+
+          // Return updated directory stats
+          const statsAfter = await asyncFs.stat(path);
+          return {
+            status: nfsstat3.OK,
+            stats: toStatWithFileId(statsAfter, handle),
+          };
+        }
+
+        // Handle regular files - open with FileHandle
+        if (pathStats.isFile()) {
+          nfsHandle.fsHandle.fh = await asyncFs.open(path, 'a+');
+          fsHandle = nfsHandle.fsHandle.fh;
+        }
       }
 
       if (!fsHandle) {

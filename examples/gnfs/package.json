@@ -1,6 +1,6 @@
 {
   "name": "@legit-sdk/gnfs",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "description": "CLI tool to serve any filesystem via NFS on macOS",
   "type": "module",
   "main": "bin/start-server.js",
@@ -26,7 +26,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@legit-sdk/nfs-serve": "^0.3.2",
+    "@legit-sdk/nfs-serve": "workspace:*",
     "commander": "^12.1.0"
   },
   "engines": {

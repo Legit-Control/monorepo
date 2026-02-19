@@ -57,6 +57,9 @@ describe('Basic File Operations', () => {
       // cleanup if needed
       await fs.promises.unlink(filePathOnMount).catch(() => {});
 
+      // give the cleanup unlink enought time to propagate before we start watching
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Set up watchers on both mount point and serve point
       const mountPointEvents: string[] = [];
       const servePointEvents: string[] = [];
@@ -137,6 +140,9 @@ describe('Basic File Operations', () => {
 
       // cleanup if needed
       await fs.promises.unlink(filePathCreatedOnMount).catch(() => {});
+
+      // give the cleanup unlink enought time to propagate before we start watching
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Set up watchers on both mount point and serve point
       const mountPointEvents: string[] = [];

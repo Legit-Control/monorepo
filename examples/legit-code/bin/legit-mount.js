@@ -288,7 +288,7 @@ function killProcess(process) {
       clearTimeout(timeout);
     };
 
-    const on_close = (code) => {
+    const on_close = code => {
       cleanup();
       if (!killed) {
         killed = true;
@@ -297,7 +297,7 @@ function killProcess(process) {
       resolve();
     };
 
-    const on_error = (err) => {
+    const on_error = err => {
       cleanup();
       if (!killed) {
         killed = true;
