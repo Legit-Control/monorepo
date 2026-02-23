@@ -4,9 +4,9 @@
 
 Legit SDKasdasdsadfasdaxycxcsasdwasadasdasdddddddddasdasd built around **two core ideas**: fail-safe ddddddasdasfmöklasmdads
 
-asdsasdasdasby design, and effortlessly simdplddddddddddddddddddddddde to use.
+asdsasdasdasby design, and effortlessly simdplddddddddddddddddddaddddde to use.
 
-Fail-safe means giving your a tsdasdhe same superpowers you know from Git:
+Fail-safe means giving your a tsdasdasdasdasdasdasdasdasdasdasdasdhe same superpowers you know from Git:
 
 - Roll back to any previous state
 - Branch off to run experiments safely
