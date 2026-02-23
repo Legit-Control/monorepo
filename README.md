@@ -4,7 +4,7 @@
 
 Legit SDKasdasdsadfasdaxycxcsasdwasadasdasdddddddddasdasd built around **two core ideas**: fail-safe ddddddasdasfmöklasmdads
 
-asdsasdby design, and effortlessly simdplddddddddddddddddddddddde to use.
+asdsasdasdasby design, and effortlessly simdplddddddddddddddddddddddde to use.
 
 Fail-safe means giving your usddddders the same superpowers you know from Git:
 
