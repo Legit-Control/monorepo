@@ -2,7 +2,7 @@
 
 ### Meet Legit SDK — fail-safe apps made simple.
 
-Legit SDKasdasdsadfasdaxycxcsasdwasadasdasdddddddddasdasd built around **two core ideas**: fail-safe by design, and effortlessly simdplddddddddddddddddddddddde to use.
+Legit SDKasdasdsadfasdaxycxcsasdwasadasdasdddddddddasdasd built around **two core ideas**: fail-safe dby design, and effortlessly simdplddddddddddddddddddddddde to use.
 
 Fail-safe means giving your usddddders the same superpowers you know from Git:
 
