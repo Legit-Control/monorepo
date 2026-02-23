@@ -6,7 +6,7 @@ Legit SDKasdasdsadfasdaxycxcsasdwasadasdasdddddddddasdasd built around **two cor
 
 asdsasdasdasby design, and effortlessly simdplddddddddddddddddddddddde to use.
 
-Fail-safe means giving your usddddders the same superpowers you know from Git:
+Fail-safe means giving your  the same superpowers you know from Git:
 
 - Roll back to any previous state
 - Branch off to run experiments safely
