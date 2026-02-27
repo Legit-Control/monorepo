@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { AsyncGnfs } from './async-gnfs';
+import { Gnfs } from './gnfs';
 import { createMemoryStateProvider } from '../state/memory-state-provider';
 
-describe('Async GNFS', () => {
+describe('GNFS', () => {
   it('should read the root folder', async () => {
-    const asyncGnfs = new AsyncGnfs();
+    const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryStateProvider();
 
     asyncGnfs.connect(memoryStateProvider);
@@ -40,7 +40,7 @@ describe('Async GNFS', () => {
   });
 
   it('truncate should workd', async () => {
-    const asyncGnfs = new AsyncGnfs();
+    const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryStateProvider();
 
     asyncGnfs.connect(memoryStateProvider);
@@ -83,7 +83,7 @@ describe('Async GNFS', () => {
   });
 
   it('should fail when stat an non existing file', async () => {
-    const asyncGnfs = new AsyncGnfs();
+    const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryStateProvider();
 
     asyncGnfs.connect(memoryStateProvider);
@@ -99,7 +99,7 @@ describe('Async GNFS', () => {
   });
 
   it('should read the root folder', async () => {
-    const asyncGnfs = new AsyncGnfs();
+    const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryStateProvider();
 
     asyncGnfs.connect(memoryStateProvider);

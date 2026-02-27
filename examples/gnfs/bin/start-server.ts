@@ -11,7 +11,7 @@ import {
   createFileHandleManager,
 } from '@legit-sdk/nfs-serve';
 import { createMemoryStateProvider } from '../lib/state/memory-state-provider';
-import { AsyncGnfs } from '../lib/gnfs/async-gnfs';
+import { Gnfs } from '../lib/gnfs/gnfs';
 
 // Function to check if a port is available
 function isPortAvailable(port: number): Promise<boolean> {
@@ -89,7 +89,7 @@ function startNfsServer(
   // Start the NFS server
   (async () => {
     try {
-      const asyncGnfs = new AsyncGnfs();
+      const asyncGnfs = new Gnfs();
       const memoryStateProvider = createMemoryStateProvider();
 
       asyncGnfs.connect(memoryStateProvider);
