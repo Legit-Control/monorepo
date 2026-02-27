@@ -11,7 +11,7 @@ export type StateProvider = {
    * @param options
    * @param subscribe
    */
-  request(
+  get(
     path: string,
     options: { type: 'body' | 'header' | 'index'; range?: string },
     subscribe: boolean
@@ -21,7 +21,7 @@ export type StateProvider = {
    * Unsubscribes from updates for the given resource. After this is called, the state bus should no longer send updates for the resource to this state bus.
    * @param path
    */
-  unsubscribe(
+  forget(
     path: string,
     options: { type: 'body' | 'header' | 'index'; range?: string }
   ): void;
@@ -33,7 +33,7 @@ export type StateProvider = {
    * @param payload the new body of the resource
    * @returns
    */
-  upsert: (
+  put: (
     path: string,
     payload:
       | { body: string | undefined } // TODO add the index as a type to check for folder
@@ -53,5 +53,5 @@ export type StateProvider = {
    * @param args.path the path of the resource to delete
    * @returns
    */
-  remove: (path: string) => void;
+  del: (path: string) => void;
 };

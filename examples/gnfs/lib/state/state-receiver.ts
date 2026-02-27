@@ -1,4 +1,4 @@
-import { IndexBody } from '../gnfs/index-body';
+import { IndexBody } from './index-body.js';
 
 /**
  * allows to connect a state provider to this

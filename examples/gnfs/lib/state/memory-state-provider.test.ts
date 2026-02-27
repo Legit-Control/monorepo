@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createMemoryStateProvider } from './memory-state-provider';
+import { createMemoryStateProvider } from './memory-state-provider.js';
 
 describe('createMemoryStateProvider', () => {
   let provider: ReturnType<typeof createMemoryStateProvider>;
@@ -10,19 +10,19 @@ describe('createMemoryStateProvider', () => {
     mockBus = {
       send: vi.fn(),
       connect: vi.fn(),
-      request: vi.fn(),
-      unsubscribe: vi.fn(),
+      get: vi.fn(),
+      forget: vi.fn(),
     };
 
     provider.connectReceiver(mockBus);
   });
 
-  describe('upsert', () => {
+  describe('put', () => {
     it('should create a file at root level', () => {
-      provider.upsert('/test.txt', { body: 'Hello World' });
+      provider.put('/test.txt', { body: 'Hello World' });
 
       // Request the file to verify it was created
-      provider.request('/test.txt', { type: 'body' }, false);
+      provider.get('/test.txt', { type: 'body' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
@@ -34,10 +34,10 @@ describe('createMemoryStateProvider', () => {
     });
 
     it('should create nested files with parent directories', () => {
-      provider.upsert('/foo/bar/baz.txt', { body: 'Nested Content' });
+      provider.put('/foo/bar/baz.txt', { body: 'Nested Content' });
 
       // Request the file to verify it was created
-      provider.request('/foo/bar/baz.txt', { type: 'body' }, false);
+      provider.get('/foo/bar/baz.txt', { type: 'body' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
@@ -49,10 +49,10 @@ describe('createMemoryStateProvider', () => {
     });
 
     it('should create an empty directory when body is undefined', () => {
-      provider.upsert('/mydir', { body: undefined });
+      provider.put('/mydir', { body: undefined });
 
       // Request index to verify it's a directory
-      provider.request('/mydir', { type: 'index' }, false);
+      provider.get('/mydir', { type: 'index' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: { path: '/mydir', body: [], headers: { type: 'index' } },
@@ -60,9 +60,9 @@ describe('createMemoryStateProvider', () => {
     });
 
     it('should update metadata when creating a file', () => {
-      provider.upsert('/test.txt', { body: 'Content' });
+      provider.put('/test.txt', { body: 'Content' });
 
-      provider.request('/test.txt', { type: 'header' }, false);
+      provider.get('/test.txt', { type: 'header' }, false);
 
       const call = mockBus.send.mock.calls.find(
         (c: any) => c[0]?.update?.headers?.type === 'header'
@@ -78,11 +78,11 @@ describe('createMemoryStateProvider', () => {
 
     it('should notify subscribers when a file is created', () => {
       provider.connectReceiver(mockBus);
-      provider.request('/test.txt', { type: 'body' }, true);
+      provider.get('/test.txt', { type: 'body' }, true);
 
       mockBus.send.mockClear();
 
-      provider.upsert('/test.txt', { body: 'New Content' });
+      provider.put('/test.txt', { body: 'New Content' });
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
@@ -94,10 +94,10 @@ describe('createMemoryStateProvider', () => {
     });
 
     it('should update existing file metadata', () => {
-      provider.upsert('/test.txt', { body: 'Original' });
+      provider.put('/test.txt', { body: 'Original' });
 
       const originalMeta = (() => {
-        provider.request('/test.txt', { type: 'header' }, false);
+        provider.get('/test.txt', { type: 'header' }, false);
         const call = mockBus.send.mock.calls.find(
           (c: any) => c[0]?.update?.headers?.type === 'header'
         );
@@ -107,10 +107,10 @@ describe('createMemoryStateProvider', () => {
       // Wait a bit to ensure time difference
       const startTime = originalMeta.mtime;
 
-      provider.upsert('/test.txt', { body: 'Updated' });
+      provider.put('/test.txt', { body: 'Updated' });
 
       const updatedMeta = (() => {
-        provider.request('/test.txt', { type: 'header' }, false);
+        provider.get('/test.txt', { type: 'header' }, false);
         const call = mockBus.send.mock.calls.find(
           (c: any, i: number) =>
             c[0]?.update?.headers?.type === 'header' && i > 0
@@ -124,14 +124,14 @@ describe('createMemoryStateProvider', () => {
 
   describe('request', () => {
     beforeEach(() => {
-      provider.upsert('/file.txt', { body: 'File Content' });
-      provider.upsert('/dir', { body: undefined });
-      provider.upsert('/dir/nested.txt', { body: 'Nested' });
+      provider.put('/file.txt', { body: 'File Content' });
+      provider.put('/dir', { body: undefined });
+      provider.put('/dir/nested.txt', { body: 'Nested' });
     });
 
     describe('body requests', () => {
       it('should return file content for existing file', () => {
-        provider.request('/file.txt', { type: 'body' }, false);
+        provider.get('/file.txt', { type: 'body' }, false);
 
         expect(mockBus.send).toHaveBeenCalledWith({
           update: {
@@ -143,7 +143,7 @@ describe('createMemoryStateProvider', () => {
       });
 
       it('should return null for non-existent resource', () => {
-        provider.request('/nonexistent.txt', { type: 'body' }, false);
+        provider.get('/nonexistent.txt', { type: 'body' }, false);
 
         expect(mockBus.send).toHaveBeenCalledWith({
           update: {
@@ -155,7 +155,7 @@ describe('createMemoryStateProvider', () => {
       });
 
       it('should return undefined for directory', () => {
-        provider.request('/dir', { type: 'body' }, false);
+        provider.get('/dir', { type: 'body' }, false);
 
         expect(mockBus.send).toHaveBeenCalledWith({
           update: { path: '/dir', body: undefined, headers: { type: 'body' } },
@@ -165,7 +165,7 @@ describe('createMemoryStateProvider', () => {
 
     describe('header requests', () => {
       it('should return metadata for existing file', () => {
-        provider.request('/file.txt', { type: 'header' }, false);
+        provider.get('/file.txt', { type: 'header' }, false);
 
         const call = mockBus.send.mock.calls.find(
           (c: any) => c[0]?.update?.headers?.type === 'header'
@@ -181,7 +181,7 @@ describe('createMemoryStateProvider', () => {
       });
 
       it('should return null for non-existent file', () => {
-        provider.request('/nonexistent.txt', { type: 'header' }, false);
+        provider.get('/nonexistent.txt', { type: 'header' }, false);
 
         const call = mockBus.send.mock.calls.find(
           (c: any) => c[0]?.update?.headers?.type === 'header'
@@ -192,7 +192,7 @@ describe('createMemoryStateProvider', () => {
 
     describe('index requests', () => {
       it('should return index for directory', () => {
-        provider.request('/dir', { type: 'index' }, false);
+        provider.get('/dir', { type: 'index' }, false);
 
         const call = mockBus.send.mock.calls.find(
           (c: any) => c[0]?.update?.headers?.type === 'index'
@@ -200,11 +200,11 @@ describe('createMemoryStateProvider', () => {
         expect(call).toBeDefined();
 
         const index = call[0].update.body;
-        expect(index).toEqual([{ link: '/nested.txt' }]);
+        expect(index).toEqual([{ link: 'nested.txt' }]);
       });
 
       it('should return empty index for empty directory', () => {
-        provider.request('/file.txt', { type: 'index' }, false);
+        provider.get('/file.txt', { type: 'index' }, false);
 
         const call = mockBus.send.mock.calls.find(
           (c: any) => c[0]?.update?.headers?.type === 'index'
@@ -213,7 +213,7 @@ describe('createMemoryStateProvider', () => {
       });
 
       it('should return null for non-existent directory', () => {
-        provider.request('/nonexistent', { type: 'index' }, false);
+        provider.get('/nonexistent', { type: 'index' }, false);
 
         const call = mockBus.send.mock.calls.find(
           (c: any) => c[0]?.update?.headers?.type === 'index'
@@ -224,11 +224,11 @@ describe('createMemoryStateProvider', () => {
 
     describe('subscriptions', () => {
       it('should add subscription when subscribe is true', () => {
-        provider.request('/file.txt', { type: 'body' }, true);
+        provider.get('/file.txt', { type: 'body' }, true);
 
         // Trigger an update
         mockBus.send.mockClear();
-        provider.upsert('/file.txt', { body: 'Updated Content' });
+        provider.put('/file.txt', { body: 'Updated Content' });
 
         expect(mockBus.send).toHaveBeenCalledWith({
           update: {
@@ -240,11 +240,11 @@ describe('createMemoryStateProvider', () => {
       });
 
       it('should not send updates when not subscribed', () => {
-        provider.request('/file.txt', { type: 'body' }, false);
+        provider.get('/file.txt', { type: 'body' }, false);
 
         // Trigger an update
         mockBus.send.mockClear();
-        provider.upsert('/file.txt', { body: 'Updated Content' });
+        provider.put('/file.txt', { body: 'Updated Content' });
 
         expect(mockBus.send).not.toHaveBeenCalled();
       });
@@ -254,34 +254,34 @@ describe('createMemoryStateProvider', () => {
   describe('unsubscribe', () => {
     it('should remove subscription', () => {
       // Subscribe first
-      provider.request('/file.txt', { type: 'body' }, true);
+      provider.get('/file.txt', { type: 'body' }, true);
 
       // Unsubscribe
-      provider.unsubscribe('/file.txt', { type: 'body' });
+      provider.forget('/file.txt', { type: 'body' });
 
       // Trigger an update
       mockBus.send.mockClear();
-      provider.upsert('/file.txt', { body: 'Updated Content' });
+      provider.put('/file.txt', { body: 'Updated Content' });
 
       expect(mockBus.send).not.toHaveBeenCalled();
     });
 
     it('should handle independent subscriptions by type', () => {
-      provider.upsert('/test.txt', { body: 'Content' });
+      provider.put('/test.txt', { body: 'Content' });
 
       // Subscribe to body
-      provider.request('/test.txt', { type: 'body' }, true);
+      provider.get('/test.txt', { type: 'body' }, true);
 
       // Subscribe to header
-      provider.request('/test.txt', { type: 'header' }, true);
+      provider.get('/test.txt', { type: 'header' }, true);
 
       // Unsubscribe from body only
-      provider.unsubscribe('/test.txt', { type: 'body' });
+      provider.forget('/test.txt', { type: 'body' });
 
       mockBus.send.mockClear();
 
       // Trigger update
-      provider.upsert('/test.txt', { body: 'Updated' });
+      provider.put('/test.txt', { body: 'Updated' });
 
       // Should only receive header update, not body
       const calls = mockBus.send.mock.calls;
@@ -297,21 +297,21 @@ describe('createMemoryStateProvider', () => {
     });
   });
 
-  describe('remove', () => {
+  describe('delete', () => {
     beforeEach(() => {
-      provider.upsert('/file.txt', { body: 'Content' });
-      provider.upsert('/dir', { body: undefined });
-      provider.upsert('/dir/nested1.txt', { body: 'Nested 1' });
-      provider.upsert('/dir/nested2.txt', { body: 'Nested 2' });
-      provider.upsert('/dir/subdir', { body: undefined });
-      provider.upsert('/dir/subdir/deep.txt', { body: 'Deep' });
+      provider.put('/file.txt', { body: 'Content' });
+      provider.put('/dir', { body: undefined });
+      provider.put('/dir/nested1.txt', { body: 'Nested 1' });
+      provider.put('/dir/nested2.txt', { body: 'Nested 2' });
+      provider.put('/dir/subdir', { body: undefined });
+      provider.put('/dir/subdir/deep.txt', { body: 'Deep' });
     });
 
-    it('should remove a file', () => {
-      provider.remove('/file.txt');
+    it('should delete a file', () => {
+      provider.del('/file.txt');
 
       // Verify it's gone
-      provider.request('/file.txt', { type: 'body' }, false);
+      provider.get('/file.txt', { type: 'body' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: { path: '/file.txt', body: null, headers: { type: 'body' } },
@@ -319,12 +319,12 @@ describe('createMemoryStateProvider', () => {
     });
 
     it('should remove a directory recursively', () => {
-      provider.remove('/dir');
+      provider.del('/dir');
 
       // Verify all nested files are gone
-      provider.request('/dir/nested1.txt', { type: 'body' }, false);
-      provider.request('/dir/nested2.txt', { type: 'body' }, false);
-      provider.request('/dir/subdir/deep.txt', { type: 'body' }, false);
+      provider.get('/dir/nested1.txt', { type: 'body' }, false);
+      provider.get('/dir/nested2.txt', { type: 'body' }, false);
+      provider.get('/dir/subdir/deep.txt', { type: 'body' }, false);
 
       const calls = mockBus.send.mock.calls.filter(
         (c: any) => c[0]?.update?.headers?.type === 'body'
@@ -336,13 +336,13 @@ describe('createMemoryStateProvider', () => {
       });
     });
 
-    it('should notify subscribers on removal', () => {
+    it('should notify subscribers on deletion', () => {
       provider.connectReceiver(mockBus);
-      provider.request('/file.txt', { type: 'body' }, true);
+      provider.get('/file.txt', { type: 'body' }, true);
 
       mockBus.send.mockClear();
 
-      provider.remove('/file.txt');
+      provider.del('/file.txt');
 
       expect(mockBus.send).toHaveBeenCalledWith({
         delete: { path: '/file.txt' },
@@ -351,15 +351,15 @@ describe('createMemoryStateProvider', () => {
 
     it('should handle non-existent path gracefully', () => {
       expect(() => {
-        provider.remove('/nonexistent');
+        provider.del('/nonexistent');
       }).not.toThrow();
     });
 
     it('should remove metadata', () => {
-      provider.upsert('/test.txt', { body: 'Test' });
-      provider.remove('/test.txt');
+      provider.put('/test.txt', { body: 'Test' });
+      provider.del('/test.txt');
 
-      provider.request('/test.txt', { type: 'header' }, false);
+      provider.get('/test.txt', { type: 'header' }, false);
 
       const call = mockBus.send.mock.calls.find(
         (c: any) => c[0]?.update?.headers?.type === 'header'
@@ -368,67 +368,11 @@ describe('createMemoryStateProvider', () => {
     });
   });
 
-  describe('send', () => {
-    it('should handle body updates from connected bus', () => {
-      const connectedBus = {
-        send: vi.fn(),
-        connect: vi.fn(),
-        request: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      provider.connectReceiver(connectedBus);
-
-      // Simulate receiving an update from the connected bus
-      provider.send({
-        update: {
-          path: '/remote.txt',
-          body: 'Remote Content',
-          headers: { type: 'body' },
-        },
-      });
-
-      // Verify the file was created
-      provider.request('/remote.txt', { type: 'body' }, false);
-
-      expect(mockBus.send).toHaveBeenCalledWith({
-        update: {
-          path: '/remote.txt',
-          body: 'Remote Content',
-          headers: { type: 'body' },
-        },
-      });
-    });
-
-    it('should handle delete messages from connected bus', () => {
-      provider.upsert('/test.txt', { body: 'Test' });
-
-      const connectedBus = {
-        send: vi.fn(),
-        connect: vi.fn(),
-        request: vi.fn(),
-        unsubscribe: vi.fn(),
-      };
-
-      provider.connectReceiver(connectedBus);
-
-      // Simulate receiving a delete from the connected bus
-      provider.send({ delete: { path: '/test.txt' } });
-
-      // Verify the file was deleted
-      provider.request('/test.txt', { type: 'body' }, false);
-
-      expect(mockBus.send).toHaveBeenCalledWith({
-        update: { path: '/test.txt', body: null, headers: { type: 'body' } },
-      });
-    });
-  });
-
   describe('nested paths', () => {
     it('should handle deeply nested paths', () => {
-      provider.upsert('/a/b/c/d/e/file.txt', { body: 'Deep' });
+      provider.put('/a/b/c/d/e/file.txt', { body: 'Deep' });
 
-      provider.request('/a/b/c/d/e/file.txt', { type: 'body' }, false);
+      provider.get('/a/b/c/d/e/file.txt', { type: 'body' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
@@ -440,11 +384,11 @@ describe('createMemoryStateProvider', () => {
     });
 
     it('should create intermediate directories', () => {
-      provider.upsert('/parent/child/file.txt', { body: 'Content' });
+      provider.put('/parent/child/file.txt', { body: 'Content' });
 
       // Verify intermediate directories were created
-      provider.request('/parent', { type: 'index' }, false);
-      provider.request('/parent/child', { type: 'index' }, false);
+      provider.get('/parent', { type: 'index' }, false);
+      provider.get('/parent/child', { type: 'index' }, false);
 
       const calls = mockBus.send.mock.calls.filter(
         (c: any) => c[0]?.update?.headers?.type === 'index'
@@ -453,11 +397,11 @@ describe('createMemoryStateProvider', () => {
       expect(calls.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('should handle removal of intermediate directories', () => {
-      provider.upsert('/parent/child/file.txt', { body: 'Content' });
-      provider.remove('/parent/child');
+    it('should handle deletion of intermediate directories', () => {
+      provider.put('/parent/child/file.txt', { body: 'Content' });
+      provider.del('/parent/child');
 
-      provider.request('/parent/child', { type: 'body' }, false);
+      provider.get('/parent/child', { type: 'body' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
@@ -479,21 +423,13 @@ describe('createMemoryStateProvider', () => {
 
       providerWithState.connectReceiver(mockBus);
 
-      providerWithState.request('/initial.txt', { type: 'body' }, false);
-      providerWithState.request('/dir/nested.txt', { type: 'body' }, false);
+      providerWithState.get('/initial.txt', { type: 'body' }, false);
+      providerWithState.get('/dir/nested.txt', { type: 'body' }, false);
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
           path: '/initial.txt',
           body: 'Initial Content',
-          headers: { type: 'body' },
-        },
-      });
-
-      expect(mockBus.send).toHaveBeenCalledWith({
-        update: {
-          path: '/dir/nested.txt',
-          body: 'Nested',
           headers: { type: 'body' },
         },
       });

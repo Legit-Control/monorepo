@@ -1,6 +1,6 @@
-import { IndexBody } from '../gnfs/index-body';
-import { StateProvider } from './state-provider';
-import { StateReceiver } from './state-receiver';
+import { IndexBody } from './index-body.js';
+import { StateProvider } from './state-provider.js';
+import { StateReceiver } from './state-receiver.js';
 
 /**
  * Type definition for a tree structure that can contain data (string) or nested records of the same type.
@@ -94,7 +94,7 @@ export const createMemoryStateProvider = (
       connectedReceiver = stateReceiver;
     },
 
-    request(
+    get(
       path: string,
       options: { type: 'body' | 'header' | 'index'; range?: string },
       subscribe: boolean
@@ -179,7 +179,7 @@ export const createMemoryStateProvider = (
       }
     },
 
-    unsubscribe(
+    forget(
       path: string,
       options: { type: 'body' | 'header' | 'index'; range?: string }
     ): void {
@@ -187,7 +187,7 @@ export const createMemoryStateProvider = (
     },
 
     // SumpleCUD methods
-    upsert(
+    put(
       path: string,
       payload:
         | { body: string | undefined }
@@ -222,7 +222,7 @@ export const createMemoryStateProvider = (
             }
 
             // before the last segment - use the upsert function to create the folder
-            memoryStateProvider.upsert(currentPath, { body: undefined });
+            memoryStateProvider.put(currentPath, { body: undefined });
           }
 
           // NOTE: upsert is not pure for now, it adds the segment the state lets assert the change
@@ -341,7 +341,7 @@ export const createMemoryStateProvider = (
       }
     },
 
-    remove(path: string): void {
+    del(path: string): void {
       // Navigate to the parent directory
       const segments = path.replace(/^\//, '').split('/');
       const finalSegment = segments[segments.length - 1];
@@ -379,7 +379,7 @@ export const createMemoryStateProvider = (
         for (const [key] of Object.entries(childObj)) {
           const childPath = path === '/' ? `/${key}` : `${path}/${key}`;
           // Recursively remove each child
-          memoryStateProvider.remove(childPath);
+          memoryStateProvider.del(childPath);
         }
       }
 

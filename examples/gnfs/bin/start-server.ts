@@ -95,7 +95,7 @@ function startNfsServer(
       asyncGnfs.connect(memoryStateProvider);
 
       // NOTE: create a filder to serve
-      await memoryStateProvider.upsert('/my_serve_folder/file.txt', {
+      await memoryStateProvider.put('/my_serve_folder/file.txt', {
         body: 'Hello, world!',
       });
 

@@ -1,6 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createGnfs, Gnfs } from '../gnfs';
-import fs from 'fs';
+import { describe, it, expect } from 'vitest';
 import { AsyncGnfs } from './async-gnfs';
 import { createMemoryStateProvider } from '../state/memory-state-provider';
 
@@ -15,7 +13,7 @@ describe('Async GNFS', () => {
 
     expect(files).toEqual([]);
 
-    await memoryStateProvider.upsert('/file.txt', { body: 'Hello, world!' });
+    await memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
 
     const filesAfter = await asyncGnfs.readdir('/');
     expect(filesAfter).toEqual(['file.txt']);
@@ -47,7 +45,7 @@ describe('Async GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    await memoryStateProvider.upsert('/file.txt', { body: 'Hello, world!' });
+    await memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
 
     const handle = await asyncGnfs.open('/file.txt', 'r+');
     const readContentBuffer = Buffer.alloc(13);
@@ -90,7 +88,7 @@ describe('Async GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    await memoryStateProvider.upsert('/path/to/file.txt', {
+    await memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
     });
 
@@ -106,7 +104,7 @@ describe('Async GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    await memoryStateProvider.upsert('/path/to/file.txt', {
+    await memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
     });
 

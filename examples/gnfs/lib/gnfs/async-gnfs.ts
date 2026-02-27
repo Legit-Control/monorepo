@@ -4,7 +4,7 @@ import { Buffer } from 'node:buffer';
 
 import { StateReceiver } from '../state/state-receiver.js';
 import { StateProvider } from '../state/state-provider.js';
-import { IndexBody } from './index-body.js';
+import { IndexBody } from '../state/index-body.js';
 
 export class AsyncGnfsFileHandle {
   constructor(
@@ -130,7 +130,7 @@ export class AsyncGnfs implements StateReceiver {
   connect(stateProvider: StateProvider) {
     stateProvider.connectReceiver(this);
 
-    this.backingState?.upsert('/', { body: undefined });
+    this.backingState?.put('/', { body: undefined });
     this.backingState = stateProvider;
   }
 
@@ -226,7 +226,7 @@ export class AsyncGnfs implements StateReceiver {
   > = {};
 
   private async putFileHeader(path: string, headerData: Partial<HeaderData>) {
-    this.backingState?.upsert(path, {
+    this.backingState?.put(path, {
       headers: headerData,
     });
   }
@@ -239,7 +239,7 @@ export class AsyncGnfs implements StateReceiver {
 
       this.fileHeaderAsks[path].push({ resolve, reject });
     });
-    this.backingState?.request(path, { type: 'header' }, false);
+    this.backingState?.get(path, { type: 'header' }, false);
 
     return await fileContent;
   }
@@ -253,7 +253,7 @@ export class AsyncGnfs implements StateReceiver {
   > = {};
 
   async putFile(path: string, content: string) {
-    this.backingState?.upsert(path, { body: content });
+    this.backingState?.put(path, { body: content });
   }
 
   async getFile(path: string): Promise<string | null | undefined> {
@@ -266,7 +266,7 @@ export class AsyncGnfs implements StateReceiver {
         this.fileAsks[path].push({ resolve, reject });
       }
     );
-    this.backingState?.request(path, { type: 'body' }, false);
+    this.backingState?.get(path, { type: 'body' }, false);
 
     return await fileContent;
   }
@@ -284,7 +284,7 @@ export class AsyncGnfs implements StateReceiver {
 
       this.indexAsks[path].push({ resolve, reject });
     });
-    this.backingState?.request(path, { type: 'index' }, false);
+    this.backingState?.get(path, { type: 'index' }, false);
 
     return await indexContent;
   }
@@ -378,7 +378,7 @@ export class AsyncGnfs implements StateReceiver {
   }
 
   async mkdir(path: string, options: { mode: number }): Promise<void> {
-    this.backingState?.upsert(path, {
+    this.backingState?.put(path, {
       body: undefined,
     });
     throw new Error('Method not implemented: mkdir');
@@ -426,7 +426,7 @@ export class AsyncGnfs implements StateReceiver {
     });
   }
 
-  async writeFile(path, content) {
-    throw new Error('Method not implemented: writeFile');
-  }
+  // async writeFile(path, content) {
+  //   throw new Error('Method not implemented: writeFile');
+  // }
 }
