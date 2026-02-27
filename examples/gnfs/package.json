@@ -3,17 +3,21 @@
   "version": "0.0.9",
   "description": "CLI tool to serve any filesystem via NFS on macOS",
   "type": "module",
-  "main": "bin/start-server.js",
+  "main": "dist/start-server.js",
   "bin": {
-    "gnfs": "bin/start-server.js"
+    "gnfs": "dist/start-server.js"
   },
   "files": [
-    "bin/start-server.js",
+    "dist",
     "readme.md",
     "package.json"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "vite build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "dev": "tsx bin/start-server.ts",
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": [
     "nfs",
@@ -28,6 +32,13 @@
   "dependencies": {
     "@legit-sdk/nfs-serve": "workspace:*",
     "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18.0.0"
