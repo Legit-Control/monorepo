@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createGnfs, Gnfs } from '../gnfs';
 import fs from 'fs';
 import { AsyncGnfs } from './async-gnfs';
-import { createMemoryStateProvider } from './memory-state-provider';
+import { createMemoryStateProvider } from '../state/memory-state-provider';
 
 describe('Async GNFS', () => {
   it('should read the root folder', async () => {

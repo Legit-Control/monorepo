@@ -10,7 +10,7 @@ import {
   createNfs3Server,
   createFileHandleManager,
 } from '@legit-sdk/nfs-serve';
-import { createMemoryStateProvider } from '../lib/gnfs/memory-state-provider';
+import { createMemoryStateProvider } from '../lib/state/memory-state-provider';
 import { AsyncGnfs } from '../lib/gnfs/async-gnfs';
 
 // Function to check if a port is available

@@ -2,11 +2,9 @@ import * as fsDisk from 'node:fs';
 import type { FileHandle } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
 
-import {
-  StateProvider,
-  StateReceiver,
-  IndexBody,
-} from './memory-state-provider.js';
+import { StateReceiver } from '../state/state-receiver.js';
+import { StateProvider } from '../state/state-provider.js';
+import { IndexBody } from './index-body.js';
 
 export class AsyncGnfsFileHandle {
   constructor(
