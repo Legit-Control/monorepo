@@ -6,6 +6,7 @@ We use [Changesets](https://github.com/changesets/changesets/) to manage version
 
 When you created changes on a branch please run changesets to trigger a new version or update the changelog:
 
+
 ```bash
 pnpm changeset
 ```
@@ -14,11 +15,9 @@ This will prompt you to:
 
 1. Select the packages affected by your changes.
 2. Choose a bump type:
-
 - `patch` → bug fixes, small improvements
 - `minor` → new features, backwards-compatible
 - `major` → breaking changes
-
 3. Add a summary describing your changes.
 
 After completion, a markdown file will be created in .changeset/ (e.g., red-fox.md).
