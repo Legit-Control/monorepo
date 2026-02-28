@@ -1,4 +1,4 @@
-# Legit Monorepo
+# Legit Hello
 
 ### Meet Legit SDK — fail-safe apps made simple.
 
