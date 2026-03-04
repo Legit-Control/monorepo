@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createMemoryStateProvider } from './memory-state-provider.js';
+import { createMemoryBackedState } from './memory-backed-state.js';
 
-describe('createMemoryStateProvider', () => {
-  let provider: ReturnType<typeof createMemoryStateProvider>;
+describe('createMemoryBackedState', () => {
+  let provider: ReturnType<typeof createMemoryBackedState>;
   let mockBus: any;
 
   beforeEach(() => {
-    provider = createMemoryStateProvider();
+    provider = createMemoryBackedState();
     mockBus = {
       send: vi.fn(),
       connect: vi.fn(),

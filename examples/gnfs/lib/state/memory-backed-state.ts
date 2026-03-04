@@ -1,3 +1,4 @@
+import { GnfsInterface } from '../gnfs/gnfs-interface.js';
 import { IndexBody } from './index-body.js';
 import { BackingStateInterface } from './state-provider.js';
 
@@ -67,7 +68,7 @@ export const createMemoryBackedState = (
     return { ...metaData[path], size: 0 };
   }
 
-  let connectedReceiver: StateReceiver | null = null;
+  let connectedReceiver: GnfsInterface | null = null;
   // Track subscriptions by path and serialized options
   const subscriptions: Record<string, Record<string, boolean>> = {};
 
@@ -86,10 +87,10 @@ export const createMemoryBackedState = (
   }
 
   const memoryStateProvider: BackingStateInterface & {
-    connectReceiver: (stateReceiver: G) => void;
+    connectReceiver: (stateReceiver: GnfsInterface) => void;
   } = {
     // StateBus methods
-    connectReceiver(stateReceiver: StateReceiver): void {
+    connectReceiver(stateReceiver: GnfsInterface): void {
       connectedReceiver = stateReceiver;
     },
 
