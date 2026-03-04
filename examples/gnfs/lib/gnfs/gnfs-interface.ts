@@ -1,10 +1,10 @@
-import { IndexBody } from './index-body.js';
+import { IndexBody } from '../state/index-body.js';
 
 /**
  * allows to connect a state provider to this
  */
 
-export type StateReceiver = {
+export type GnfsInterface = {
   /**
    * Sends a resource message to the connected state bus.
    *

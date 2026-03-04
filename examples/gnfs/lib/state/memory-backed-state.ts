@@ -1,6 +1,5 @@
 import { IndexBody } from './index-body.js';
-import { StateProvider } from './state-provider.js';
-import { StateReceiver } from './state-receiver.js';
+import { BackingStateInterface } from './state-provider.js';
 
 /**
  * Type definition for a tree structure that can contain data (string) or nested records of the same type.
@@ -10,9 +9,9 @@ interface RecursiveRecord {
   [key: string]: string | RecursiveRecord;
 }
 
-export const createMemoryStateProvider = (
+export const createMemoryBackedState = (
   initialState: RecursiveRecord = {}
-): StateProvider => {
+): BackingStateInterface => {
   let state: RecursiveRecord = { ...initialState };
   let metaData: Record<
     string,
@@ -42,7 +41,7 @@ export const createMemoryStateProvider = (
         return null;
       }
 
-      if (!current[segment]) {
+      if (current[segment] === undefined) {
         return null;
       }
 
@@ -86,8 +85,8 @@ export const createMemoryStateProvider = (
     return `${JSON.stringify(options)}`;
   }
 
-  const memoryStateProvider: StateProvider & {
-    connectReceiver: (stateReceiver: StateReceiver) => void;
+  const memoryStateProvider: BackingStateInterface & {
+    connectReceiver: (stateReceiver: G) => void;
   } = {
     // StateBus methods
     connectReceiver(stateReceiver: StateReceiver): void {

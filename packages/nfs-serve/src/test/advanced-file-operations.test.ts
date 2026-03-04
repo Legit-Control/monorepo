@@ -125,7 +125,7 @@ describe('Advanced File Operations', () => {
     });
 
 
-  test.todo('Symbolic Links (SYMLINK/READLINK Procedures)', () => {
+  test('Symbolic Links (SYMLINK/READLINK Procedures)', () => {
     it('should create symbolic link to file', async () => {
       const targetFile = path.join(MOUNT_POINT, 'target-file.txt');
       const linkFile = path.join(MOUNT_POINT, 'symlink-to-file.txt');

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { Gnfs } from './gnfs';
-import { createMemoryStateProvider } from '../state/memory-state-provider';
+import { createMemoryBackedState } from '../state/memory-backed-state.js';
 
 describe('GNFS', () => {
   it('should read the root folder', async () => {
     const asyncGnfs = new Gnfs();
-    const memoryStateProvider = createMemoryStateProvider();
+    const memoryStateProvider = createMemoryBackedState();
 
     asyncGnfs.connect(memoryStateProvider);
 
@@ -13,7 +13,7 @@ describe('GNFS', () => {
 
     expect(files).toEqual([]);
 
-    await memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
+    memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
 
     const filesAfter = await asyncGnfs.readdir('/');
     expect(filesAfter).toEqual(['file.txt']);
@@ -41,11 +41,11 @@ describe('GNFS', () => {
 
   it('truncate should workd', async () => {
     const asyncGnfs = new Gnfs();
-    const memoryStateProvider = createMemoryStateProvider();
+    const memoryStateProvider = createMemoryBackedState();
 
     asyncGnfs.connect(memoryStateProvider);
 
-    await memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
+    memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
 
     const handle = await asyncGnfs.open('/file.txt', 'r+');
     const readContentBuffer = Buffer.alloc(13);
@@ -80,15 +80,25 @@ describe('GNFS', () => {
     expect(bufferAfter.toString('utf8', 0, bytesReadAfter)).toEqual(
       'Hello, mars!'
     );
+
+    memoryStateProvider.put('/my_serve_folder/file.txt', {
+      body: 'Hello, world!',
+    });
+
+    const fh = await asyncGnfs.open('/my_serve_folder/file.txt', 'r+');
+    await fh.truncate(0);
+
+    const stats = await fh.stat();
+    expect(stats.size).toEqual(0);
   });
 
   it('should fail when stat an non existing file', async () => {
     const asyncGnfs = new Gnfs();
-    const memoryStateProvider = createMemoryStateProvider();
+    const memoryStateProvider = createMemoryBackedState();
 
     asyncGnfs.connect(memoryStateProvider);
 
-    await memoryStateProvider.put('/path/to/file.txt', {
+    memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
     });
 
@@ -100,11 +110,11 @@ describe('GNFS', () => {
 
   it('should read the root folder', async () => {
     const asyncGnfs = new Gnfs();
-    const memoryStateProvider = createMemoryStateProvider();
+    const memoryStateProvider = createMemoryBackedState();
 
     asyncGnfs.connect(memoryStateProvider);
 
-    await memoryStateProvider.put('/path/to/file.txt', {
+    memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
     });
 
@@ -122,5 +132,176 @@ describe('GNFS', () => {
 
     const filesAfterPathTo = await asyncGnfs.readdir('/path/to');
     expect(filesAfterPathTo).toEqual(['file.txt']);
+  });
+
+  it('should allow to create a folder', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/path/to/file.txt', {
+      body: 'Hello, world!',
+    });
+
+    const filesBefore = await asyncGnfs.readdir('/');
+    expect(filesBefore).toEqual(['path']);
+
+    await asyncGnfs.mkdir('/test');
+
+    const filesAfter = await asyncGnfs.readdir('/');
+    expect(filesAfter).toEqual(['path', 'test']);
+  });
+
+  it('should remove a directory with rmdir', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    await asyncGnfs.mkdir('/test');
+
+    const filesBefore = await asyncGnfs.readdir('/');
+    expect(filesBefore).toEqual(['test']);
+
+    await asyncGnfs.rmdir('/test');
+
+    const filesAfter = await asyncGnfs.readdir('/');
+    expect(filesAfter).toEqual([]);
+  });
+
+  it('should remove a file with unlink', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/file.txt', {
+      body: 'Hello, world!',
+    });
+
+    const filesBefore = await asyncGnfs.readdir('/');
+    expect(filesBefore).toEqual(['file.txt']);
+
+    await asyncGnfs.unlink('/file.txt');
+
+    const filesAfter = await asyncGnfs.readdir('/');
+    expect(filesAfter).toEqual([]);
+
+    await expect(asyncGnfs.stat('/file.txt')).rejects.toThrow();
+  });
+
+  it('should rename/move a file', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/oldname.txt', {
+      body: 'Hello, world!',
+    });
+
+    const filesBefore = await asyncGnfs.readdir('/');
+    expect(filesBefore).toEqual(['oldname.txt']);
+
+    await asyncGnfs.rename('/oldname.txt', '/newname.txt');
+
+    const filesAfter = await asyncGnfs.readdir('/');
+    expect(filesAfter).toEqual(['newname.txt']);
+
+    const handle = await asyncGnfs.open('/newname.txt', 'r+');
+    const { bytesRead, buffer } = await handle.read(Buffer.alloc(13), 0, 13, 0);
+    expect(buffer.toString('utf8', 0, bytesRead)).toEqual('Hello, world!');
+  });
+
+  it('should rename/move a directory', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    await asyncGnfs.mkdir('/olddir');
+
+    const filesBefore = await asyncGnfs.readdir('/');
+    expect(filesBefore).toEqual(['olddir']);
+
+    await asyncGnfs.rename('/olddir', '/newdir');
+
+    const filesAfter = await asyncGnfs.readdir('/');
+    expect(filesAfter).toEqual(['newdir']);
+  });
+
+  it.todo('should create a hard link with link', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/original.txt', {
+      body: 'Hello, world!',
+    });
+
+    await asyncGnfs.link('/original.txt', '/link.txt');
+
+    const files = await asyncGnfs.readdir('/');
+    expect(files).toContain('link.txt');
+
+    const handle = await asyncGnfs.open('/link.txt', 'r+');
+    const { bytesRead, buffer } = await handle.read(Buffer.alloc(13), 0, 13, 0);
+    expect(buffer.toString('utf8', 0, bytesRead)).toEqual('Hello, world!');
+  });
+
+  it.todo('should create a symbolic link with symlink', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/original.txt', {
+      body: 'Hello, world!',
+    });
+
+    await asyncGnfs.symlink('/original.txt', '/symlink.txt');
+
+    const files = await asyncGnfs.readdir('/');
+    expect(files).toContain('symlink.txt');
+
+    const linkTarget = await asyncGnfs.readlink('/symlink.txt');
+    expect(linkTarget).toEqual('/original.txt');
+  });
+
+  it.todo('should read a symbolic link with readlink', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/original.txt', {
+      body: 'Hello, world!',
+    });
+
+    await asyncGnfs.symlink('/original.txt', '/symlink.txt');
+
+    const linkTarget = await asyncGnfs.readlink('/symlink.txt');
+    expect(linkTarget).toEqual('/original.txt');
+  });
+
+  it.todo('should change file permissions with chmod', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    memoryStateProvider.put('/file.txt', {
+      body: 'Hello, world!',
+    });
+
+    const statsBefore = await asyncGnfs.stat('/file.txt');
+    expect(statsBefore.mode).toBeDefined();
+
+    await asyncGnfs.chmod('/file.txt', 0o755);
+
+    const statsAfter = await asyncGnfs.stat('/file.txt');
+    expect(statsAfter.mode).toEqual(0o755);
   });
 });

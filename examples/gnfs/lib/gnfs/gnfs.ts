@@ -2,11 +2,11 @@ import * as fsDisk from 'node:fs';
 import type { FileHandle } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
 
-import { StateReceiver } from '../state/state-receiver.js';
-import { StateProvider } from '../state/state-provider.js';
+import { GnfsInterface as GnfsInterface } from './gnfs-interface.js';
+import { BackingStateInterface } from '../state/state-provider.js';
 import { IndexBody } from '../state/index-body.js';
 
-import { AsyncGnfsFileHandle } from './gnfs-filehandle.js';
+import { GnfsFileHandle } from './gnfs-filehandle.js';
 
 type HeaderData = {
   type: 'index' | 'body';
@@ -17,14 +17,12 @@ type HeaderData = {
   fileId: number;
 };
 
-export class Gnfs implements StateReceiver {
-  openFiles: Map<string, AsyncGnfsFileHandle> = new Map();
-
+export class Gnfs implements GnfsInterface {
   // #region Sate bus logic
 
-  backingState: StateProvider | undefined;
+  backingState: BackingStateInterface | undefined;
 
-  connect(stateProvider: StateProvider) {
+  connect(stateProvider: BackingStateInterface) {
     stateProvider.connectReceiver(this);
 
     this.backingState?.put('/', { body: undefined });
@@ -129,7 +127,7 @@ export class Gnfs implements StateReceiver {
   }
 
   private async getFileHeader(path: string): Promise<HeaderData | null> {
-    const fileContent = new Promise<HeaderData | null>((resolve, reject) => {
+    const fileHeaders = new Promise<HeaderData | null>((resolve, reject) => {
       if (!this.fileHeaderAsks[path]) {
         this.fileHeaderAsks[path] = [];
       }
@@ -138,7 +136,7 @@ export class Gnfs implements StateReceiver {
     });
     this.backingState?.get(path, { type: 'header' }, false);
 
-    return await fileContent;
+    return await fileHeaders;
   }
 
   private fileAsks: Record<
@@ -188,7 +186,9 @@ export class Gnfs implements StateReceiver {
 
   // #endregion Sate bus logic
 
-  // #region File system operation stubs needed by createAsyncNfsHandler
+  // #region File system operation needed by createAsyncNfsHandler
+
+  openFiles: Map<string, GnfsFileHandle> = new Map();
 
   async lstat(path: string): Promise<fsDisk.Stats> {
     return this.stat(path);
@@ -202,7 +202,9 @@ export class Gnfs implements StateReceiver {
     const headerData = await this.getFileHeader(path);
 
     if (headerData === null) {
-      throw new Error('ENOENT: no such file or directory, stat ' + path);
+      const e = new Error('ENOENT: no such file or directory, stat ' + path);
+      (e as any).code = 'ENOENT';
+      throw e;
     }
 
     return {
@@ -260,7 +262,7 @@ export class Gnfs implements StateReceiver {
     }
 
     // Create new file handle
-    const fileHandle = new AsyncGnfsFileHandle(path, this);
+    const fileHandle = new GnfsFileHandle(path, this);
 
     // Track the open file handle
     this.openFiles.set(path, fileHandle);
@@ -268,7 +270,7 @@ export class Gnfs implements StateReceiver {
     return fileHandle as unknown as FileHandle;
   }
 
-  closeFileHandle(fileHandle: AsyncGnfsFileHandle) {
+  closeFileHandle(fileHandle: GnfsFileHandle) {
     this.openFiles.delete(fileHandle.path);
   }
 
@@ -277,39 +279,122 @@ export class Gnfs implements StateReceiver {
     return index.map(entry => entry.link);
   }
 
-  async mkdir(path: string, options: { mode: number }): Promise<void> {
+  async mkdir(path: string, options?: { mode: number }): Promise<void> {
     this.backingState?.put(path, {
       body: undefined,
     });
-    throw new Error('Method not implemented: mkdir');
   }
 
   async rmdir(path: string): Promise<void> {
-    throw new Error('Method not implemented: rmdir');
+    if (!this.backingState) {
+      throw new Error('State provider not connected');
+    }
+
+    // Check if path exists and is a directory
+    const stats = await this.stat(path);
+    if (!stats.isDirectory()) {
+      throw new Error(`ENOTDIR: not a directory, rmdir '${path}'`);
+    }
+
+    // Check if directory is empty
+    const entries = await this.readdir(path);
+    if (entries.length > 0) {
+      throw new Error(`ENOTEMPTY: directory not empty, rmdir '${path}'`);
+    }
+
+    this.backingState.del(path);
   }
 
   async unlink(path: string): Promise<void> {
-    throw new Error('Method not implemented: unlink');
+    if (!this.backingState) {
+      throw new Error('State provider not connected');
+    }
+
+    // Check if path exists and is a file
+    const stats = await this.stat(path);
+    if (stats.isDirectory()) {
+      throw new Error(
+        `EISDIR: illegal operation on a directory, unlink '${path}'`
+      );
+    }
+
+    this.backingState.del(path);
+  }
+
+  private async recursiveRename(
+    oldPath: string,
+    newPath: string
+  ): Promise<void> {
+    // Check if oldPath exists
+    const stats = await this.stat(oldPath);
+
+    if (stats.isFile()) {
+      // It's a file: copy content and metadata, then delete old
+      const content = await this.getFile(oldPath);
+      const metadata = await this.getFileHeader(oldPath);
+
+      if (metadata && content !== undefined) {
+        // Write content to new path
+        this.backingState?.put(newPath, { body: content });
+        // Write metadata to new path
+        this.backingState?.put(newPath, {
+          headers: {
+            ctime: metadata.ctime,
+            mtime: metadata.mtime,
+            atime: metadata.atime,
+            size: metadata.size,
+          },
+        });
+      }
+    } else if (stats.isDirectory()) {
+      // It's a directory: create the new directory
+      this.backingState?.put(newPath, { body: undefined });
+
+      // Recursively rename all children
+      const children = await this.readdir(oldPath);
+      for (const child of children) {
+        const childOldPath =
+          oldPath === '/' ? `/${child}` : `${oldPath}/${child}`;
+        const childNewPath =
+          newPath === '/' ? `/${child}` : `${newPath}/${child}`;
+        await this.recursiveRename(childOldPath, childNewPath);
+      }
+    }
+
+    // Delete the old path (for directories, this should only delete the directory itself, not children)
+    this.backingState?.del(oldPath);
   }
 
   async rename(oldPath: string, newPath: string): Promise<void> {
-    throw new Error('Method not implemented: rename');
+    if (!this.backingState) {
+      throw new Error('State provider not connected');
+    }
+
+    await this.recursiveRename(oldPath, newPath);
   }
 
   async link(target: string, path: string): Promise<void> {
-    throw new Error('Method not implemented: link');
+    throw new Error(
+      'Hard links are not supported by the memory-backed state provider'
+    );
   }
 
   async symlink(target: string, path: string): Promise<void> {
-    throw new Error('Method not implemented: symlink');
+    throw new Error(
+      'Symbolic links are not supported by the memory-backed state provider'
+    );
   }
 
   async readlink(path: string): Promise<string> {
-    throw new Error('Method not implemented: readlink');
+    throw new Error(
+      'Symbolic links are not supported by the memory-backed state provider'
+    );
   }
 
   async chmod(path: string, mode: number): Promise<void> {
-    throw new Error('Method not implemented: chmod');
+    throw new Error(
+      'File permissions (chmod) are not supported by the memory-backed state provider'
+    );
   }
 
   async utimes(path: string, atime: Date, mtime: Date): Promise<void> {

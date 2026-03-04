@@ -1,7 +1,8 @@
-import { StateReceiver } from './state-receiver';
+import { GnfsInterface } from '../gnfs/gnfs-interface';
 
-export type StateProvider = {
-  connectReceiver(stateReceiver: StateReceiver): void;
+// TODO rename to backing state
+export type BackingStateInterface = {
+  connectReceiver(stateReceiver: GnfsInterface): void;
 
   /**
    * Requests the resource at the given path from the connected state bus.

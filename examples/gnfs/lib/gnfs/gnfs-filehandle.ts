@@ -1,7 +1,10 @@
-export class AsyncGnfsFileHandle {
+import { type Gnfs } from './gnfs';
+import * as fsDisk from 'node:fs';
+
+export class GnfsFileHandle {
   constructor(
     public path: string,
-    private originFs: AsyncGnfs
+    private originFs: Gnfs
   ) {}
 
   // FileHandle methods needed by createAsyncNfsHandler
@@ -96,6 +99,7 @@ export class AsyncGnfsFileHandle {
 
       this.originFs.putFile(this.path, content.buffer.toString('utf8'));
     } else {
+      console.log('Truncating file to length 0, writing empty content');
       this.originFs.putFile(this.path, '');
     }
   }
