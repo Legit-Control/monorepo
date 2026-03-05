@@ -246,6 +246,33 @@ export const createMemoryBackedState = (
     }
   }
 
+  function putSymlink(
+    segment: string,
+    parentFolder: DirectoryNode,
+    target: string,
+    now: Date
+  ): void {
+    // Create or update the symlink
+    if (!parentFolder.entries[segment]) {
+      // Create new symlink
+      parentFolder.entries[segment] = {
+        type: 'symlink',
+        meta: {
+          ctime: now,
+          mtime: now,
+          atime: now,
+          fileId: currentFileId++,
+        },
+        content: target, // Store symlink target path
+      };
+    } else {
+      // Update existing symlink
+      const existingLink = parentFolder.entries[segment] as SymlinkNode;
+      existingLink.meta.mtime = now;
+      existingLink.content = target;
+    }
+  }
+
   function notifySubscribers(
     path: string,
     payload:
@@ -499,8 +526,11 @@ export const createMemoryBackedState = (
             putFolder(segment, parentFolder, now);
           } else if (payload.type === 'file') {
             putFile(segment, parentFolder, payload.body, now);
+          } else if (payload.type === 'symlink') {
+            putSymlink(segment, parentFolder, payload.body, now);
           } else {
-            throw new Error('Unsupported payload type ' + payload.type);
+            const exhaustiveCheck: never = payload;
+            throw new Error('Unsupported payload type');
           }
 
           notifySubscribers(path, payload);

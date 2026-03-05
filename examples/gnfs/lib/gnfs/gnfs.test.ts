@@ -302,6 +302,110 @@ describe('GNFS', () => {
     expect(linkTarget).toEqual('/original.txt');
   });
 
+  it('symlinks should appear in readdir alongside files', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    // Create a regular file
+    memoryStateProvider.put('/original.txt', {
+      body: 'Hello, world!',
+      type: 'file',
+    });
+
+    // Create a symlink
+    await asyncGnfs.symlink('/original.txt', '/mylink.txt');
+
+    // Create another regular file
+    memoryStateProvider.put('/other.txt', {
+      body: 'Another file',
+      type: 'file',
+    });
+
+    // Check that readdir includes both files and the symlink
+    const files = await asyncGnfs.readdir('/');
+    expect(files).toContain('original.txt');
+    expect(files).toContain('mylink.txt');
+    expect(files).toContain('other.txt');
+    expect(files.length).toBe(3);
+
+    // Verify readlink still works
+    const linkTarget = await asyncGnfs.readlink('/mylink.txt');
+    expect(linkTarget).toEqual('/original.txt');
+  });
+
+  it('lstat should return stats for a directory', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    // Create a directory
+    await asyncGnfs.mkdir('/testdir');
+
+    const stats = await asyncGnfs.lstat('/testdir');
+
+    expect(stats.isDirectory()).toBe(true);
+    expect(stats.isFile()).toBe(false);
+    expect(stats.isSymbolicLink()).toBe(false);
+    expect(stats.mode).toBeDefined();
+    expect(stats.size).toBeDefined();
+    expect(stats.atime).toBeInstanceOf(Date);
+    expect(stats.mtime).toBeInstanceOf(Date);
+    expect(stats.ctime).toBeInstanceOf(Date);
+  });
+
+  it('lstat should return stats for a regular file', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    // Create a file
+    memoryStateProvider.put('/testfile.txt', {
+      type: 'file',
+      body: 'Hello, World!',
+    });
+
+    const stats = await asyncGnfs.lstat('/testfile.txt');
+
+    expect(stats.isFile()).toBe(true);
+    expect(stats.isDirectory()).toBe(false);
+    expect(stats.isSymbolicLink()).toBe(false);
+    expect(stats.mode).toBeDefined();
+    expect(stats.size).toBe(13); // "Hello, World!" length
+    expect(stats.atime).toBeInstanceOf(Date);
+    expect(stats.mtime).toBeInstanceOf(Date);
+    expect(stats.ctime).toBeInstanceOf(Date);
+  });
+
+  it('lstat should return stats for a symlink', async () => {
+    const asyncGnfs = new Gnfs();
+    const memoryStateProvider = createMemoryBackedState();
+
+    asyncGnfs.connect(memoryStateProvider);
+
+    await asyncGnfs.symlink('atarget', '/link.txt');
+
+    const stats = await asyncGnfs.lstat('/link.txt');
+
+    // Currently lstat doesn't distinguish symlinks (not implemented yet)
+    // Symlinks have type: 'symlink' so they're neither files nor directories
+    expect(stats.isFile()).toBe(false);
+    expect(stats.isDirectory()).toBe(false);
+    expect(stats.isSymbolicLink()).toBe(true);
+    expect(stats.mode).toBe(0o777 | 0o120000); // Symlink permissions
+    expect(stats.size).toBe(7); // Length of "atarget" (the symlink target)
+    expect(stats.atime).toBeInstanceOf(Date);
+    expect(stats.mtime).toBeInstanceOf(Date);
+    expect(stats.ctime).toBeInstanceOf(Date);
+
+    // Verify readlink still works
+    const linkTarget = await asyncGnfs.readlink('/link.txt');
+    expect(linkTarget).toEqual('atarget');
+  });
+
   it.todo('should change file permissions with chmod', async () => {
     const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryBackedState();

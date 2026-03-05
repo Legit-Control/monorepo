@@ -9,7 +9,7 @@ import { IndexBody } from '../state/index-body.js';
 import { GnfsFileHandle } from './gnfs-filehandle.js';
 
 type HeaderData = {
-  type: 'index' | 'file';
+  type: 'index' | 'file' | 'symlink';
   ctime: Date;
   mtime: Date;
   atime: Date;
@@ -209,7 +209,12 @@ export class Gnfs implements GnfsInterface {
     }
 
     return {
-      mode: headerData.type === 'file' ? 0o644 : 0o755,
+      mode:
+        headerData.type === 'file'
+          ? 0o644
+          : headerData.type === 'symlink'
+            ? 0o777 | 0o120000
+            : 0o755,
       size: headerData.size,
       atimeMs: headerData.atime.getTime(),
       mtimeMs: headerData.mtime.getTime(),
@@ -223,7 +228,7 @@ export class Gnfs implements GnfsInterface {
       isDirectory: () => {
         return headerData.type === 'index';
       },
-      isSymbolicLink: () => false,
+      isSymbolicLink: () => headerData.type === 'symlink',
       isBlockDevice: () => false,
       isCharacterDevice: () => false,
       isSocket: () => false,

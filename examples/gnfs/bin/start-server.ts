@@ -96,6 +96,7 @@ function startNfsServer(
 
       // NOTE: create a filder to serve
       await memoryStateProvider.put('/my_serve_folder/file.txt', {
+        type: 'file',
         body: 'Hello, world!',
       });
 
