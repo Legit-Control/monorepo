@@ -384,15 +384,31 @@ export class Gnfs implements GnfsInterface {
   }
 
   async symlink(target: string, path: string): Promise<void> {
-    throw new Error(
-      'Symbolic links are not supported by the memory-backed state provider'
-    );
+    if (!this.backingState) {
+      throw new Error('State provider not connected');
+    }
+
+    // Create symlink by storing target path as content
+    this.backingState.put(path, {
+      type: 'symlink',
+      body: target,
+    });
   }
 
   async readlink(path: string): Promise<string> {
-    throw new Error(
-      'Symbolic links are not supported by the memory-backed state provider'
-    );
+    if (!this.backingState) {
+      throw new Error('State provider not connected');
+    }
+
+    const content = await this.getFile(path);
+
+    if (content === null || content === undefined) {
+      const e = new Error('ENOENT: no such file or directory, readlink ' + path);
+      (e as any).code = 'ENOENT';
+      throw e;
+    }
+
+    return content; // Return the symlink target
   }
 
   async chmod(path: string, mode: number): Promise<void> {

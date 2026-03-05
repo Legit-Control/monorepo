@@ -265,7 +265,7 @@ describe('GNFS', () => {
     expect(buffer.toString('utf8', 0, bytesRead)).toEqual('Hello, world!');
   });
 
-  it.todo('should create a symbolic link with symlink', async () => {
+  it('should create a symbolic link with symlink', async () => {
     const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryBackedState();
 
@@ -285,7 +285,7 @@ describe('GNFS', () => {
     expect(linkTarget).toEqual('/original.txt');
   });
 
-  it.todo('should read a symbolic link with readlink', async () => {
+  it('should read a symbolic link with readlink', async () => {
     const asyncGnfs = new Gnfs();
     const memoryStateProvider = createMemoryBackedState();
 
