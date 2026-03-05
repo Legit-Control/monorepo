@@ -195,7 +195,6 @@ export const createMemoryBackedState = (
   }
 
   function putFolder(
-    path: string,
     segment: string,
     parentFolder: DirectoryNode,
     now: Date
@@ -221,16 +220,15 @@ export const createMemoryBackedState = (
   }
 
   function putFile(
-    path: string,
-    segment: string,
+    filename: string,
     parentFolder: DirectoryNode,
     body: string,
     now: Date
   ): void {
     // Create or update the file
-    if (!parentFolder.entries[segment]) {
+    if (!parentFolder.entries[filename]) {
       // Create new file
-      parentFolder.entries[segment] = {
+      parentFolder.entries[filename] = {
         type: 'file',
         meta: {
           ctime: now,
@@ -242,7 +240,7 @@ export const createMemoryBackedState = (
       };
     } else {
       // Update existing file
-      const existingFile = parentFolder.entries[segment] as FileNode;
+      const existingFile = parentFolder.entries[filename] as FileNode;
       existingFile.meta.mtime = now;
       existingFile.content = body;
     }
@@ -250,15 +248,19 @@ export const createMemoryBackedState = (
 
   function notifySubscribers(
     path: string,
-    body: string | undefined,
-    headers:
-      | Partial<{
-          mtime: Date;
-          ctime: Date;
-          atime: Date;
-          size: number;
-        }>
-      | undefined
+    payload:
+      | { type: 'index' }
+      | { body: string; type: 'file' }
+      | { body: string; type: 'symlink' }
+      | {
+          type: 'headers';
+          headers: Partial<{
+            mtime: Date;
+            ctime: Date;
+            atime: Date;
+            size: number;
+          }>;
+        }
   ): void {
     if (!subscriptions[path]) {
       return;
@@ -270,25 +272,6 @@ export const createMemoryBackedState = (
         range?: string;
       };
 
-      if (!headers) {
-        if (body === undefined) {
-          // folder
-          if (subOptions.type === 'index') {
-            const index: IndexBody = [];
-            connectedReceiver?.send({
-              update: { path, body: index, headers: { type: 'index' } },
-            });
-          }
-        } else {
-          // file
-          if (subOptions.type === 'body') {
-            connectedReceiver?.send({
-              update: { path, body: body, headers: { type: 'body' } },
-            });
-          }
-        }
-      }
-
       if (subOptions.type === 'header') {
         const meta = getMeta(path);
         if (meta) {
@@ -298,6 +281,22 @@ export const createMemoryBackedState = (
               body: meta,
               headers: { type: 'header' },
             },
+          });
+        }
+      }
+      if (payload.type === 'index') {
+        // folder
+        if (subOptions.type === 'index') {
+          const index: IndexBody = [];
+          connectedReceiver?.send({
+            update: { path, body: index, headers: { type: 'index' } },
+          });
+        }
+      } else if (payload.type === 'file' || payload.type === 'symlink') {
+        // file
+        if (subOptions.type === 'body') {
+          connectedReceiver?.send({
+            update: { path, body: payload.body, headers: { type: 'body' } },
           });
         }
       }
@@ -406,12 +405,14 @@ export const createMemoryBackedState = (
       delete subscriptions[path]?.[getSubscriptionOptionKey(options)];
     },
 
-    // SumpleCUD methods
     put(
       path: string,
-      payload:
-        | { body: string | undefined }
+      payload: // NOTE on index we only allow empty index - entries got to be created by putting files/folders
+        | { type: 'index' }
+        | { body: string; type: 'file' }
+        | { body: string; type: 'symlink' }
         | {
+            type: 'headers';
             headers: Partial<{
               mtime: Date;
               ctime: Date;
@@ -433,6 +434,8 @@ export const createMemoryBackedState = (
 
       for (const [index, segment] of segments.entries()) {
         currentPath += `/${segment}`;
+
+        // add all parent folders missing in the path
         if (index < segments.length - 1) {
           if (!parentFolder.entries[segment]) {
             if (headers) {
@@ -442,7 +445,7 @@ export const createMemoryBackedState = (
             }
 
             // before the last segment - use the upsert function to create the folder
-            memoryStateProvider.put(currentPath, { body: undefined });
+            memoryStateProvider.put(currentPath, { type: 'index' });
           }
 
           // NOTE: upsert is not pure for now, it adds the segment the state lets assert the change
@@ -461,8 +464,7 @@ export const createMemoryBackedState = (
 
           // assert required folder/file structure
           if (
-            headers === undefined &&
-            body === undefined &&
+            payload.type === 'index' &&
             currentNode &&
             currentNode.type === 'file'
           ) {
@@ -474,10 +476,9 @@ export const createMemoryBackedState = (
           }
 
           if (
-            headers === undefined &&
+            payload.type !== 'index' &&
             currentNode &&
-            currentNode.type === 'index' &&
-            typeof body === 'string'
+            currentNode.type === 'index'
           ) {
             throw new Error(
               currentPath +
@@ -485,25 +486,24 @@ export const createMemoryBackedState = (
                 path
             );
           }
-          if (
-            headers === undefined &&
-            body === undefined &&
-            currentNode !== undefined
-          ) {
+
+          if (payload.type === 'index' && currentNode !== undefined) {
             // parent folder exists already - nothing to do
             return;
           }
 
           // Branch to appropriate handler based on payload type
-          if (headers !== undefined) {
-            putHeader(path, now, headers);
-          } else if (body === undefined) {
-            putFolder(path, segment, parentFolder, now);
+          if (payload.type === 'headers') {
+            putHeader(path, now, payload.headers);
+          } else if (payload.type === 'index') {
+            putFolder(segment, parentFolder, now);
+          } else if (payload.type === 'file') {
+            putFile(segment, parentFolder, payload.body, now);
           } else {
-            putFile(path, segment, parentFolder, body, now);
+            throw new Error('Unsupported payload type ' + payload.type);
           }
 
-          notifySubscribers(path, body, headers);
+          notifySubscribers(path, payload);
         }
       }
     },
@@ -562,5 +562,6 @@ export const createMemoryBackedState = (
       connectedReceiver?.send({ delete: { path } });
     },
   };
+
   return memoryStateProvider;
 };

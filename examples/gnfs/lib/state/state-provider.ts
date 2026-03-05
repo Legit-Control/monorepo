@@ -1,6 +1,5 @@
 import { GnfsInterface } from '../gnfs/gnfs-interface';
 
-// TODO rename to backing state
 export type BackingStateInterface = {
   connectReceiver(stateReceiver: GnfsInterface): void;
 
@@ -31,14 +30,17 @@ export type BackingStateInterface = {
    * Updates / inserts a resource at the given path with the given body.
    * If a resource already exists at the path, it should be updated with the new body. If no resource exists at the path, a new resource should be created with the given body.
    * @param path the path of the resource to update/insert
-   * @param payload the new body of the resource
+   * @param payload the new state of the resource
    * @returns
    */
   put: (
     path: string,
     payload:
-      | { body: string | undefined } // TODO add the index as a type to check for folder
+      | { type: 'index' }
+      | { body: string; type: 'file' }
+      | { body: string; type: 'symlink' }
       | {
+          type: 'headers';
           headers: Partial<{
             mtime: Date;
             ctime: Date;

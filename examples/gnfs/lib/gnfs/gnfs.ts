@@ -122,6 +122,7 @@ export class Gnfs implements GnfsInterface {
 
   private async putFileHeader(path: string, headerData: Partial<HeaderData>) {
     this.backingState?.put(path, {
+      type: 'headers',
       headers: headerData,
     });
   }
@@ -148,7 +149,7 @@ export class Gnfs implements GnfsInterface {
   > = {};
 
   async putFile(path: string, content: string) {
-    this.backingState?.put(path, { body: content });
+    this.backingState?.put(path, { type: 'file', body: content });
   }
 
   async getFile(path: string): Promise<string | null | undefined> {
@@ -283,7 +284,7 @@ export class Gnfs implements GnfsInterface {
 
   async mkdir(path: string, options?: { mode: number }): Promise<void> {
     this.backingState?.put(path, {
-      body: undefined,
+      type: 'index',
     });
   }
 
@@ -337,9 +338,10 @@ export class Gnfs implements GnfsInterface {
 
       if (metadata && content !== undefined) {
         // Write content to new path
-        this.backingState?.put(newPath, { body: content });
+        this.backingState?.put(newPath, { type: 'file', body: content });
         // Write metadata to new path
         this.backingState?.put(newPath, {
+          type: 'headers',
           headers: {
             ctime: metadata.ctime,
             mtime: metadata.mtime,
@@ -350,7 +352,7 @@ export class Gnfs implements GnfsInterface {
       }
     } else if (stats.isDirectory()) {
       // It's a directory: create the new directory
-      this.backingState?.put(newPath, { body: undefined });
+      this.backingState?.put(newPath, { type: 'index' });
 
       // Recursively rename all children
       const children = await this.readdir(oldPath);

@@ -19,7 +19,7 @@ describe('createMemoryBackedState', () => {
 
   describe('put', () => {
     it('should create a file at root level', () => {
-      provider.put('/test.txt', { body: 'Hello World' });
+      provider.put('/test.txt', { type: 'file', body: 'Hello World' });
 
       // Request the file to verify it was created
       provider.get('/test.txt', { type: 'body' }, false);
@@ -34,7 +34,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should create nested files with parent directories', () => {
-      provider.put('/foo/bar/baz.txt', { body: 'Nested Content' });
+      provider.put('/foo/bar/baz.txt', { type: 'file', body: 'Nested Content' });
 
       // Request the file to verify it was created
       provider.get('/foo/bar/baz.txt', { type: 'body' }, false);
@@ -49,7 +49,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should create an empty directory when body is undefined', () => {
-      provider.put('/mydir', { body: undefined });
+      provider.put('/mydir', { type: 'index' });
 
       // Request index to verify it's a directory
       provider.get('/mydir', { type: 'index' }, false);
@@ -60,7 +60,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should update metadata when creating a file', () => {
-      provider.put('/test.txt', { body: 'Content' });
+      provider.put('/test.txt', { type: 'file', body: 'Content' });
 
       provider.get('/test.txt', { type: 'header' }, false);
 
@@ -82,7 +82,7 @@ describe('createMemoryBackedState', () => {
 
       mockBus.send.mockClear();
 
-      provider.put('/test.txt', { body: 'New Content' });
+      provider.put('/test.txt', { type: 'file', body: 'New Content' });
 
       expect(mockBus.send).toHaveBeenCalledWith({
         update: {
@@ -94,7 +94,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should update existing file metadata', () => {
-      provider.put('/test.txt', { body: 'Original' });
+      provider.put('/test.txt', { type: 'file', body: 'Original' });
 
       const originalMeta = (() => {
         provider.get('/test.txt', { type: 'header' }, false);
@@ -107,7 +107,7 @@ describe('createMemoryBackedState', () => {
       // Wait a bit to ensure time difference
       const startTime = originalMeta.mtime;
 
-      provider.put('/test.txt', { body: 'Updated' });
+      provider.put('/test.txt', { type: 'file', body: 'Updated' });
 
       const updatedMeta = (() => {
         provider.get('/test.txt', { type: 'header' }, false);
@@ -124,9 +124,9 @@ describe('createMemoryBackedState', () => {
 
   describe('request', () => {
     beforeEach(() => {
-      provider.put('/file.txt', { body: 'File Content' });
-      provider.put('/dir', { body: undefined });
-      provider.put('/dir/nested.txt', { body: 'Nested' });
+      provider.put('/file.txt', { type: 'file', body: 'File Content' });
+      provider.put('/dir', { type: 'index' });
+      provider.put('/dir/nested.txt', { type: 'file', body: 'Nested' });
     });
 
     describe('body requests', () => {
@@ -228,7 +228,7 @@ describe('createMemoryBackedState', () => {
 
         // Trigger an update
         mockBus.send.mockClear();
-        provider.put('/file.txt', { body: 'Updated Content' });
+        provider.put('/file.txt', { type: 'file', body: 'Updated Content' });
 
         expect(mockBus.send).toHaveBeenCalledWith({
           update: {
@@ -244,7 +244,7 @@ describe('createMemoryBackedState', () => {
 
         // Trigger an update
         mockBus.send.mockClear();
-        provider.put('/file.txt', { body: 'Updated Content' });
+        provider.put('/file.txt', { type: 'file', body: 'Updated Content' });
 
         expect(mockBus.send).not.toHaveBeenCalled();
       });
@@ -261,13 +261,14 @@ describe('createMemoryBackedState', () => {
 
       // Trigger an update
       mockBus.send.mockClear();
-      provider.put('/file.txt', { body: 'Updated Content' });
+      provider.put('/file.txt', { type: 'file', body: 'Updated Content' });
 
       expect(mockBus.send).not.toHaveBeenCalled();
     });
 
     it('should handle independent subscriptions by type', () => {
-      provider.put('/test.txt', { body: 'Content' });
+      // initially create the file
+      provider.put('/test.txt', { type: 'file', body: 'Content' });
 
       // Subscribe to body
       provider.get('/test.txt', { type: 'body' }, true);
@@ -281,7 +282,7 @@ describe('createMemoryBackedState', () => {
       mockBus.send.mockClear();
 
       // Trigger update
-      provider.put('/test.txt', { body: 'Updated' });
+      provider.put('/test.txt', { type: 'file', body: 'Updated' });
 
       // Should only receive header update, not body
       const calls = mockBus.send.mock.calls;
@@ -299,12 +300,12 @@ describe('createMemoryBackedState', () => {
 
   describe('delete', () => {
     beforeEach(() => {
-      provider.put('/file.txt', { body: 'Content' });
-      provider.put('/dir', { body: undefined });
-      provider.put('/dir/nested1.txt', { body: 'Nested 1' });
-      provider.put('/dir/nested2.txt', { body: 'Nested 2' });
-      provider.put('/dir/subdir', { body: undefined });
-      provider.put('/dir/subdir/deep.txt', { body: 'Deep' });
+      provider.put('/file.txt', { type: 'file', body: 'Content' });
+      provider.put('/dir', { type: 'index' });
+      provider.put('/dir/nested1.txt', { type: 'file', body: 'Nested 1' });
+      provider.put('/dir/nested2.txt', { type: 'file', body: 'Nested 2' });
+      provider.put('/dir/subdir', { type: 'index' });
+      provider.put('/dir/subdir/deep.txt', { type: 'file', body: 'Deep' });
     });
 
     it('should delete a file', () => {
@@ -356,7 +357,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should remove metadata', () => {
-      provider.put('/test.txt', { body: 'Test' });
+      provider.put('/test.txt', { type: 'file', body: 'Test' });
       provider.del('/test.txt');
 
       provider.get('/test.txt', { type: 'header' }, false);
@@ -370,7 +371,7 @@ describe('createMemoryBackedState', () => {
 
   describe('nested paths', () => {
     it('should handle deeply nested paths', () => {
-      provider.put('/a/b/c/d/e/file.txt', { body: 'Deep' });
+      provider.put('/a/b/c/d/e/file.txt', { type: 'file', body: 'Deep' });
 
       provider.get('/a/b/c/d/e/file.txt', { type: 'body' }, false);
 
@@ -384,7 +385,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should create intermediate directories', () => {
-      provider.put('/parent/child/file.txt', { body: 'Content' });
+      provider.put('/parent/child/file.txt', { type: 'file', body: 'Content' });
 
       // Verify intermediate directories were created
       provider.get('/parent', { type: 'index' }, false);
@@ -398,7 +399,7 @@ describe('createMemoryBackedState', () => {
     });
 
     it('should handle deletion of intermediate directories', () => {
-      provider.put('/parent/child/file.txt', { body: 'Content' });
+      provider.put('/parent/child/file.txt', { type: 'file', body: 'Content' });
       provider.del('/parent/child');
 
       provider.get('/parent/child', { type: 'body' }, false);

@@ -13,7 +13,10 @@ describe('GNFS', () => {
 
     expect(files).toEqual([]);
 
-    memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
+    memoryStateProvider.put('/file.txt', {
+      body: 'Hello, world!',
+      type: 'file',
+    });
 
     const filesAfter = await asyncGnfs.readdir('/');
     expect(filesAfter).toEqual(['file.txt']);
@@ -45,7 +48,10 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/file.txt', { body: 'Hello, world!' });
+    memoryStateProvider.put('/file.txt', {
+      body: 'Hello, world!',
+      type: 'file',
+    });
 
     const handle = await asyncGnfs.open('/file.txt', 'r+');
     const readContentBuffer = Buffer.alloc(13);
@@ -83,6 +89,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/my_serve_folder/file.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const fh = await asyncGnfs.open('/my_serve_folder/file.txt', 'r+');
@@ -100,6 +107,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const nonExisitingFileStats = await asyncGnfs
@@ -116,13 +124,14 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const filesAfter = await asyncGnfs.readdir('/');
     expect(filesAfter).toEqual(['path']);
 
     const statsRoot = await asyncGnfs.stat('/');
-    const isFolder = statsRoot.isDirectory()
+    const isFolder = statsRoot.isDirectory();
     expect(isFolder).toBe(true);
 
     const filesAfterPath = await asyncGnfs.readdir('/path');
@@ -143,6 +152,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/path/to/file.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const filesBefore = await asyncGnfs.readdir('/');
@@ -179,6 +189,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/file.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const filesBefore = await asyncGnfs.readdir('/');
@@ -200,6 +211,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/oldname.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const filesBefore = await asyncGnfs.readdir('/');
@@ -240,6 +252,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     await asyncGnfs.link('/original.txt', '/link.txt');
@@ -260,6 +273,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     await asyncGnfs.symlink('/original.txt', '/symlink.txt');
@@ -279,6 +293,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     await asyncGnfs.symlink('/original.txt', '/symlink.txt');
@@ -295,6 +310,7 @@ describe('GNFS', () => {
 
     memoryStateProvider.put('/file.txt', {
       body: 'Hello, world!',
+      type: 'file',
     });
 
     const statsBefore = await asyncGnfs.stat('/file.txt');
