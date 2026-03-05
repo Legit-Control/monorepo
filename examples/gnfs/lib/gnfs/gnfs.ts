@@ -9,7 +9,7 @@ import { IndexBody } from '../state/index-body.js';
 import { GnfsFileHandle } from './gnfs-filehandle.js';
 
 type HeaderData = {
-  type: 'index' | 'body';
+  type: 'index' | 'file';
   ctime: Date;
   mtime: Date;
   atime: Date;
@@ -208,7 +208,7 @@ export class Gnfs implements GnfsInterface {
     }
 
     return {
-      mode: headerData.type === 'body' ? 0o644 : 0o755,
+      mode: headerData.type === 'file' ? 0o644 : 0o755,
       size: headerData.size,
       atimeMs: headerData.atime.getTime(),
       mtimeMs: headerData.mtime.getTime(),
@@ -218,8 +218,10 @@ export class Gnfs implements GnfsInterface {
       mtime: new Date(headerData.mtime.getTime()),
       ctime: new Date(headerData.ctime.getTime()),
       birthtime: new Date(headerData.ctime.getTime()),
-      isFile: () => headerData.type === 'body',
-      isDirectory: () => headerData.type === 'index',
+      isFile: () => headerData.type === 'file',
+      isDirectory: () => {
+        return headerData.type === 'index';
+      },
       isSymbolicLink: () => false,
       isBlockDevice: () => false,
       isCharacterDevice: () => false,
@@ -330,7 +332,7 @@ export class Gnfs implements GnfsInterface {
 
     if (stats.isFile()) {
       // It's a file: copy content and metadata, then delete old
-      const content = await this.getFile(oldPath);
+      const content = (await this.getFile(oldPath)) as string; // its a file (we checked the stats before)
       const metadata = await this.getFileHeader(oldPath);
 
       if (metadata && content !== undefined) {

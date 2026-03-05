@@ -3,69 +3,146 @@ import { IndexBody } from './index-body.js';
 import { BackingStateInterface } from './state-provider.js';
 
 /**
- * Type definition for a tree structure that can contain data (string) or nested records of the same type.
- * This is used to represent the state of the file system in memory, where each path can either be a file (with string content) or a directory (with nested paths).
+ * Type definitions for the unified file system state where metadata lives directly in the state.
+ * Both files and directories have a /meta/ property with their metadata.
  */
-interface RecursiveRecord {
-  [key: string]: string | RecursiveRecord;
+
+// Type alias for file/directory names (strings without '/')
+// Note: TypeScript cannot enforce "no slash" constraint at compile time,
+// but this documents the intent. Runtime validation should enforce this.
+type NoSlash<S extends string> = S extends `${string}/${string}` ? never : S;
+
+type FileName = NoSlash<string>;
+
+interface BaseHeaders {
+  ctime: Date;
+  mtime: Date;
+  atime: Date;
+  fileId: number;
 }
 
+interface MetaData extends BaseHeaders {
+  type: 'file' | 'index' | 'symlink';
+  size: number;
+}
+
+interface FileNode {
+  type: 'file';
+  meta: BaseHeaders;
+  content: string;
+}
+
+interface SymlinkNode {
+  type: 'symlink';
+  meta: BaseHeaders;
+  content: string;
+}
+
+interface DirectoryNode {
+  type: 'index';
+  entries: { [key: FileName]: UnifiedFileSystemNode };
+  meta: BaseHeaders;
+}
+
+type UnifiedFileSystemNode = FileNode | SymlinkNode | DirectoryNode;
+
+/**
+ * Creates a memory-backed state provider for a virtual file system.
+ *
+ * This function initializes a file system state that stores all metadata and content in memory.
+ * It supports files, directories, and symlinks with full metadata tracking (creation time,
+ * modification time, access time, and file IDs).
+ *
+ * @param initialState - The initial root directory state. Defaults to an empty root directory.
+ * @returns A BackingStateInterface implementation that can be used with GNFS.
+ *
+ * @example
+ * // Create a memory-backed state with initial content
+ * const now = new Date();
+ * const state = createMemoryBackedState({
+ *   type: 'index',
+ *   meta: {
+ *     type: 'index',
+ *     ctime: now,
+ *     mtime: now,
+ *     atime: now,
+ *     fileId: 0,
+ *   },
+ *   entries: {
+ *     'documents': {
+ *       type: 'index',
+ *       meta: {
+ *         type: 'index',
+ *         ctime: now,
+ *         mtime: now,
+ *         atime: now,
+ *         fileId: 1,
+ *       },
+ *       entries: {
+ *         'notes.txt': {
+ *           type: 'file',
+ *           meta: {
+ *             type: 'file',
+ *             ctime: now,
+ *             mtime: now,
+ *             atime: now,
+ *             fileId: 2,
+ *           },
+ *           content: 'Hello, World!',
+ *         },
+ *       },
+ *     },
+ *   },
+ * });
+ */
 export const createMemoryBackedState = (
-  initialState: RecursiveRecord = {}
+  initialState: DirectoryNode = {
+    type: 'index',
+    meta: {
+      ctime: new Date(),
+      mtime: new Date(),
+      atime: new Date(),
+      fileId: 0,
+    },
+    entries: {},
+  }
 ): BackingStateInterface => {
-  let state: RecursiveRecord = { ...initialState };
-  let metaData: Record<
-    string,
-    {
-      ctime: Date;
-      mtime: Date;
-      atime: Date;
-      type: 'body' | 'index';
-      fileId: number;
-    }
-  > = {};
+  let state: DirectoryNode = initialState;
+  let currentFileId = 1;
 
-  let currentFiledId = 1;
-
-  function getMeta(path: string) {
+  function getMeta(path: string): MetaData | null {
     // Navigate to the path
     const segments = path.replace(/^\//, '').split('/');
 
-    let current: string | RecursiveRecord = state;
+    let current: UnifiedFileSystemNode | null = state;
 
     for (const segment of segments) {
       if (segment === '') {
         continue;
       }
-      if (typeof current === 'string') {
-        // Trying to navigate into a file
+
+      // Check if current is an index
+      if (current.type !== 'index') {
         return null;
       }
 
-      if (current[segment] === undefined) {
+      if (current.entries[segment] === undefined) {
         return null;
       }
 
-      current = current[segment];
+      current = current.entries[segment];
     }
 
-    if (!metaData[path]) {
-      const now = new Date();
-      metaData[path] = {
-        type: typeof current === 'string' ? 'body' : 'index',
-        ctime: now,
-        mtime: now,
-        atime: now,
-        fileId: currentFiledId++,
-      };
-    }
+    // Now current is the node at the path
+    const meta = current.meta;
 
-    // Now current is the value at the path
-    if (typeof current === 'string') {
-      return { ...metaData[path], size: current.length };
+    // Add size based on node type
+    if (current.type === 'file' || current.type === 'symlink') {
+      const node = current as FileNode | SymlinkNode;
+      return { ...meta, type: current.type, size: node.content.length };
     }
     // NOTE for now we return size 0 for directories
-    return { ...metaData[path], size: 0 };
+    return { ...meta, type: 'index', size: 0 };
   }
 
   let connectedReceiver: GnfsInterface | null = null;
@@ -86,6 +163,147 @@ export const createMemoryBackedState = (
     return `${JSON.stringify(options)}`;
   }
 
+  function putHeader(
+    path: string,
+    now: Date,
+    headers: Partial<{
+      mtime: Date;
+      ctime: Date;
+      atime: Date;
+      size: number;
+    }>
+  ): void {
+    // Navigate to the node
+    const segments = path.replace(/^\//, '').split('/');
+    let current: UnifiedFileSystemNode = state;
+
+    for (const segment of segments) {
+      if (segment === '') {
+        continue;
+      }
+      if (current.type !== 'index') {
+        throw new Error(`Cannot update headers for non-existing path ${path}`);
+      }
+      if (current.entries[segment] === undefined) {
+        throw new Error(`Cannot update headers for non-existing path ${path}`);
+      }
+      current = current.entries[segment];
+    }
+
+    // Update the metadata
+    current.meta = { ...current.meta, ...headers };
+  }
+
+  function putFolder(
+    path: string,
+    segment: string,
+    parentFolder: DirectoryNode,
+    now: Date
+  ): void {
+    // Create or update the index
+    if (!parentFolder.entries[segment]) {
+      // Create new index
+      parentFolder.entries[segment] = {
+        type: 'index',
+        meta: {
+          ctime: now,
+          mtime: now,
+          atime: now,
+          fileId: currentFileId++,
+        },
+        entries: {},
+      };
+    } else {
+      // Update existing index's mtime
+      const existingDir = parentFolder.entries[segment] as DirectoryNode;
+      existingDir.meta.mtime = now;
+    }
+  }
+
+  function putFile(
+    path: string,
+    segment: string,
+    parentFolder: DirectoryNode,
+    body: string,
+    now: Date
+  ): void {
+    // Create or update the file
+    if (!parentFolder.entries[segment]) {
+      // Create new file
+      parentFolder.entries[segment] = {
+        type: 'file',
+        meta: {
+          ctime: now,
+          mtime: now,
+          atime: now,
+          fileId: currentFileId++,
+        },
+        content: body,
+      };
+    } else {
+      // Update existing file
+      const existingFile = parentFolder.entries[segment] as FileNode;
+      existingFile.meta.mtime = now;
+      existingFile.content = body;
+    }
+  }
+
+  function notifySubscribers(
+    path: string,
+    body: string | undefined,
+    headers:
+      | Partial<{
+          mtime: Date;
+          ctime: Date;
+          atime: Date;
+          size: number;
+        }>
+      | undefined
+  ): void {
+    if (!subscriptions[path]) {
+      return;
+    }
+
+    for (const subOptionsRaw of Object.keys(subscriptions[path])) {
+      const subOptions = JSON.parse(subOptionsRaw) as {
+        type: 'body' | 'header' | 'index';
+        range?: string;
+      };
+
+      if (!headers) {
+        if (body === undefined) {
+          // folder
+          if (subOptions.type === 'index') {
+            const index: IndexBody = [];
+            connectedReceiver?.send({
+              update: { path, body: index, headers: { type: 'index' } },
+            });
+          }
+        } else {
+          // file
+          if (subOptions.type === 'body') {
+            connectedReceiver?.send({
+              update: { path, body: body, headers: { type: 'body' } },
+            });
+          }
+        }
+      }
+
+      if (subOptions.type === 'header') {
+        const meta = getMeta(path);
+        if (meta) {
+          connectedReceiver?.send({
+            update: {
+              path,
+              body: meta,
+              headers: { type: 'header' },
+            },
+          });
+        }
+      }
+    }
+  }
+
   const memoryStateProvider: BackingStateInterface & {
     connectReceiver: (stateReceiver: GnfsInterface) => void;
   } = {
@@ -102,24 +320,25 @@ export const createMemoryBackedState = (
       // Navigate to the path
       const segments = path.replace(/^\//, '').split('/');
 
-      let current: string | RecursiveRecord | null = state;
+      let current: UnifiedFileSystemNode | null = state;
 
       for (const segment of segments) {
         if (segment === '') {
           continue;
         }
-        if (current === null || typeof current === 'string') {
+
+        if (current === null || current.type !== 'index') {
           // Trying to navigate into a file or through null
           current = null;
           break;
         }
 
-        if (current[segment] === undefined) {
+        if (current.entries[segment] === undefined) {
           current = null;
           break;
         }
 
-        current = current[segment];
+        current = current.entries[segment];
       }
 
       if (options.type === 'body') {
@@ -128,10 +347,11 @@ export const createMemoryBackedState = (
           connectedReceiver?.send({
             update: { path, body: null, headers: { type: 'body' } },
           });
-        } else if (typeof current === 'string') {
-          // It's a file
+        } else if (current.type === 'file' || current.type === 'symlink') {
+          // It's a file or symlink
+          const fileNode = current;
           connectedReceiver?.send({
-            update: { path, body: current, headers: { type: 'body' } },
+            update: { path, body: fileNode.content, headers: { type: 'body' } },
           });
         } else {
           // It's a directory, can't provide body
@@ -156,15 +376,15 @@ export const createMemoryBackedState = (
           connectedReceiver?.send({
             update: { path, body: null, headers: { type: 'index' } },
           });
-        } else if (typeof current === 'string') {
-          // It's a file, can't provide index
+        } else if (current.type !== 'index') {
+          // It's a file or symlink, can't provide index
           connectedReceiver?.send({
             update: { path, body: undefined, headers: { type: 'index' } },
           });
         } else {
           // It's a directory, build index
           const index: IndexBody = [];
-          for (const [key] of Object.entries(current)) {
+          for (const [key] of Object.entries(current.entries)) {
             index.push({ link: `${key}` });
           }
           connectedReceiver?.send({
@@ -208,13 +428,13 @@ export const createMemoryBackedState = (
       // Remove leading slash and split by /
       const segments = path.replace(/^\//, '').split('/');
 
-      let parentFolder: RecursiveRecord = state;
+      let parentFolder: DirectoryNode = state;
       let currentPath = '';
 
       for (const [index, segment] of segments.entries()) {
         currentPath += `/${segment}`;
         if (index < segments.length - 1) {
-          if (!parentFolder[segment]) {
+          if (!parentFolder.entries[segment]) {
             if (headers) {
               throw new Error(
                 `Cannot update headers for non-existing path ${currentPath}`
@@ -226,7 +446,8 @@ export const createMemoryBackedState = (
           }
 
           // NOTE: upsert is not pure for now, it adds the segment the state lets assert the change
-          if (typeof parentFolder[segment] !== 'object') {
+          const nextNode = parentFolder.entries[segment];
+          if (nextNode && nextNode.type !== 'index') {
             throw new Error(
               currentPath +
                 ' is expected to be a directory but is a file when upserting into path ' +
@@ -234,15 +455,16 @@ export const createMemoryBackedState = (
             );
           }
           // the sub node should exist now!
-          parentFolder = parentFolder[segment];
+          parentFolder = parentFolder.entries[segment] as DirectoryNode;
         } else {
-          let currentNode = parentFolder[segment];
+          const currentNode = parentFolder.entries[segment];
 
           // assert required folder/file structure
           if (
             headers === undefined &&
             body === undefined &&
-            typeof currentNode === 'string'
+            currentNode &&
+            currentNode.type === 'file'
           ) {
             throw new Error(
               currentPath +
@@ -253,7 +475,8 @@ export const createMemoryBackedState = (
 
           if (
             headers === undefined &&
-            typeof currentNode === 'object' &&
+            currentNode &&
+            currentNode.type === 'index' &&
             typeof body === 'string'
           ) {
             throw new Error(
@@ -271,72 +494,16 @@ export const createMemoryBackedState = (
             return;
           }
 
-          if (!metaData[path]) {
-            const defaultMeta = {
-              type: body == undefined ? ('index' as const) : ('body' as const),
-              ctime: now,
-              mtime: now,
-              atime: now,
-              fileId: currentFiledId++,
-            };
-            metaData[path] = { ...defaultMeta, ...headers };
-          } else if (headers) {
-            metaData[path] = { ...metaData[path], ...headers };
+          // Branch to appropriate handler based on payload type
+          if (headers !== undefined) {
+            putHeader(path, now, headers);
+          } else if (body === undefined) {
+            putFolder(path, segment, parentFolder, now);
           } else {
-            metaData[path].mtime = now;
+            putFile(path, segment, parentFolder, body, now);
           }
 
-          if (headers === undefined) {
-            // propagate metadata change
-            if (body === undefined) {
-              // create folder
-              parentFolder[segment] = {};
-            } else {
-              // create file
-              parentFolder[segment] = body;
-            }
-          }
-
-          if (subscriptions[path]) {
-            for (const subOptionsRaw of Object.keys(subscriptions[path])) {
-              const subOptions = JSON.parse(subOptionsRaw) as {
-                type: 'body' | 'header' | 'index';
-                range?: string;
-              };
-
-              if (!headers) {
-                if (body === undefined) {
-                  // folder
-                  if (subOptions.type === 'index') {
-                    const index: IndexBody = [];
-                    connectedReceiver?.send({
-                      update: { path, body: index, headers: { type: 'index' } },
-                    });
-                  }
-                } else {
-                  // file
-                  if (subOptions.type === 'body') {
-                    connectedReceiver?.send({
-                      update: { path, body: body, headers: { type: 'body' } },
-                    });
-                  }
-                }
-              }
-
-              if (subOptions.type === 'header') {
-                const meta = getMeta(path);
-                if (meta) {
-                  connectedReceiver?.send({
-                    update: {
-                      path,
-                      body: meta,
-                      headers: { type: 'header' },
-                    },
-                  });
-                }
-              }
-            }
-          }
+          notifySubscribers(path, body, headers);
         }
       }
     },
@@ -347,47 +514,49 @@ export const createMemoryBackedState = (
       const finalSegment = segments[segments.length - 1];
       const dirSegments = segments.slice(0, -1);
 
-      let current: string | RecursiveRecord = state;
+      let current: DirectoryNode = state;
 
       // Navigate to parent
       for (const segment of dirSegments) {
-        if (typeof current === 'string') {
+        if (current.type !== 'index') {
           // Trying to navigate into a file, path doesn't exist
           return;
         }
 
-        if (!current[segment]) {
+        if (!current.entries[segment]) {
           // Path doesn't exist
           return;
         }
 
-        current = current[segment] as RecursiveRecord;
+        const nextNode = current.entries[segment];
+        if (nextNode.type !== 'index') {
+          // Not a directory, can't navigate further
+          return;
+        }
+        current = nextNode;
       }
 
       // Check if the final segment exists
-      if (typeof current === 'string' || !current[finalSegment]) {
+      if (!current.entries[finalSegment]) {
         // Path doesn't exist
         return;
       }
 
-      const target = current[finalSegment];
+      const target = current.entries[finalSegment];
 
-      // If target is a directory (object), recursively remove all children first
-      if (typeof target !== 'string') {
-        const childObj = target as RecursiveRecord;
+      // If target is a directory, recursively remove all children first
+      if (target.type === 'index') {
+        const childDir = target;
 
-        for (const [key] of Object.entries(childObj)) {
+        for (const [key] of Object.entries(childDir.entries)) {
           const childPath = path === '/' ? `/${key}` : `${path}/${key}`;
           // Recursively remove each child
           memoryStateProvider.del(childPath);
         }
       }
 
-      // Delete metadata for this path
-      delete metaData[path];
-
       // Delete the entry from the state
-      delete current[finalSegment];
+      delete current.entries[finalSegment];
 
       // Notify subscribers
       connectedReceiver?.send({ delete: { path } });

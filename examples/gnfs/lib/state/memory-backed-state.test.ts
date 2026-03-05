@@ -415,10 +415,26 @@ describe('createMemoryBackedState', () => {
 
   describe('initial state', () => {
     it('should initialize with provided state', () => {
-      const providerWithState = createMemoryStateProvider({
-        'initial.txt': 'Initial Content',
-        dir: {},
-        'dir/nested.txt': 'Nested',
+      const providerWithState = createMemoryBackedState({
+        type: 'index',
+        meta: {
+          ctime: new Date(),
+          mtime: new Date(),
+          atime: new Date(),
+          fileId: 0,
+        },
+        entries: {
+          'initial.txt': {
+            type: 'file',
+            meta: {
+              ctime: new Date(),
+              mtime: new Date(),
+              atime: new Date(),
+              fileId: 1,
+            },
+            content: 'Initial Content',
+          },
+        },
       });
 
       providerWithState.connectReceiver(mockBus);

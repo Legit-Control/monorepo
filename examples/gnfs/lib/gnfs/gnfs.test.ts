@@ -122,7 +122,8 @@ describe('GNFS', () => {
     expect(filesAfter).toEqual(['path']);
 
     const statsRoot = await asyncGnfs.stat('/');
-    expect(statsRoot.isDirectory()).toBe(true);
+    const isFolder = statsRoot.isDirectory()
+    expect(isFolder).toBe(true);
 
     const filesAfterPath = await asyncGnfs.readdir('/path');
     expect(filesAfterPath).toEqual(['to']);
