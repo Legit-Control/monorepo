@@ -1,0 +1,53 @@
+{
+  "name": "@legit-sdk/gitaway",
+  "version": "0.0.1",
+  "description": "Virtual git gateway via NFS on macOS",
+  "type": "module",
+  "main": "dist/start-server.js",
+  "bin": {
+    "gitaway": "dist/start-server.js"
+  },
+  "files": [
+    "dist",
+    "readme.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "dev": "tsx bin/start-server.ts",
+    "prepublishOnly": "pnpm run build"
+  },
+  "keywords": [
+    "git",
+    "nfs",
+    "cli",
+    "mount",
+    "filesystem",
+    "virtual-fs",
+    "macos",
+    "github",
+    "gateway"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@legit-sdk/nfs-serve": "workspace:*",
+    "commander": "^12.1.0",
+    "isomorphic-git": "^1.27.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.0",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
