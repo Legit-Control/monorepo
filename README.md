@@ -72,4 +72,4 @@ Please review the [CLA](./cla/CLA.md) before submitting contributions.
 
 We welcome PRs, issues, and suggestions to make Legit SDK better for everyone.
 
-&#8203;
+⁠![colibri badge](https://backend-knty.onrender.com/get-artifact?roomId=github.com/Legit-Control/monorepo/blob/main/README.md&path=badge.get-colibri.com)
