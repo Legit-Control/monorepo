@@ -20,6 +20,7 @@ And it’s easy because you interact through the **file system API** (Legit FS) 
 - [Getting Started](https://legitcontrol.com/docs/quickstart): Minimal example to get your first LegitFS repo up
 - [Example Starter](https://legitcontrol.com/docs/examples): See a working editor demo with history tracking
 - [Contributing](./CONTRIBUTING.md): How to contribute, including the Contributor License Agreement
+
 ### Installation
 
 
@@ -57,14 +58,18 @@ main();
 - **Branching and history** – Access past states, branch safely, merge confidently
 - **Interoperable** – Works with Node.js, browsers, Docker, serverless, and more
 - **Extensible API** – Compatible with custom storage backends
+
 ### Project Structure
 
 - `packages/sdk/` – Source code of the SDK
 - `packages/sdk/dist/` – Bundled outputs for Node.js, browser, and TypeScript
 - `packages/sdk/src/compositeFs/` – Core filesystem abstraction
 - `packages/sdk/src/compositeFs/subsystems/` – Ephemeral, hidden, pass-through, and Git-backed file systems
+
 ### Contributing
 
 Please review the [CLA](./cla/CLA.md) before submitting contributions.
 
 We welcome PRs, issues, and suggestions to make Legit SDK better for everyone.
+
+&#8203;
