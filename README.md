@@ -1,4 +1,4 @@
-# Legit Monorepo
+# Legit Hello
 
 ### Meet Legit SDK — fail-safe apps made simple.
 
@@ -10,7 +10,7 @@ Fail-safe means giving your users the same superpowers you know from Git:
 - Branch off to run experiments safely
 - Accept changes when you’re happy with the result
 
-And it’s easy because you interact through the **file system API** (Legit FS) — the same one you learned in your first semesters of computer science.
+And it’s easy because you interact through the **file system API** (Legit FS) — the same one you learned in your first semesters of compuasdasdasdter science.
 
 **Runs everywhere.** Use Legit SDK as an API in the browser, or mount it as a folder on your machine. That means instant compatibility with the stack of your choice: Node.js, Python, Java… you name it.
 
@@ -23,11 +23,13 @@ And it’s easy because you interact through the **file system API** (Legit FS) 
 
 ### Installation
 
+
 ```bash
 npm install @legit-sdk/core
 ```
 
 ### Minimal example
+
 
 ```ts
 import { fs } from 'memfs';
@@ -70,4 +72,4 @@ Please review the [CLA](./cla/CLA.md) before submitting contributions.
 
 We welcome PRs, issues, and suggestions to make Legit SDK better for everyone.
 
-
+⁠![](https://badge.get-colibri.com/)
