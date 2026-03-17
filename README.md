@@ -14,6 +14,8 @@ And it’s easy because you interact through the **file system API** (Legit FS) 
 
 **Runs everywhere.** Use Legit SDK as an API in the browser, or mount it as a folder on your machine. That means instant compatibility with the stack of your choice: Node.js, Python, Java… you name it.
 
+&#8203;
+
 ### Quick Links
 
 - [Documentation](https://legitcontrol.com/docs): Full guide and API reference
