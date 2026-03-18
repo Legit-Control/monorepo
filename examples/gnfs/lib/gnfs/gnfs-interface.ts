@@ -5,6 +5,7 @@ import { IndexBody } from '../state/index-body.js';
  */
 
 export type GnfsInterface = {
+  peerId: string;
   /**
    * Sends a resource message to the connected state bus.
    *
@@ -46,4 +47,21 @@ export type GnfsInterface = {
           delete: { path: string };
         }
   ): void;
+
+  /**
+   * Watch a file or directory for changes.
+   *
+   * @param filename - Path to the file or directory to watch
+   * @param options - Watch options (signal - to stop watching)
+   * @returns Async iterable of file system events
+   */
+  watch(
+    filename: string,
+    options?: {
+      signal?: AbortSignal;
+    }
+  ): AsyncIterable<{
+    eventType: 'update' | 'headerUpdate' | 'delete';
+    filename?: string;
+  }>;
 };

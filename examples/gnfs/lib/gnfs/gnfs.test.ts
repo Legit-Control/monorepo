@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Gnfs } from './gnfs';
 import { createMemoryBackedState } from '../state/memory-backed-state.js';
 
@@ -13,10 +13,14 @@ describe('GNFS', () => {
 
     expect(files).toEqual([]);
 
-    memoryStateProvider.put('/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const filesAfter = await asyncGnfs.readdir('/');
     expect(filesAfter).toEqual(['file.txt']);
@@ -48,10 +52,14 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const handle = await asyncGnfs.open('/file.txt', 'r+');
     const readContentBuffer = Buffer.alloc(13);
@@ -87,10 +95,14 @@ describe('GNFS', () => {
       'Hello, mars!'
     );
 
-    memoryStateProvider.put('/my_serve_folder/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/my_serve_folder/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const fh = await asyncGnfs.open('/my_serve_folder/file.txt', 'r+');
     await fh.truncate(0);
@@ -105,10 +117,14 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/path/to/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/path/to/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const nonExisitingFileStats = await asyncGnfs
       .stat('/does_not_exist')
@@ -122,10 +138,14 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/path/to/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/path/to/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const filesAfter = await asyncGnfs.readdir('/');
     expect(filesAfter).toEqual(['path']);
@@ -150,10 +170,14 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/path/to/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/path/to/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const filesBefore = await asyncGnfs.readdir('/');
     expect(filesBefore).toEqual(['path']);
@@ -187,10 +211,14 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/file.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/file.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const filesBefore = await asyncGnfs.readdir('/');
     expect(filesBefore).toEqual(['file.txt']);
@@ -209,10 +237,14 @@ describe('GNFS', () => {
 
     asyncGnfs.connect(memoryStateProvider);
 
-    memoryStateProvider.put('/oldname.txt', {
-      body: 'Hello, world!',
-      type: 'file',
-    });
+    memoryStateProvider.put(
+      '/oldname.txt',
+      {
+        body: 'Hello, world!',
+        type: 'file',
+      },
+      'external-peer'
+    );
 
     const filesBefore = await asyncGnfs.readdir('/');
     expect(filesBefore).toEqual(['oldname.txt']);
@@ -253,7 +285,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
       type: 'file',
-    });
+    }, 'external-peer');
 
     await asyncGnfs.link('/original.txt', '/link.txt');
 
@@ -274,7 +306,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
       type: 'file',
-    });
+    }, 'external-peer');
 
     await asyncGnfs.symlink('/original.txt', '/symlink.txt');
 
@@ -294,7 +326,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
       type: 'file',
-    });
+    }, 'external-peer');
 
     await asyncGnfs.symlink('/original.txt', '/symlink.txt');
 
@@ -312,7 +344,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/original.txt', {
       body: 'Hello, world!',
       type: 'file',
-    });
+    }, 'external-peer');
 
     // Create a symlink
     await asyncGnfs.symlink('/original.txt', '/mylink.txt');
@@ -321,7 +353,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/other.txt', {
       body: 'Another file',
       type: 'file',
-    });
+    }, 'external-peer');
 
     // Check that readdir includes both files and the symlink
     const files = await asyncGnfs.readdir('/');
@@ -366,7 +398,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/testfile.txt', {
       type: 'file',
       body: 'Hello, World!',
-    });
+    }, 'external-peer');
 
     const stats = await asyncGnfs.lstat('/testfile.txt');
 
@@ -415,7 +447,7 @@ describe('GNFS', () => {
     memoryStateProvider.put('/file.txt', {
       body: 'Hello, world!',
       type: 'file',
-    });
+    }, 'external-peer');
 
     const statsBefore = await asyncGnfs.stat('/file.txt');
     expect(statsBefore.mode).toBeDefined();
@@ -425,4 +457,7 @@ describe('GNFS', () => {
     const statsAfter = await asyncGnfs.stat('/file.txt');
     expect(statsAfter.mode).toEqual(0o755);
   });
+
+  // Helper function to wait for async operations
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 });

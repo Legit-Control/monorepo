@@ -31,7 +31,8 @@
   "license": "ISC",
   "dependencies": {
     "@legit-sdk/nfs-serve": "workspace:*",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "fsevents": "^2.3.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

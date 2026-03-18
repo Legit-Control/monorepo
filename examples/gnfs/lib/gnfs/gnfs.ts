@@ -17,15 +17,32 @@ type HeaderData = {
   fileId: number;
 };
 
+interface WatcherController {
+  done: boolean;
+  push: (event: {
+    eventType: 'create' | 'update' | 'headerUpdate' | 'delete';
+    filename?: string;
+  }) => void;
+}
+
 export class Gnfs implements GnfsInterface {
   // #region Sate bus logic
 
   backingState: BackingStateInterface | undefined;
 
+  // Track active watchers for file system events
+  private watchers = new Map<string, Set<WatcherController>>();
+
+  public peerId: string;
+
+  constructor(peerId?: string) {
+    this.peerId = peerId || Math.random().toString(36).substring(2, 11);
+  }
+
   connect(stateProvider: BackingStateInterface) {
     stateProvider.connectReceiver(this);
 
-    this.backingState?.put('/', { body: undefined });
+    this.backingState?.put('/', { type: 'index' }, this.peerId);
     this.backingState = stateProvider;
   }
 
@@ -63,7 +80,10 @@ export class Gnfs implements GnfsInterface {
   ): void {
     // called when receiving an update from the state provider
     if ('update' in resourceMessage) {
-      if (resourceMessage.update.headers.type === 'body') {
+      if (
+        resourceMessage.update.headers.type === 'body' &&
+        this.fileAsks[resourceMessage.update.path]
+      ) {
         const { path, body } = resourceMessage.update;
         console.log(
           'Received body update for path',
@@ -75,7 +95,11 @@ export class Gnfs implements GnfsInterface {
           resolve(body as string | null | undefined)
         );
         delete this.fileAsks[path];
-      } else if (resourceMessage.update.headers.type === 'header') {
+        return;
+      } else if (
+        resourceMessage.update.headers.type === 'header' &&
+        this.fileHeaderAsks[resourceMessage.update.path]
+      ) {
         const { path, body } = resourceMessage.update;
         const todoCast = body as any;
         // console.log('Received header update for path', path, todoCast);
@@ -95,12 +119,17 @@ export class Gnfs implements GnfsInterface {
           )
         );
         delete this.fileHeaderAsks[path];
-      } else if (resourceMessage.update.headers.type === 'index') {
+        return;
+      } else if (
+        resourceMessage.update.headers.type === 'index' &&
+        this.indexAsks[resourceMessage.update.path]
+      ) {
         const { path, body } = resourceMessage.update;
         const todoCast = body as any;
         const asks = this.indexAsks[path] || [];
         asks.forEach(({ resolve }) => resolve(todoCast));
         delete this.indexAsks[path];
+        return;
       }
     } else if ('delete' in resourceMessage) {
       const { path } = resourceMessage.delete;
@@ -110,6 +139,9 @@ export class Gnfs implements GnfsInterface {
         this.openFiles.delete(path);
       }
     }
+
+    // Notify watchers of file system events
+    this.notifyWatchers(resourceMessage);
   }
 
   private fileHeaderAsks: Record<
@@ -121,10 +153,14 @@ export class Gnfs implements GnfsInterface {
   > = {};
 
   private async putFileHeader(path: string, headerData: Partial<HeaderData>) {
-    this.backingState?.put(path, {
-      type: 'headers',
-      headers: headerData,
-    });
+    this.backingState?.put(
+      path,
+      {
+        type: 'headers',
+        headers: headerData,
+      },
+      this.peerId
+    );
   }
 
   private async getFileHeader(path: string): Promise<HeaderData | null> {
@@ -135,7 +171,11 @@ export class Gnfs implements GnfsInterface {
 
       this.fileHeaderAsks[path].push({ resolve, reject });
     });
-    this.backingState?.get(path, { type: 'header' }, false);
+
+    // we only request a resource once per tick
+    if (this.fileHeaderAsks[path].length === 1) {
+      this.backingState?.get(path, { type: 'header' }, false, this.peerId);
+    }
 
     return await fileHeaders;
   }
@@ -149,7 +189,7 @@ export class Gnfs implements GnfsInterface {
   > = {};
 
   async putFile(path: string, content: string) {
-    this.backingState?.put(path, { type: 'file', body: content });
+    this.backingState?.put(path, { type: 'file', body: content }, this.peerId);
   }
 
   async getFile(path: string): Promise<string | null | undefined> {
@@ -162,7 +202,10 @@ export class Gnfs implements GnfsInterface {
         this.fileAsks[path].push({ resolve, reject });
       }
     );
-    this.backingState?.get(path, { type: 'body' }, false);
+    // we only request a resource once per tick
+    if (this.fileAsks[path].length === 1) {
+      this.backingState?.get(path, { type: 'body' }, false, this.peerId);
+    }
 
     return await fileContent;
   }
@@ -180,9 +223,248 @@ export class Gnfs implements GnfsInterface {
 
       this.indexAsks[path].push({ resolve, reject });
     });
-    this.backingState?.get(path, { type: 'index' }, false);
+    // we only request a resource once per tick
+    if (this.indexAsks[path].length === 1) {
+      this.backingState?.get(path, { type: 'index' }, false, this.peerId);
+    }
 
     return await indexContent;
+  }
+
+  /**
+   * Watch a file or directory for changes
+   * Implements Node.js fs.watch() API
+   */
+  async *watch(
+    filename: string,
+    options?: {
+      signal?: AbortSignal;
+    }
+  ): AsyncIterable<{
+    eventType: 'create' | 'update' | 'headerUpdate' | 'delete';
+    filename?: string;
+  }> {
+    if (!this.backingState) {
+      throw new Error('State provider not connected');
+    }
+
+    const normalizedPath = this.normalizePath(filename);
+    const eventQueue: {
+      eventType: 'create' | 'update' | 'headerUpdate' | 'delete';
+      filename?: string;
+    }[] = [];
+    const controller: WatcherController = {
+      done: false,
+      push: event => eventQueue.push(event),
+    };
+
+    // Register this watcher
+    if (!this.watchers.has(normalizedPath)) {
+      this.watchers.set(normalizedPath, new Set());
+      // subscribe to the path for all types on the first type
+      this.backingState.get(
+        normalizedPath,
+        { type: 'header' },
+        true,
+        this.peerId
+      );
+
+      this.backingState.get(
+        normalizedPath,
+        { type: 'index' },
+        true,
+        this.peerId
+      );
+
+      this.backingState.get(
+        normalizedPath,
+        { type: 'body' },
+        true,
+        this.peerId
+      );
+    }
+    this.watchers.get(normalizedPath)!.add(controller);
+
+    console.log(`[GNFS] Started watching: ${normalizedPath}`);
+
+    // Handle abort signal for cleanup
+    if (options?.signal) {
+      const abortHandler = () => {
+        console.log(`[GNFS] Aborted watching: ${normalizedPath}`);
+        controller.done = true;
+        this.watchers.get(normalizedPath)!.delete(controller);
+
+        if (this.watchers.get(normalizedPath)?.size === 0) {
+          this.backingState?.forget(
+            normalizedPath,
+            { type: 'header' },
+            this.peerId
+          );
+          this.backingState?.forget(
+            normalizedPath,
+            { type: 'index' },
+            this.peerId
+          );
+          this.backingState?.forget(
+            normalizedPath,
+            { type: 'body' },
+            this.peerId
+          );
+        }
+      };
+      options.signal.addEventListener('abort', abortHandler, { once: true });
+
+      // Remove listener if signal is already aborted
+      if (options.signal.aborted) {
+        controller.done = true;
+      }
+    }
+
+    try {
+      // Yield events from queue
+      while (!controller.done) {
+        while (eventQueue.length > 0) {
+          yield eventQueue.shift()!;
+        }
+        // Wait a bit before checking again
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    } finally {
+      // Cleanup: unsubscribe from backing state
+      console.log(`[GNFS] Stopped watching: ${normalizedPath}`);
+      this.watchers.get(normalizedPath)!.delete(controller);
+
+      if (this.watchers.get(normalizedPath)?.size === 0) {
+        this.backingState?.forget(
+          normalizedPath,
+          { type: 'header' },
+          this.peerId
+        );
+        this.backingState?.forget(
+          normalizedPath,
+          { type: 'index' },
+          this.peerId
+        );
+        this.backingState?.forget(
+          normalizedPath,
+          { type: 'body' },
+          this.peerId
+        );
+      }
+    }
+  }
+
+  /**
+   * Notify watchers of file system events
+   *
+   *
+   *
+   */
+  private notifyWatchers(
+    resourceMessage:
+      | {
+          update: {
+            path: string;
+            body: any;
+            headers: { type: 'body' | 'header' | 'index' };
+          };
+        }
+      | { delete: { path: string } }
+  ): void {
+    const path =
+      'update' in resourceMessage
+        ? resourceMessage.update.path
+        : resourceMessage.delete.path;
+
+    const normalizedPath = this.normalizePath(path);
+
+    const controllers = this.watchers.get(normalizedPath);
+    if (!controllers) {
+      return;
+    }
+
+    const filename = this.getBaseName(normalizedPath);
+
+    const event = { eventType, filename };
+    for (const controller of controllers) {
+      controller.push(event);
+    }
+
+    // skip body updates
+    if (
+      'update' in resourceMessage &&
+      resourceMessage.update.headers.type === 'body'
+    ) {
+      return;
+    }
+
+    if ('update' in resourceMessage) {
+      const { path, body, headers } = resourceMessage.update;
+      const normalizedPath = this.normalizePath(path);
+
+      // Map backing state update types to watch event types
+      let eventType: 'rename' | 'change';
+      if (headers.type === 'header') {
+        // Metadata changed (mtime, size, etc.)
+        eventType = 'change';
+        this.notifyWatchersAtPath(normalizedPath, eventType, 'header');
+      } else if (headers.type === 'index') {
+        // Directory listing changed - something was created/deleted/renamed
+        // Notify parent directory watchers
+        this.notifyWatchersAtPath(normalizedPath, 'change', 'index');
+
+        // Extract filename from path and include it in the event
+        // const filename = this.getBaseName(normalizedPath);
+        // this.notifyWatchersAtPath(normalizedPath, 'rename', filename);
+      }
+    } else if ('delete' in resourceMessage) {
+      const { path } = resourceMessage.delete;
+      const normalizedPath = this.normalizePath(path);
+
+      // File/directory deleted - notify as rename event
+      this.notifyWatchersAtPath(normalizedPath, 'change', 'delete');
+
+      // Also notify parent directory
+      // const parentPath = this.getParentPath(normalizedPath);
+      // if (parentPath !== normalizedPath) {
+      //   const filename = this.getBaseName(normalizedPath);
+      //   this.notifyWatchersAtPath(parentPath, 'rename', filename);
+      // }
+    }
+  }
+
+  /**
+   * Normalize path to remove leading/trailing slashes and resolve duplicate slashes
+   */
+  private normalizePath(path: string): string {
+    return path.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+  }
+
+  /**
+   * Get parent directory path
+   */
+  private getParentPath(path: string): string {
+    const normalized = this.normalizePath(path);
+    if (normalized === '/') {
+      return '/';
+    }
+    const lastSlash = normalized.lastIndexOf('/');
+    if (lastSlash === 0) {
+      return '/';
+    }
+    return normalized.substring(0, lastSlash) || '/';
+  }
+
+  /**
+   * Get base name (filename) from path
+   */
+  private getBaseName(path: string): string {
+    const normalized = this.normalizePath(path);
+    if (normalized === '/') {
+      return '';
+    }
+    const lastSlash = normalized.lastIndexOf('/');
+    return normalized.substring(lastSlash + 1);
   }
 
   // #endregion Sate bus logic
@@ -288,9 +570,13 @@ export class Gnfs implements GnfsInterface {
   }
 
   async mkdir(path: string, options?: { mode: number }): Promise<void> {
-    this.backingState?.put(path, {
-      type: 'index',
-    });
+    this.backingState?.put(
+      path,
+      {
+        type: 'index',
+      },
+      this.peerId
+    );
   }
 
   async rmdir(path: string): Promise<void> {
@@ -310,7 +596,7 @@ export class Gnfs implements GnfsInterface {
       throw new Error(`ENOTEMPTY: directory not empty, rmdir '${path}'`);
     }
 
-    this.backingState.del(path);
+    this.backingState.del(path, this.peerId);
   }
 
   async unlink(path: string): Promise<void> {
@@ -326,7 +612,7 @@ export class Gnfs implements GnfsInterface {
       );
     }
 
-    this.backingState.del(path);
+    this.backingState.del(path, this.peerId);
   }
 
   private async recursiveRename(
@@ -343,21 +629,29 @@ export class Gnfs implements GnfsInterface {
 
       if (metadata && content !== undefined) {
         // Write content to new path
-        this.backingState?.put(newPath, { type: 'file', body: content });
+        this.backingState?.put(
+          newPath,
+          { type: 'file', body: content },
+          this.peerId
+        );
         // Write metadata to new path
-        this.backingState?.put(newPath, {
-          type: 'headers',
-          headers: {
-            ctime: metadata.ctime,
-            mtime: metadata.mtime,
-            atime: metadata.atime,
-            size: metadata.size,
+        this.backingState?.put(
+          newPath,
+          {
+            type: 'headers',
+            headers: {
+              ctime: metadata.ctime,
+              mtime: metadata.mtime,
+              atime: metadata.atime,
+              size: metadata.size,
+            },
           },
-        });
+          this.peerId
+        );
       }
     } else if (stats.isDirectory()) {
       // It's a directory: create the new directory
-      this.backingState?.put(newPath, { type: 'index' });
+      this.backingState?.put(newPath, { type: 'index' }, this.peerId);
 
       // Recursively rename all children
       const children = await this.readdir(oldPath);
@@ -371,7 +665,7 @@ export class Gnfs implements GnfsInterface {
     }
 
     // Delete the old path (for directories, this should only delete the directory itself, not children)
-    this.backingState?.del(oldPath);
+    this.backingState?.del(oldPath, this.peerId);
   }
 
   async rename(oldPath: string, newPath: string): Promise<void> {
@@ -394,10 +688,14 @@ export class Gnfs implements GnfsInterface {
     }
 
     // Create symlink by storing target path as content
-    this.backingState.put(path, {
-      type: 'symlink',
-      body: target,
-    });
+    this.backingState.put(
+      path,
+      {
+        type: 'symlink',
+        body: target,
+      },
+      this.peerId
+    );
   }
 
   async readlink(path: string): Promise<string> {
@@ -408,7 +706,9 @@ export class Gnfs implements GnfsInterface {
     const content = await this.getFile(path);
 
     if (content === null || content === undefined) {
-      const e = new Error('ENOENT: no such file or directory, readlink ' + path);
+      const e = new Error(
+        'ENOENT: no such file or directory, readlink ' + path
+      );
       (e as any).code = 'ENOENT';
       throw e;
     }
