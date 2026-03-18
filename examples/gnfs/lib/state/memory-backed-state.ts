@@ -145,9 +145,12 @@ export const createMemoryBackedState = (
     return { ...meta, type: 'index', size: 0 };
   }
 
-  let connectedReceiver: GnfsInterface | null = null;
+  let connectedReceivers: Record<string, GnfsInterface> = {};
   // Track subscriptions by path and serialized options
-  const subscriptions: Record<string, Record<string, boolean>> = {};
+  const subscriptions: Record<
+    string,
+    Record<string, Record<string, boolean>>
+  > = {};
 
   /**
    * Generates a unique key for a subscription based on the path and options. This is used to track subscriptions in a Set.
@@ -171,7 +174,9 @@ export const createMemoryBackedState = (
       ctime: Date;
       atime: Date;
       size: number;
-    }>
+      peerId: string;
+    }>,
+    peerId: string
   ): void {
     // Navigate to the node
     const segments = path.replace(/^\//, '').split('/');
@@ -197,8 +202,9 @@ export const createMemoryBackedState = (
   function putFolder(
     segment: string,
     parentFolder: DirectoryNode,
-    now: Date
-  ): void {
+    now: Date,
+    peerId: string
+  ): boolean {
     // Create or update the index
     if (!parentFolder.entries[segment]) {
       // Create new index
@@ -212,10 +218,12 @@ export const createMemoryBackedState = (
         },
         entries: {},
       };
+      return true;
     } else {
       // Update existing index's mtime
       const existingDir = parentFolder.entries[segment] as DirectoryNode;
       existingDir.meta.mtime = now;
+      return false;
     }
   }
 
@@ -223,8 +231,9 @@ export const createMemoryBackedState = (
     filename: string,
     parentFolder: DirectoryNode,
     body: string,
-    now: Date
-  ): void {
+    now: Date,
+    peerId: string
+  ): boolean {
     // Create or update the file
     if (!parentFolder.entries[filename]) {
       // Create new file
@@ -238,11 +247,13 @@ export const createMemoryBackedState = (
         },
         content: body,
       };
+      return true;
     } else {
       // Update existing file
       const existingFile = parentFolder.entries[filename] as FileNode;
       existingFile.meta.mtime = now;
       existingFile.content = body;
+      return false;
     }
   }
 
@@ -250,8 +261,9 @@ export const createMemoryBackedState = (
     segment: string,
     parentFolder: DirectoryNode,
     target: string,
-    now: Date
-  ): void {
+    now: Date,
+    peerId: string
+  ): boolean {
     // Create or update the symlink
     if (!parentFolder.entries[segment]) {
       // Create new symlink
@@ -265,20 +277,22 @@ export const createMemoryBackedState = (
         },
         content: target, // Store symlink target path
       };
+      return true;
     } else {
       // Update existing symlink
       const existingLink = parentFolder.entries[segment] as SymlinkNode;
       existingLink.meta.mtime = now;
       existingLink.content = target;
+      return false;
     }
   }
 
   function notifySubscribers(
     path: string,
     payload:
-      | { type: 'index' }
-      | { body: string; type: 'file' }
-      | { body: string; type: 'symlink' }
+      | { body: IndexBody | null; type: 'index' }
+      | { body: string | null; type: 'file' }
+      | { body: string | null; type: 'symlink' }
       | {
           type: 'headers';
           headers: Partial<{
@@ -286,23 +300,41 @@ export const createMemoryBackedState = (
             ctime: Date;
             atime: Date;
             size: number;
+            peerId: string;
           }>;
-        }
+        },
+
+    originPeerId: string
   ): void {
-    if (!subscriptions[path]) {
-      return;
+    const pathSubscriptions = [];
+
+    for (const currentPeerId of Object.keys(subscriptions)) {
+      if (currentPeerId === originPeerId) {
+        // skip the peer that caused the change
+        continue;
+      }
+
+      if (subscriptions[currentPeerId][path]) {
+        pathSubscriptions.push({
+          peerId: currentPeerId,
+          options: subscriptions[currentPeerId][path],
+        });
+      }
     }
 
-    for (const subOptionsRaw of Object.keys(subscriptions[path])) {
-      const subOptions = JSON.parse(subOptionsRaw) as {
+    for (const pathSubscription of pathSubscriptions) {
+      const subOptions = JSON.parse(
+        Object.keys(pathSubscription.options)[0]
+      ) as {
         type: 'body' | 'header' | 'index';
         range?: string;
       };
 
+      // we sent an update for headers iresspectivly what changed an index, a symlink ore a file
       if (subOptions.type === 'header') {
         const meta = getMeta(path);
         if (meta) {
-          connectedReceiver?.send({
+          connectedReceivers[pathSubscription.peerId]?.send({
             update: {
               path,
               body: meta,
@@ -311,19 +343,28 @@ export const createMemoryBackedState = (
           });
         }
       }
+
       if (payload.type === 'index') {
         // folder
         if (subOptions.type === 'index') {
           const index: IndexBody = [];
-          connectedReceiver?.send({
-            update: { path, body: index, headers: { type: 'index' } },
+          connectedReceivers[pathSubscription.peerId]?.send({
+            update: {
+              path,
+              body: index,
+              headers: { type: 'index' },
+            },
           });
         }
       } else if (payload.type === 'file' || payload.type === 'symlink') {
         // file
         if (subOptions.type === 'body') {
-          connectedReceiver?.send({
-            update: { path, body: payload.body, headers: { type: 'body' } },
+          connectedReceivers[pathSubscription.peerId]?.send({
+            update: {
+              path,
+              body: payload.body,
+              headers: { type: 'body' },
+            },
           });
         }
       }
@@ -335,14 +376,21 @@ export const createMemoryBackedState = (
   } = {
     // StateBus methods
     connectReceiver(stateReceiver: GnfsInterface): void {
-      connectedReceiver = stateReceiver;
+      connectedReceivers[stateReceiver.peerId] = stateReceiver;
     },
 
     get(
       path: string,
       options: { type: 'body' | 'header' | 'index'; range?: string },
-      subscribe: boolean
+      subscribe: boolean,
+      peerId: string
     ): void {
+      if (connectedReceivers[peerId] === undefined) {
+        throw new Error(
+          `Peer ${peerId} is not connected to the state provider but tried to get resource ${path}`
+        );
+      }
+
       // Navigate to the path
       const segments = path.replace(/^\//, '').split('/');
 
@@ -370,42 +418,70 @@ export const createMemoryBackedState = (
       if (options.type === 'body') {
         if (current === null) {
           // Resource doesn't exist
-          connectedReceiver?.send({
-            update: { path, body: null, headers: { type: 'body' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: null,
+              headers: { type: 'body' },
+            },
           });
         } else if (current.type === 'file' || current.type === 'symlink') {
           // It's a file or symlink
           const fileNode = current;
-          connectedReceiver?.send({
-            update: { path, body: fileNode.content, headers: { type: 'body' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: fileNode.content,
+              headers: { type: 'body' },
+            },
           });
         } else {
           // It's a directory, can't provide body
-          connectedReceiver?.send({
-            update: { path, body: undefined, headers: { type: 'body' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: undefined,
+              headers: { type: 'body' },
+            },
           });
         }
       } else if (options.type === 'header') {
         const meta = getMeta(path);
         if (meta) {
-          connectedReceiver?.send({
-            update: { path, body: meta, headers: { type: 'header' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: meta,
+              headers: { type: 'header' },
+            },
           });
         } else {
-          connectedReceiver?.send({
-            update: { path, body: null, headers: { type: 'header' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: null,
+              headers: { type: 'header' },
+            },
           });
         }
       } else if (options.type === 'index') {
         if (current === null) {
           // Resource doesn't exist
-          connectedReceiver?.send({
-            update: { path, body: null, headers: { type: 'index' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: null,
+              headers: { type: 'index' },
+            },
           });
         } else if (current.type !== 'index') {
           // It's a file or symlink, can't provide index
-          connectedReceiver?.send({
-            update: { path, body: undefined, headers: { type: 'index' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: undefined,
+              headers: { type: 'index' },
+            },
           });
         } else {
           // It's a directory, build index
@@ -413,23 +489,29 @@ export const createMemoryBackedState = (
           for (const [key] of Object.entries(current.entries)) {
             index.push({ link: `${key}` });
           }
-          connectedReceiver?.send({
-            update: { path, body: index, headers: { type: 'index' } },
+          connectedReceivers[peerId].send({
+            update: {
+              path,
+              body: index,
+              headers: { type: 'index' },
+            },
           });
         }
       }
 
       if (subscribe) {
-        subscriptions[path] ||= {};
-        subscriptions[path][getSubscriptionOptionKey(options)] = true;
+        subscriptions[peerId] ||= {};
+        subscriptions[peerId][path] ||= {};
+        subscriptions[peerId][path][getSubscriptionOptionKey(options)] = true;
       }
     },
 
     forget(
       path: string,
-      options: { type: 'body' | 'header' | 'index'; range?: string }
+      options: { type: 'body' | 'header' | 'index'; range?: string },
+      peerId: string
     ): void {
-      delete subscriptions[path]?.[getSubscriptionOptionKey(options)];
+      delete subscriptions[peerId]?.[path]?.[getSubscriptionOptionKey(options)];
     },
 
     put(
@@ -446,7 +528,8 @@ export const createMemoryBackedState = (
               atime: Date;
               size: number;
             }>;
-          }
+          },
+      peerId: string
     ): void {
       const body = 'body' in payload ? payload.body : undefined;
       const headers = 'headers' in payload ? payload.headers : undefined;
@@ -472,7 +555,7 @@ export const createMemoryBackedState = (
             }
 
             // before the last segment - use the upsert function to create the folder
-            memoryStateProvider.put(currentPath, { type: 'index' });
+            memoryStateProvider.put(currentPath, { type: 'index' }, peerId);
           }
 
           // NOTE: upsert is not pure for now, it adds the segment the state lets assert the change
@@ -519,26 +602,63 @@ export const createMemoryBackedState = (
             return;
           }
 
+          let fileCreated = false;
+
           // Branch to appropriate handler based on payload type
           if (payload.type === 'headers') {
-            putHeader(path, now, payload.headers);
+            putHeader(path, now, payload.headers, peerId);
           } else if (payload.type === 'index') {
-            putFolder(segment, parentFolder, now);
+            fileCreated = putFolder(segment, parentFolder, now, peerId);
           } else if (payload.type === 'file') {
-            putFile(segment, parentFolder, payload.body, now);
+            fileCreated = putFile(
+              segment,
+              parentFolder,
+              payload.body,
+              now,
+              peerId
+            );
           } else if (payload.type === 'symlink') {
-            putSymlink(segment, parentFolder, payload.body, now);
+            fileCreated = putSymlink(
+              segment,
+              parentFolder,
+              payload.body,
+              now,
+              peerId
+            );
           } else {
             const exhaustiveCheck: never = payload;
             throw new Error('Unsupported payload type');
           }
 
-          notifySubscribers(path, payload);
+          if (payload.type !== 'index') {
+            // first inform the subscriber about the file
+            notifySubscribers(path, payload, peerId);
+          } else {
+            // NOTE: in case of folder we only support put of an empty folder - so we can produce the index here
+            notifySubscribers(
+              path,
+              { ...payload, body: [] as IndexBody },
+              peerId
+            );
+          }
+
+          // next - if file/symlink/folder creation - inform parent folder subscribers
+
+          // It's a directory, build index
+          const index: IndexBody = [];
+          for (const [key] of Object.entries(parentFolder.entries)) {
+            index.push({ link: `${key}` });
+          }
+
+          // also propagate change for the parent
+          const parentPath =
+            currentPath.substring(0, currentPath.lastIndexOf('/')) || '/';
+          notifySubscribers(parentPath, { type: 'index', body: index }, peerId);
         }
       }
     },
 
-    del(path: string): void {
+    del(path: string, peerId: string): void {
       // Navigate to the parent directory
       const segments = path.replace(/^\//, '').split('/');
       const finalSegment = segments[segments.length - 1];
@@ -581,15 +701,27 @@ export const createMemoryBackedState = (
         for (const [key] of Object.entries(childDir.entries)) {
           const childPath = path === '/' ? `/${key}` : `${path}/${key}`;
           // Recursively remove each child
-          memoryStateProvider.del(childPath);
+          memoryStateProvider.del(childPath, peerId);
         }
       }
 
       // Delete the entry from the state
       delete current.entries[finalSegment];
 
+      const index: IndexBody = [];
+      for (const [key] of Object.entries(current.entries)) {
+        index.push({ link: `${key}` });
+      }
+
       // Notify subscribers
-      connectedReceiver?.send({ delete: { path } });
+      // notifySubscribers(path, { type: 'index', body: current.entries }, peerId);
+
+      notifySubscribers(path, { type: target.type, body: null }, peerId);
+      notifySubscribers(
+        path,
+        { type: 'index', body: index as IndexBody },
+        peerId
+      );
     },
   };
 

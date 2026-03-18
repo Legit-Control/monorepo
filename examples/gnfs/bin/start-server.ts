@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import * as fsDisk from 'node:fs';
 import * as net from 'net';
 import * as path from 'node:path';
 import { exec } from 'child_process';
@@ -76,16 +75,6 @@ function startNfsServer(
     serverReadyRejecter = reject;
   });
 
-  // if (!fsDisk.existsSync(serverFolder)) {
-  //   throw new Error(`Server folder does not exist: ${serverFolder}`);
-  // }
-
-  // // Ensure the folder to mount the nfs to exists
-  // if (!fsDisk.existsSync(mountFolder)) {
-  //   fsDisk.mkdirSync(mountFolder, { recursive: true });
-  //   console.log(`Created mount folder directory: ${mountFolder}`);
-  // }
-
   // Start the NFS server
   (async () => {
     try {
@@ -131,6 +120,8 @@ function startNfsServer(
       const errorMsg = `Error starting NFS server: ${err.message}`;
       console.log(errorMsg, true);
       console.error(errorMsg);
+
+      // @ts-expect-error -- control follw not correct here
       serverReadyRejecter(err);
     }
   })();

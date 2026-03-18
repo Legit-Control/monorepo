@@ -14,7 +14,8 @@ export type BackingStateInterface = {
   get(
     path: string,
     options: { type: 'body' | 'header' | 'index'; range?: string },
-    subscribe: boolean
+    subscribe: boolean,
+    peerId: string
   ): void;
 
   /**
@@ -23,7 +24,8 @@ export type BackingStateInterface = {
    */
   forget(
     path: string,
-    options: { type: 'body' | 'header' | 'index'; range?: string }
+    options: { type: 'body' | 'header' | 'index'; range?: string },
+    peerId: string
   ): void;
 
   /**
@@ -31,6 +33,7 @@ export type BackingStateInterface = {
    * If a resource already exists at the path, it should be updated with the new body. If no resource exists at the path, a new resource should be created with the given body.
    * @param path the path of the resource to update/insert
    * @param payload the new state of the resource
+   * @param peerId the id of the peer that caused the update, used for avoiding echoing updates back to the originator
    * @returns
    */
   put: (
@@ -47,14 +50,16 @@ export type BackingStateInterface = {
             atime: Date;
             size: number;
           }>;
-        }
+        },
+    peerId: string
   ) => void;
 
   /**
    * Deletes a resource at the given path.
    * If no resource exists at the path, this operation should have no effect.
    * @param args.path the path of the resource to delete
+   * @param args.peerId the id of the peer that caused the deletion, used for avoiding echoing deletions back to the originator
    * @returns
    */
-  del: (path: string) => void;
+  del: (path: string, peerId: string) => void;
 };
