@@ -16,7 +16,7 @@
     "build": "vite build",
     "test": "vitest",
     "test:run": "vitest run",
-    "dev": "tsx bin/start-server.ts",
+    "dev": "tsx bin/start-server.ts --path ./gitaway",
     "prepublishOnly": "pnpm run build"
   },
   "keywords": [
@@ -35,7 +35,8 @@
   "dependencies": {
     "@legit-sdk/nfs-serve": "workspace:*",
     "commander": "^12.1.0",
-    "isomorphic-git": "^1.27.1"
+    "isomorphic-git": "^1.27.1",
+    "memfs": "^4.57.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

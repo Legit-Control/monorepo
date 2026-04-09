@@ -56,12 +56,12 @@ interface NfsServerResult {
 }
 
 function startNfsServer(
-  cacheFolder: string,
+  storageBasePath: string,
   mountFolder: string,
   port: number
 ): NfsServerResult {
   console.log(`Starting Gitaway NFS server...`);
-  console.log(`Server folder: ${cacheFolder}`);
+  console.log(`Storage base path: ${storageBasePath}`);
   console.log(`Mount folder: ${mountFolder}`);
   console.log(`Port: ${port}`);
 
@@ -77,12 +77,23 @@ function startNfsServer(
   // Start the NFS server
   (async () => {
     try {
+      // Read GitHub token from config if available
+      const configPath = path.join(storageBasePath, 'config/github_token');
+      let githubToken: string | undefined;
+
+      try {
+        if (fsDisk.existsSync(configPath)) {
+          githubToken = fsDisk.readFileSync(configPath, 'utf-8').trim();
+          console.log('GitHub token loaded from config');
+        }
+      } catch (error) {
+        // Ignore error if config doesn't exist
+        console.log('No GitHub token found, using unauthenticated API (rate limited)');
+      }
+
       // Create the GitGateway virtual filesystem
       console.log('Creating GitGateway virtual filesystem...');
-      const gitGateway = new GitGateway(cacheFolder);
-
-      // Initialize with sample data
-      gitGateway.initializeSampleData();
+      const gitGateway = new GitGateway(fsDisk, storageBasePath, githubToken);
 
       console.log('Creating file handle manager...');
       const fileHandleManager = createFileHandleManager(
@@ -151,7 +162,7 @@ function mountNfsShare(mountPoint: string, port: number): Promise<void> {
       }
 
       // Mount the NFS share
-      const mountCommand = `mount_nfs -o nolocks,soft,retrans=2,timeo=10,vers=3,tcp,rsize=131072,actimeo=0,port=${port},mountport=${port} localhost:/ ${mountPoint}`;
+      const mountCommand = `mount_nfs -o nolocks,soft,retrans=2,timeo=10,vers=3,tcp,rsize=131072,actimeo=0,noreaddirplus,port=${port},mountport=${port} localhost:/ ${mountPoint}`;
 
       exec(mountCommand, mountErr => {
         if (mountErr) {
@@ -209,8 +220,7 @@ function unmountNfsShare(mountFolderPath: string): Promise<void> {
 }
 
 interface ProgramOptions {
-  cachePath: string;
-  mountPath: string;
+  path: string;
   port?: number;
 }
 
@@ -222,14 +232,9 @@ async function main() {
     .description('Virtual git gateway via NFS on macOS')
     .version('0.0.1')
     .option(
-      '--cache-path <cachePath>',
-      'Folder where to cache git repositories',
-      './gitaway-cache'
-    )
-    .option(
-      '--mount-path <mountPath>',
-      'Folder where to mount the virtual filesystem',
-      './gitaway-mount'
+      '--path <path>',
+      'Base path for gitaway data (repos and storage folders)',
+      './gitaway'
     )
     .option(
       '--port <number>',
@@ -243,29 +248,30 @@ async function main() {
     options.port = await findAvailablePort(13618);
   }
 
-  // Convert paths to absolute paths relative to current working directory
-  if (!path.isAbsolute(options.cachePath)) {
-    options.cachePath = path.resolve(process.cwd(), options.cachePath);
+  // Convert path to absolute path relative to current working directory
+  if (!path.isAbsolute(options.path)) {
+    options.path = path.resolve(process.cwd(), options.path);
   }
 
-  if (!path.isAbsolute(options.mountPath)) {
-    options.mountPath = path.resolve(process.cwd(), options.mountPath);
+  // Define repos and storage paths
+  const reposPath = path.join(options.path, 'repos');
+  const storagePath = options.path; // storageBasePath is the base path itself
+
+  // Ensure base directory exists
+  if (!fsDisk.existsSync(options.path)) {
+    fsDisk.mkdirSync(options.path, { recursive: true });
+    console.log(`Created base directory: ${options.path}`);
   }
 
-  // Ensure cache directory exists
-  if (!fsDisk.existsSync(options.cachePath)) {
-    fsDisk.mkdirSync(options.cachePath, { recursive: true });
-    console.log(`Created cache directory: ${options.cachePath}`);
+  // Ensure repos directory exists
+  if (!fsDisk.existsSync(reposPath)) {
+    fsDisk.mkdirSync(reposPath, { recursive: true });
+    console.log(`Created repos directory: ${reposPath}`);
   }
 
-  // Ensure mount directory exists
-  if (!fsDisk.existsSync(options.mountPath)) {
-    fsDisk.mkdirSync(options.mountPath, { recursive: true });
-    console.log(`Created mount directory: ${options.mountPath}`);
-  }
-
-  console.log('Cache path:', options.cachePath);
-  console.log('Mount path:', options.mountPath);
+  console.log('Base path:', options.path);
+  console.log('Repos path (mount point):', reposPath);
+  console.log('Storage base path:', storagePath);
   console.log('Port:', options.port);
 
   let nfsServer: NfsServerResult | undefined;
@@ -276,7 +282,7 @@ async function main() {
 
     try {
       // Try to unmount
-      await unmountNfsShare(options.mountPath);
+      await unmountNfsShare(reposPath);
     } catch (err) {
       // Ignore unmount errors during shutdown
     }
@@ -297,8 +303,8 @@ async function main() {
   try {
     // Start NFS server directly in main thread
     nfsServer = startNfsServer(
-      options.cachePath,
-      options.mountPath,
+      storagePath,
+      reposPath,
       parseInt(options.port as unknown as string)
     );
 
@@ -307,20 +313,16 @@ async function main() {
 
     // Mount the NFS share
     await mountNfsShare(
-      options.mountPath,
+      reposPath,
       parseInt(options.port as unknown as string)
     );
 
     console.log('\n✅ Gitaway filesystem mounted successfully!');
-    console.log(`📁 Mount point: ${options.mountPath}`);
+    console.log(`📁 Base path: ${options.path}`);
+    console.log(`📁 Mount point: ${reposPath}`);
     console.log('\n📖 Quick start:');
-    console.log(`   cd ${options.mountPath}/github.com/m/a/r/tin-lysk/my-repo`);
+    console.log(`   cd ${reposPath}/github.com/username`);
     console.log(`   ls -la`);
-    console.log('\n🔖 Bookmark a repo:');
-    console.log(`   cd ${options.mountPath}/github.com/m/a/r/tin-lysk/my-repo/.gateway-bookmarked`);
-    console.log(`   rm no  # This will bookmark the repo`);
-    console.log('\n📂 Access bookmarked repos:');
-    console.log(`   cd ${options.mountPath}/bookmarked/github.com/martin-lysk/my-repo`);
     console.log('\nPress Ctrl+C to stop the server and unmount.\n');
   } catch (error) {
     const err = error as Error;
@@ -329,7 +331,7 @@ async function main() {
 
     // Try to unmount on error
     try {
-      await unmountNfsShare(options.mountPath);
+      await unmountNfsShare(reposPath);
     } catch (unmountErr) {
       // Ignore unmount errors during cleanup
     }

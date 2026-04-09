@@ -3,297 +3,26 @@ import type { FileHandle } from 'node:fs/promises';
 import { GitGatewayFileHandle } from './git-gateway-filehandle.js';
 
 /**
- * Valid characters for each level of sharding
- */
-const FIRST_LEVEL_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'; // No dash at start
-const MIDDLE_LEVEL_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789-'; // Dash allowed in middle
-
-const serverStartDate = new Date();
-
-/**
- * Repository metadata
- */
-interface RepoMetadata {
-  domain: string;
-  username: string;
-  repoName: string;
-  isBookmarked: boolean;
-  clonePath?: string; // Local path where repo is cloned
-}
-
-/**
- * Bookmark state file info
- */
-interface BookmarkState {
-  path: string;
-  isBookmarked: boolean;
-}
-
-/**
  * GitGateway - Virtual filesystem for browsing GitHub repositories via NFS
  */
 export class GitGateway {
-  private cacheBasePath: string; // Where to cache cloned repositories
-  private repos: Map<string, RepoMetadata> = new Map();
-  private bookmarkStates: Map<string, BookmarkState> = new Map();
   private nextFileId = 1;
+  private storageBasePath: string;
+  private storageFs: typeof fsDisk; // replace type with nodefs type
+  private serverStartDate: Date;
+  private unmaterializedUsers: Map<string, string[]> = new Map(); // username -> repos
+  private materializedUserRepos: Map<string, string[]> = new Map(); // username -> repos cache for materialized users
+  private githubToken: string | undefined;
 
-  constructor(cacheBasePath: string) {
-    this.cacheBasePath = cacheBasePath;
-  }
-
-  /**
-   * Dummy function to get users with a given prefix
-   * This will be replaced with actual GitHub API calls later
-   * @param prefix - The prefix to search for (e.g., "mar" for users starting with "mar")
-   * @returns Array of usernames with the given prefix
-   */
-  async getUsers(prefix: string): Promise<string[]> {
-    // Dummy data - in production this would call GitHub API
-    const dummyUsers: Record<string, string[]> = {
-      'mar': ['martin-lysk', 'mario', 'mark', 'martha', 'marcus-w', 'maria'],
-      'ma': ['martin-lysk', 'mario', 'mark', 'martha', 'marcus-w', 'maria', 'matthew', 'mary', 'max', 'maya'],
-      'm': ['martin-lysk', 'mario', 'mark', 'martha', 'marcus-w', 'maria', 'matthew', 'mary', 'max', 'maya', 'michael', 'michelle'],
-      'pl': ['plate', 'playground', 'plasma', 'player', 'plugin'],
-      'p': ['plate', 'playground', 'plasma', 'player', 'plugin', 'python', 'project', 'patrick'],
-      '': ['martin-lysk', 'mario', 'plate', 'playground', 'python', 'patrick', 'aaron', 'zack'],
-    };
-
-    // Simulate async API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const users = dummyUsers[prefix] || dummyUsers[''] || [];
-        resolve(users);
-      }, 0);
-    });
-  }
-
-  /**
-   * Initialize with some sample repositories
-   */
-  initializeSampleData() {
-    // Add sample repos (for testing purposes)
-    this.addRepo('github.com', 'martin-lysk', 'my-repo', false);
-    this.addRepo('github.com', 'martin-lysk', 'about-me', false);
-    this.addRepo('github.com', 'plate', 'plate-sdk', false);
-  }
-
-  /**
-   * Add a repository to the virtual filesystem
-   */
-  addRepo(
-    domain: string,
-    username: string,
-    repoName: string,
-    isBookmarked: boolean
+  constructor(
+    storageFs: typeof fsDisk,
+    storageBasePath: string,
+    githubToken?: string
   ) {
-    const key = `${domain}/${username}/${repoName}`;
-    this.repos.set(key, {
-      domain,
-      username,
-      repoName,
-      isBookmarked,
-    });
-
-    // Initialize bookmark state
-    const bookmarkPath = this.getBookmarkPath(domain, username, repoName);
-    this.bookmarkStates.set(bookmarkPath, {
-      path: bookmarkPath,
-      isBookmarked,
-    });
-  }
-
-  /**
-   * Get the sharded path for a repo
-   */
-  getRepoShardedPath(
-    domain: string,
-    username: string,
-    repoName: string
-  ): string {
-    const shards = this.getShardsForUsername(username);
-    return `/${domain}/${shards.join('/')}/${repoName}`;
-  }
-
-  /**
-   * Get bookmark state path for a repo
-   */
-  getBookmarkPath(domain: string, username: string, repoName: string): string {
-    const repoPath = this.getRepoShardedPath(domain, username, repoName);
-    return `${repoPath}/.gateway-bookmarked`;
-  }
-
-  /**
-   * Get bookmarked section path for a repo
-   */
-  getBookmarkedSectionPath(
-    domain: string,
-    username: string,
-    repoName: string
-  ): string {
-    return `/bookmarked/${domain}/${username}/${repoName}`;
-  }
-
-  /**
-   * Get the shard components for a username
-   * Examples: "martin-lysk" -> ["m", "a", "r", "tin-lysk"]
-   *           "ab" -> ["_repos", "ab"]
-   *           "a" -> ["_repos", "a"]
-   */
-  getShardsForUsername(username: string): string[] {
-    if (username.length <= 3) {
-      // Short usernames go into _repos
-      return ['_repos', username];
-    }
-    // Long usernames are sharded by first 3 characters
-    return [username[0], username[1], username[2], username.slice(3)];
-  }
-
-  /**
-   * Parse a path to determine its type and extract components
-   */
-  parsePath(virtualPath: string): {
-    type:
-      | 'root'
-      | 'domain'
-      | 'first-shard'
-      | 'second-shard'
-      | 'third-shard'
-      | 'username-shard'
-      | 'repos-shard'
-      | 'repo'
-      | 'bookmark-dir'
-      | 'bookmarked-section'
-      | 'bookmarked-root'
-      | 'file'
-      | 'bookmark-file'
-      | 'not-found';
-    domain?: string;
-    username?: string;
-    repoName?: string;
-    shardLevel?: number;
-    prefix?: string;
-    bookmarkFile?: 'no' | 'yes';
-  } {
-    const normalizedPath = virtualPath.replace(/^\/+/, '').replace(/\/+$/, '');
-    const parts = normalizedPath.split('/').filter(p => p);
-
-    // Root directory
-    if (parts.length === 0) {
-      return { type: 'root' };
-    }
-
-    // Bookmarked section
-    if (parts[0] === 'bookmarked') {
-      if (parts.length === 1) {
-        return { type: 'bookmarked-root' };
-      }
-      if (parts.length >= 4) {
-        const domain = parts[1];
-        const username = parts[2];
-        const repoName = parts[3];
-        const key = `${domain}/${username}/${repoName}`;
-        const repo = this.repos.get(key);
-
-        if (!repo || !repo.isBookmarked) {
-          return { type: 'not-found' };
-        }
-
-        if (parts.length === 4) {
-          return { type: 'bookmarked-section', domain, username, repoName };
-        }
-
-        return {
-          type: 'file',
-          domain,
-          username,
-          repoName,
-        };
-      }
-    }
-
-    // Regular domain path (github.com/...)
-    const domain = parts[0];
-    if (parts.length === 1) {
-      return { type: 'domain', domain };
-    }
-
-    // Shard levels
-    if (parts[1] === '_repos') {
-      // Short username path: github.com/_repos/username
-      if (parts.length === 2) {
-        return { type: 'repos-shard', domain, shardLevel: 0 };
-      }
-      const username = parts[2];
-      if (parts.length === 3) {
-        return { type: 'username-shard', domain, username, shardLevel: 0 };
-      }
-      // Check if it's a repo
-      const repoName = parts[3];
-      const key = `${domain}/${username}/${repoName}`;
-      const repo = this.repos.get(key);
-      if (repo) {
-        if (parts.length === 4) {
-          return { type: 'repo', domain, username, repoName };
-        }
-        if (parts.length === 5 && parts[4] === '.gateway-bookmarked') {
-          return { type: 'bookmark-dir', domain, username, repoName };
-        }
-        if (parts.length === 6 && parts[4] === '.gateway-bookmarked') {
-          const bookmarkFile = parts[5] as 'no' | 'yes';
-          if (bookmarkFile === 'no' || bookmarkFile === 'yes') {
-            return { type: 'bookmark-file', domain, username, repoName, bookmarkFile };
-          }
-        }
-      }
-    } else {
-      // Long username sharded path: github.com/a/b/r/...
-      if (parts.length === 2) {
-        return { type: 'first-shard', domain, shardLevel: 1, prefix: parts[1] };
-      }
-      if (parts.length === 3) {
-        return { type: 'second-shard', domain, shardLevel: 2, prefix: parts[1] + parts[2] };
-      }
-      if (parts.length === 4) {
-        // Check if it's _repos at third level
-        if (parts[3] === '_repos') {
-          return { type: 'repos-shard', domain, shardLevel: 3, prefix: parts[1] + parts[2] };
-        }
-        return { type: 'third-shard', domain, shardLevel: 3, prefix: parts[1] + parts[2] + parts[3] };
-      }
-      if (parts.length === 5) {
-        // Check if it's _repos or username shard
-        if (parts[4] === '_repos') {
-          return { type: 'repos-shard', domain, shardLevel: 4, prefix: parts[1] + parts[2] + parts[3] };
-        }
-        // Username shard (remainder of username after first 3 chars)
-        const username = parts[1] + parts[2] + parts[3] + parts[4];
-        return { type: 'username-shard', domain, username, shardLevel: 4, prefix: username };
-      }
-      if (parts.length >= 6) {
-        // Reconstruct username from first 5 parts
-        const username = parts[1] + parts[2] + parts[3] + parts[4];
-        const repoName = parts[5];
-        const key = `${domain}/${username}/${repoName}`;
-        const repo = this.repos.get(key);
-        if (repo) {
-          if (parts.length === 6) {
-            return { type: 'repo', domain, username, repoName };
-          }
-          if (parts.length === 7 && parts[6] === '.gateway-bookmarked') {
-            return { type: 'bookmark-dir', domain, username, repoName };
-          }
-          if (parts.length === 8 && parts[6] === '.gateway-bookmarked') {
-            const bookmarkFile = parts[7] as 'no' | 'yes';
-            if (bookmarkFile === 'no' || bookmarkFile === 'yes') {
-              return { type: 'bookmark-file', domain, username, repoName, bookmarkFile };
-            }
-          }
-        }
-      }
-    }
-
-    return { type: 'not-found' };
+    this.storageBasePath = storageBasePath;
+    this.storageFs = storageFs;
+    this.serverStartDate = new Date();
+    this.githubToken = githubToken;
   }
 
   // #region File system operations
@@ -303,146 +32,453 @@ export class GitGateway {
   }
 
   async stat(pathStr: string): Promise<fsDisk.Stats> {
-    const parsed = this.parsePath(pathStr);
+    // Normalize path
+    const normalizedPath = pathStr === '' ? '/' : pathStr;
+    const pathParts = normalizedPath.split('/').filter(part => part.length > 0);
 
-    
-    const fileId = this.nextFileId++;
-
-    switch (parsed.type) {
-      case 'root':
-      case 'bookmarked-root':
-      case 'domain':
-      case 'first-shard':
-      case 'second-shard':
-      case 'third-shard':
-      case 'username-shard':
-      case 'repos-shard':
-      case 'repo':
-      case 'bookmarked-section':
-      case 'bookmark-dir':
-        return this.createDirStats(fileId, serverStartDate);
-
-      case 'bookmark-file':
-        return this.createBookmarkFileStats(fileId, serverStartDate, parsed.bookmarkFile === 'yes');
-
-      case 'file':
-        const e = new Error(`ENOENT: no such file or directory, stat ${pathStr}`);
-        (e as any).code = 'ENOENT';
-        throw e;
-
-      case 'not-found':
-        const e2 = new Error(`ENOENT: no such file or directory, stat ${pathStr}`);
-        (e2 as any).code = 'ENOENT';
-        throw e2;
-
-      default:
-        const e3 = new Error(`ENOENT: no such file or directory, stat ${pathStr}`);
-        (e3 as any).code = 'ENOENT';
-        throw e3;
+    // Root directory
+    if (pathParts.length === 0 || normalizedPath === '/') {
+      const fileId = this.nextFileId++;
+      return this.createDirStats(fileId, this.serverStartDate);
     }
+
+    const firstPart = pathParts[0];
+
+    // /config directory
+    if (firstPart === 'config') {
+      if (pathParts.length === 1) {
+        const fileId = this.nextFileId++;
+        return this.createDirStats(fileId, this.serverStartDate);
+      }
+      throw new Error(`ENOENT: no such file or directory, stat '${pathStr}'`);
+    }
+
+    // /github.com directory
+    if (firstPart === 'github.com') {
+      // Ensure storage folder exists
+      const bookmarksPath = this.storageBasePath + '/bookmarks/github.com';
+      await this.ensureDir(bookmarksPath);
+
+      if (pathParts.length === 1) {
+        const fileId = this.nextFileId++;
+        return this.createDirStats(fileId, this.serverStartDate);
+      }
+
+      // /github.com/username directory
+      if (pathParts.length === 2) {
+        const username = pathParts[1];
+        const userPath = `${bookmarksPath}/${username}`;
+
+        // Check if user is materialized (storage folder exists)
+        const isMaterialized = await this.pathExists(userPath);
+
+        if (isMaterialized) {
+          // User is bookmarked, return stats
+          const fileId = this.nextFileId++;
+          return this.createDirStats(fileId, this.serverStartDate);
+        }
+
+        // Check if user is unmaterialized (in memory)
+        if (this.unmaterializedUsers.has(username)) {
+          // User exists in GitHub but not materialized yet
+          const fileId = this.nextFileId++;
+          return this.createDirStats(fileId, this.serverStartDate);
+        }
+
+        // Check GitHub API for user existence
+        const userExists = await this.checkGitHubUserExists(username);
+
+        if (userExists) {
+          // User exists on GitHub, add to unmaterialized map
+          // (we'll fetch repos when readdir is called)
+          this.unmaterializedUsers.set(username, []);
+
+          const fileId = this.nextFileId++;
+          return this.createDirStats(fileId, this.serverStartDate);
+        }
+
+        // User doesn't exist on GitHub
+        throw new Error(`ENOENT: no such file or directory, stat '${pathStr}'`);
+      }
+
+      // /github.com/username/repo - materialize on access
+      if (pathParts.length === 3) {
+        const username = pathParts[1];
+        const repoName = pathParts[2];
+        const userPath = `${bookmarksPath}/${username}`;
+
+        // Check if user exists (materialized or unmaterialized)
+        const isMaterialized = await this.pathExists(userPath);
+        const isUnmaterialized = this.unmaterializedUsers.has(username);
+
+        if (!isMaterialized && !isUnmaterialized) {
+          // User doesn't exist, check GitHub
+          const userExists = await this.checkGitHubUserExists(username);
+          if (!userExists) {
+            throw new Error(
+              `ENOENT: no such file or directory, stat '${pathStr}'`
+            );
+          }
+          this.unmaterializedUsers.set(username, []);
+        }
+
+        // Check if repo exists in unmaterialized map before materializing
+        if (!isMaterialized && this.unmaterializedUsers.has(username)) {
+          const userRepos = this.unmaterializedUsers.get(username);
+
+          // If repos array is empty, fetch from GitHub API
+          if (!userRepos || userRepos.length === 0) {
+            const repos = await this.fetchGitHubUserRepos(username);
+            this.unmaterializedUsers.set(username, repos);
+          }
+
+          const updatedRepos = this.unmaterializedUsers.get(username);
+          if (updatedRepos && !updatedRepos.includes(repoName)) {
+            // Repo doesn't exist in user's repo list from GitHub API
+            throw new Error(
+              `ENOENT: no such file or directory, stat '${pathStr}'`
+            );
+          }
+          // Repo exists in unmaterialized map, return stats without materializing
+          const fileId = this.nextFileId++;
+          return this.createDirStats(fileId, this.serverStartDate);
+        }
+
+        // User is materialized - check repo cache or fetch from GitHub API
+        if (isMaterialized) {
+          // Check if we have cached repos for this materialized user
+          if (!this.materializedUserRepos.has(username)) {
+            // First time accessing a repo for this materialized user - fetch and cache repos
+            const repos = await this.fetchGitHubUserRepos(username);
+            this.materializedUserRepos.set(username, repos);
+          }
+
+          const cachedRepos = this.materializedUserRepos.get(username);
+
+          if (cachedRepos && !cachedRepos.includes(repoName)) {
+            // Repo doesn't exist in user's repo list from GitHub API
+            throw new Error(
+              `ENOENT: no such file or directory, stat '${pathStr}'`
+            );
+          }
+
+          // Repo exists in cached list, return stats
+          const fileId = this.nextFileId++;
+          return this.createDirStats(fileId, this.serverStartDate);
+        }
+
+        // Should not reach here, but handle gracefully
+        throw new Error(
+          `ENOENT: no such file or directory, stat '${pathStr}'`
+        );
+      }
+
+      // Deeper paths not supported yet
+      throw new Error(`ENOENT: no such file or directory, stat '${pathStr}'`);
+    }
+
+    // Non-existent path
+    throw new Error(`ENOENT: no such file or directory, stat '${pathStr}'`);
   }
 
   async readdir(pathStr: string): Promise<string[]> {
-    const parsed = this.parsePath(pathStr);
+    // Normalize path - handle empty string as root
+    const normalizedPath = pathStr === '' ? '/' : pathStr;
+    const pathParts = normalizedPath.split('/').filter(part => part.length > 0);
 
-    console.log(`readdir called for '${pathStr}' (parsed as type '${parsed.type}')`);
+    // Root directory - list domains
+    if (pathParts.length === 0 || normalizedPath === '/') {
+      return ['config', 'github.com'];
+    }
 
-    switch (parsed.type) {
-      case 'root':
-        return ['github.com', 'bookmarked'];
+    const firstPart = pathParts[0];
 
-      case 'bookmarked-root': {
-        // Return domains that have bookmarked repos
-        const domains = new Set<string>();
-        for (const repo of this.repos.values()) {
-          if (repo.isBookmarked) {
-            domains.add(repo.domain);
-          }
-        }
-        return Array.from(domains);
-      }
-
-      case 'domain':
-        // First level: return a-z0-9 (no dash)
-        return FIRST_LEVEL_CHARS.split('');
-
-      case 'first-shard': {
-        // Second level: return a-z0-9- (including dash) and _repos
-        const result = MIDDLE_LEVEL_CHARS.split('');
-        result.push('_repos');
-        return result;
-      }
-
-      case 'second-shard': {
-        // Third level: return a-z0-9- (including dash) and _repos
-        const result = MIDDLE_LEVEL_CHARS.split('');
-        result.push('_repos');
-        return result;
-      }
-
-      case 'third-shard':
-      case 'repos-shard': {
-        // At this point, we need to return either:
-        // - _repos (for usernames that continue)
-        // - Usernames that match the prefix (for final shard level)
-        const result: string[] = [];
-
-        // Add _repos if it makes sense
-        if (parsed.shardLevel === 3 || parsed.shardLevel === 4) {
-          result.push('_repos');
-        }
-
-        // Get users with the current prefix
-        if (parsed.prefix) {
-          const users = await this.getUsers(parsed.prefix);
-          // Filter and transform users based on shard level
-          for (const user of users) {
-            if (user.startsWith(parsed.prefix)) {
-              if (parsed.shardLevel === 4) {
-                // At username shard level, return the remainder of the username
-                const remainder = user.slice(parsed.prefix.length);
-                if (remainder && !result.includes(remainder)) {
-                  result.push(remainder);
-                }
-              } else if (parsed.shardLevel === 0 && user.length <= 3) {
-                // At _repos level, return short usernames
-                result.push(user);
-              }
-            }
-          }
-        }
-
-        // Remove duplicates
-        return [...new Set(result)];
-      }
-
-      case 'username-shard': {
-        // Return repos for this username
-        const repos: string[] = [];
-        for (const [key, repo] of this.repos.entries()) {
-          if (repo.domain === parsed.domain && repo.username === parsed.username) {
-            repos.push(repo.repoName);
-          }
-        }
-        return repos;
-      }
-
-      case 'repo':
-        return ['.gateway-bookmarked'];
-
-      case 'bookmark-dir': {
-        // Return 'no' or 'yes' based on bookmark state
-        const bookmarkPath = this.getBookmarkPath(
-          parsed.domain!,
-          parsed.username!,
-          parsed.repoName!
-        );
-        const state = this.bookmarkStates.get(bookmarkPath);
-        return [state?.isBookmarked ? 'yes' : 'no'];
-      }
-
-      default:
+    // /config directory
+    if (firstPart === 'config') {
+      if (pathParts.length === 1) {
+        // For now, return empty array - config.json doesn't exist yet
+        // TODO: Create config.json if it doesn't exist
         return [];
+      }
+      throw new Error(
+        `ENOENT: no such file or directory, readdir '${pathStr}'`
+      );
+    }
+
+    // /github.com directory
+    if (firstPart === 'github.com') {
+      // Ensure storage folder exists
+      const bookmarksPath = this.storageBasePath + '/bookmarks/github.com';
+      await this.ensureDir(bookmarksPath);
+
+      // List users in storage
+      if (pathParts.length === 1) {
+        try {
+          const entries = await this.storageFs.promises.readdir(bookmarksPath) as string[];
+          return entries.map(entry => {
+            if (typeof entry !== 'string') throw new Error('Expected string entry name');
+            return entry;
+          });
+        } catch (error) {
+          // If directory doesn't exist or can't be read, return empty array
+          return [];
+        }
+      }
+
+      // /github.com/username directory
+      if (pathParts.length === 2) {
+        const username = pathParts[1];
+        const userPath = `${bookmarksPath}/${username}`;
+
+        // Check if user is materialized in storage
+        const isMaterialized = await this.pathExists(userPath);
+
+        if (isMaterialized) {
+          // User is materialized - check cache first
+          if (this.materializedUserRepos.has(username)) {
+            // Return cached repos
+            return this.materializedUserRepos.get(username)!;
+          }
+
+          // No cache yet, try to fetch from GitHub API
+          try {
+            const repos = await this.fetchGitHubUserRepos(username);
+            this.materializedUserRepos.set(username, repos);
+            return repos;
+          } catch (error) {
+            // GitHub API failed, fall through to storage fallback
+            console.debug(`GitHub API fetch failed for ${username}, falling back to storage:`, error);
+          }
+
+          // Fallback to storage for materialized users
+          try {
+            const entries = (await this.storageFs.promises.readdir(
+              userPath
+            )) as string[];
+            const repos = entries.map(entry => {
+              if (typeof entry !== 'string')
+                throw new Error('Expected string entry name');
+              return entry;
+            });
+            // Cache the storage results
+            this.materializedUserRepos.set(username, repos);
+            return repos;
+          } catch (error) {
+            return [];
+          }
+        }
+
+        // User is not materialized - use GitHub API
+        try {
+          const repos = await this.fetchGitHubUserRepos(username);
+
+          // Successfully fetched from GitHub API (even if empty - user might have no repos)
+          // Update unmaterialized map and return results
+          this.unmaterializedUsers.set(username, repos);
+          return repos;
+        } catch (error) {
+          // GitHub API failed, fall through to storage fallback
+          console.debug(`GitHub API fetch failed for ${username}, falling back to storage:`, error);
+        }
+
+        // Check unmaterialized map as fallback
+        if (this.unmaterializedUsers.has(username)) {
+          return this.unmaterializedUsers.get(username)!;
+        }
+
+        // User doesn't exist in GitHub or storage
+        throw new Error(
+          `ENOENT: no such file or directory, readdir '${pathStr}'`
+        );
+      }
+
+      // /github.com/username/repo - return contents from git repo
+      if (pathParts.length === 3) {
+        const username = pathParts[1];
+        const repoName = pathParts[2];
+        const userPath = `${bookmarksPath}/${username}`;
+
+        // Check if user exists (materialized or unmaterialized)
+        const isMaterialized = await this.pathExists(userPath);
+        const isUnmaterialized = this.unmaterializedUsers.has(username);
+
+        if (!isMaterialized && !isUnmaterialized) {
+          // User doesn't exist, check GitHub
+          const userExists = await this.checkGitHubUserExists(username);
+          if (!userExists) {
+            throw new Error(
+              `ENOENT: no such file or directory, readdir '${pathStr}'`
+            );
+          }
+          this.unmaterializedUsers.set(username, []);
+        }
+
+        // For unmaterialized users, validate repo exists
+        if (!isMaterialized && this.unmaterializedUsers.has(username)) {
+          const userRepos = this.unmaterializedUsers.get(username);
+
+          // If repos array is empty, fetch from GitHub API
+          if (!userRepos || userRepos.length === 0) {
+            const repos = await this.fetchGitHubUserRepos(username);
+            this.unmaterializedUsers.set(username, repos);
+          }
+
+          const updatedRepos = this.unmaterializedUsers.get(username);
+          if (updatedRepos && !updatedRepos.includes(repoName)) {
+            // Repo doesn't exist in user's repo list from GitHub API
+            throw new Error(
+              `ENOENT: no such file or directory, readdir '${pathStr}'`
+            );
+          }
+          // Repo exists, return empty array (files not implemented yet)
+          return [];
+        }
+
+        // For materialized users, check cache or validate repo
+        if (isMaterialized) {
+          // Check if we have cached repos
+          if (!this.materializedUserRepos.has(username)) {
+            // First time - fetch and cache repos
+            const repos = await this.fetchGitHubUserRepos(username);
+            this.materializedUserRepos.set(username, repos);
+          }
+
+          const cachedRepos = this.materializedUserRepos.get(username);
+
+          if (cachedRepos && !cachedRepos.includes(repoName)) {
+            // Repo doesn't exist in user's repo list from GitHub API
+            throw new Error(
+              `ENOENT: no such file or directory, readdir '${pathStr}'`
+            );
+          }
+
+          // Repo exists, return empty array (files not implemented yet)
+          // TODO: Read actual files from git repository
+          return [];
+        }
+
+        // Should not reach here
+        throw new Error(
+          `ENOENT: no such file or directory, readdir '${pathStr}'`
+        );
+      }
+
+      // Nested paths under /github.com/username/repo/... not supported yet
+      if (pathParts.length >= 4) {
+        throw new Error(
+          `ENOENT: no such file or directory, readdir '${pathStr}'`
+        );
+      }
+    }
+
+    // Non-existent directory
+    throw new Error(`ENOENT: no such file or directory, readdir '${pathStr}'`);
+  }
+
+  /**
+   * Ensure a directory exists, create it if it doesn't
+   */
+  private async ensureDir(dirPath: string): Promise<void> {
+    try {
+      await this.storageFs.promises.mkdir(dirPath, { recursive: true });
+    } catch (error) {
+      // Ignore error if directory already exists
+      const errorCode = (error as any)?.code;
+      if (errorCode !== 'EEXIST') {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Check if a path exists in storage
+   */
+  private async pathExists(filePath: string): Promise<boolean> {
+    try {
+      await this.storageFs.promises.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if a GitHub user exists by calling the GitHub API
+   */
+  private async checkGitHubUserExists(username: string): Promise<boolean> {
+    try {
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github.v3+json',
+      };
+
+      if (this.githubToken) {
+        headers['Authorization'] = `Bearer ${this.githubToken}`;
+      }
+
+      const response = await fetch(`https://api.github.com/users/${username}`, {
+        headers,
+      });
+
+      return response.ok;
+    } catch (error) {
+      // On network error, assume user doesn't exist
+      return false;
+    }
+  }
+
+  /**
+   * Fetch repositories for a GitHub user from the GitHub API
+   */
+  private async fetchGitHubUserRepos(username: string): Promise<string[]> {
+    try {
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github.v3+json',
+      };
+
+      if (this.githubToken) {
+        headers['Authorization'] = `Bearer ${this.githubToken}`;
+      }
+
+      const response = await fetch(
+        `https://api.github.com/users/${username}/repos?per_page=100`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const repos = (await response.json()) as { name: string }[];
+      return repos.map((repo: any) => repo.name);
+    } catch (error) {
+      // On network error, return empty array
+      return [];
+    }
+  }
+
+  /**
+   * Materialize a user by creating storage folder and fetching repos
+   */
+  private async materializeUser(username: string): Promise<void> {
+    // If already materialized, return
+    const userPath = `${this.storageBasePath}/bookmarks/github.com/${username}`;
+    if (await this.pathExists(userPath)) {
+      return;
+    }
+
+    // Create storage folder
+    await this.ensureDir(userPath);
+
+    // Fetch repos from GitHub API
+    const repos = await this.fetchGitHubUserRepos(username);
+
+    // Update unmaterialized map (removes from unmaterialized, now materialized)
+    this.unmaterializedUsers.delete(username);
+
+    // Create repo folders in storage (empty for now, will be cloned on access)
+    for (const repo of repos) {
+      const repoPath = `${userPath}/${repo}`;
+      await this.ensureDir(repoPath);
     }
   }
 
@@ -452,24 +488,18 @@ export class GitGateway {
   }
 
   async rmdir(pathStr: string): Promise<void> {
+    // TODO check if this is a delte of a user like /github.com/username
+    // -> remove the user folder in the config dir
+    // TODO check if this is a delete of a repo like /github.com/username/repo
+    // -> remove the repo folder in the config dir
+
+    // else throw
+
     // We don't support removing directories in this version
     throw new Error(`EPERM: operation not permitted, rmdir '${pathStr}'`);
   }
 
   async unlink(pathStr: string): Promise<void> {
-    const parsed = this.parsePath(pathStr);
-
-    // Only allow unlinking bookmark state files
-    if (parsed.type === 'bookmark-file') {
-      await this.handleBookmarkFileDelete(
-        parsed.domain!,
-        parsed.username!,
-        parsed.repoName!,
-        parsed.bookmarkFile!
-      );
-      return;
-    }
-
     throw new Error(`EPERM: operation not permitted, unlink '${pathStr}'`);
   }
 
@@ -495,23 +525,6 @@ export class GitGateway {
   }
 
   async readlink(pathStr: string): Promise<string> {
-    const parsed = this.parsePath(pathStr);
-
-    // Handle bookmarked section symlinks
-    if (parsed.type === 'bookmarked-section') {
-      const shardedPath = this.getRepoShardedPath(
-        parsed.domain!,
-        parsed.username!,
-        parsed.repoName!
-      );
-      return shardedPath;
-    }
-
-    // Handle bookmark state files (they're broken symlinks with no target)
-    if (parsed.type === 'bookmark-file') {
-      return ''; // Empty string = no target
-    }
-
     throw new Error(`EINVAL: invalid argument, readlink '${pathStr}'`);
   }
 
@@ -529,8 +542,6 @@ export class GitGateway {
   }
 
   async open(pathStr: string, flags: string): Promise<FileHandle> {
-    const parsed = this.parsePath(pathStr);
-
     // For now, we don't support opening files
     // In a full implementation, this would open files from cloned repos
     const e = new Error(`ENOENT: no such file or directory, open '${pathStr}'`);
@@ -541,43 +552,6 @@ export class GitGateway {
   // #endregion
 
   // #region Helper methods
-
-  /**
-   * Handle deletion of bookmark state file (toggle bookmark state)
-   */
-  private async handleBookmarkFileDelete(
-    domain: string,
-    username: string,
-    repoName: string,
-    bookmarkFile: 'no' | 'yes'
-  ) {
-    const bookmarkPath = this.getBookmarkPath(domain, username, repoName);
-    const state = this.bookmarkStates.get(bookmarkPath);
-
-    if (!state) {
-      return;
-    }
-
-    // If 'no' was deleted, bookmark the repo
-    if (bookmarkFile === 'no' && !state.isBookmarked) {
-      state.isBookmarked = true;
-      const repoKey = `${domain}/${username}/${repoName}`;
-      const repo = this.repos.get(repoKey);
-      if (repo) {
-        repo.isBookmarked = true;
-      }
-    }
-
-    // If 'yes' was deleted, unbookmark the repo
-    if (bookmarkFile === 'yes' && state.isBookmarked) {
-      state.isBookmarked = false;
-      const repoKey = `${domain}/${username}/${repoName}`;
-      const repo = this.repos.get(repoKey);
-      if (repo) {
-        repo.isBookmarked = false;
-      }
-    }
-  }
 
   /**
    * Create Stats object for a directory

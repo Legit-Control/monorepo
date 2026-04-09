@@ -1,307 +1,431 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GitGateway } from './git-gateway.js';
+import { vol, fs } from 'memfs';
 
-describe('GitGateway.parsePath', () => {
+// Mock global fetch
+global.fetch = vi.fn();
+
+describe('GitGateway', () => {
   let gitGateway: GitGateway;
+  let storageFs: typeof fs;
 
   beforeEach(() => {
-    gitGateway = new GitGateway('/tmp/test-cache');
-    gitGateway.initializeSampleData();
+    // Reset memfs before each test
+    vol.reset();
+
+    // Reset mocks
+    vi.mocked(global.fetch).mockReset();
+
+    // Create storage filesystem with memfs
+    storageFs = fs;
+
+    // Create GitGateway instance with memfs as storage
+    gitGateway = new GitGateway(storageFs as any, '/storage');
   });
 
-  describe('Root and basic paths', () => {
-    it('should parse root directory', () => {
-      const result = gitGateway.parsePath('/');
-      expect(result.type).toBe('root');
+  describe('readdir', () => {
+    describe('Root directory (/)', () => {
+      it('should return config and github.com entries', async () => {
+        const result = await gitGateway.readdir('/');
+        expect(result).toEqual(
+          expect.arrayContaining(['config', 'github.com'])
+        );
+        expect(result).toHaveLength(2);
+      });
+
+      it('should return config and github.com entries for empty path', async () => {
+        const result = await gitGateway.readdir('');
+        expect(result).toEqual(
+          expect.arrayContaining(['config', 'github.com'])
+        );
+        expect(result).toHaveLength(2);
+      });
     });
 
-    it('should parse root directory with trailing slashes', () => {
-      const result = gitGateway.parsePath('///');
-      expect(result.type).toBe('root');
+    describe('/config directory', () => {
+      it('should return empty array when listing config directory', async () => {
+        const result = await gitGateway.readdir('/config');
+        expect(result).toEqual([]);
+      });
     });
 
-    it('should parse domain directory', () => {
-      const result = gitGateway.parsePath('/github.com');
-      expect(result.type).toBe('domain');
-      expect(result.domain).toBe('github.com');
-    });
-  });
+    describe('/github.com directory', () => {
+      it('should return empty array when no users are bookmarked', async () => {
+        const result = await gitGateway.readdir('/github.com');
+        expect(result).toEqual([]);
+      });
 
-  describe('Long username sharding (4+ characters)', () => {
-    it('should parse first shard level', () => {
-      const result = gitGateway.parsePath('/github.com/m');
-      expect(result.type).toBe('first-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(1);
-      expect(result.prefix).toBe('m');
-    });
+      it('should create storage folder bookmarks/github.com when accessed', async () => {
+        // Access the github.com directory
+        await gitGateway.readdir('/github.com');
 
-    it('should parse second shard level', () => {
-      const result = gitGateway.parsePath('/github.com/m/a');
-      expect(result.type).toBe('second-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(2);
-      expect(result.prefix).toBe('ma');
-    });
+        // Verify the storage folder was created in memfs
+        const bookmarksExists = await storageFs.promises
+          .access('/storage/bookmarks/github.com')
+          .then(() => true)
+          .catch(() => false);
 
-    it('should parse third shard level', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r');
-      expect(result.type).toBe('third-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(3);
-      expect(result.prefix).toBe('mar');
-    });
+        expect(bookmarksExists).toBe(true);
+      });
 
-    it('should parse third shard level with _repos', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/_repos');
-      expect(result.type).toBe('repos-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(3);
-      expect(result.prefix).toBe('ma');
-    });
+      it('should return list of bookmarked users when users exist in storage', async () => {
+        // Create a user folder in storage
+        await storageFs.promises.mkdir(
+          '/storage/bookmarks/github.com/testuser',
+          {
+            recursive: true,
+          }
+        );
 
-    it('should parse username shard (remainder of username)', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk');
-      expect(result.type).toBe('username-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.shardLevel).toBe(4);
-      expect(result.prefix).toBe('martin-lysk');
-    });
+        const result = await gitGateway.readdir('/github.com');
+        expect(result).toContain('testuser');
+      });
 
-    it('should parse username shard with dash in middle', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/cus-w');
-      expect(result.type).toBe('username-shard');
-      expect(result.username).toBe('marcus-w');
-      expect(result.prefix).toBe('marcus-w');
+      it('should return multiple bookmarked users', async () => {
+        // Create multiple user folders in storage
+        await storageFs.promises.mkdir('/storage/bookmarks/github.com/user1', {
+          recursive: true,
+        });
+        await storageFs.promises.mkdir('/storage/bookmarks/github.com/user2', {
+          recursive: true,
+        });
+        await storageFs.promises.mkdir('/storage/bookmarks/github.com/user3', {
+          recursive: true,
+        });
+
+        const result = await gitGateway.readdir('/github.com');
+        expect(result).toEqual(
+          expect.arrayContaining(['user1', 'user2', 'user3'])
+        );
+        expect(result).toHaveLength(3);
+      });
     });
 
-    it('should parse _repos at level 4', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/_repos');
-      expect(result.type).toBe('repos-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(4);
-      expect(result.prefix).toBe('mar');
+    describe('/github.com/username directories', () => {
+      it('should return empty array when user has no bookmarked repos', async () => {
+        // Create user folder in storage
+        await storageFs.promises.mkdir(
+          '/storage/bookmarks/github.com/testuser',
+          {
+            recursive: true,
+          }
+        );
+
+        const result = await gitGateway.readdir('/github.com/testuser');
+
+        expect(result).toEqual([]);
+      });
+
+      it('should create storage folder for user when first accessed', async () => {
+        // Mock GitHub API to return user exists
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        // Mock repos API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => [],
+        } as any);
+
+        // Access user directory for the first time
+        await gitGateway.readdir('/github.com/newuser');
+
+        // Verify the user folder was NOT created in storage (unmaterialized)
+        const userFolderExists = await storageFs.promises
+          .access('/storage/bookmarks/github.com/newuser')
+          .then(() => true)
+          .catch(() => false);
+
+        expect(userFolderExists).toBe(false);
+      });
+
+      it('should return list of repos for a user', async () => {
+        // TODO it should not return the bookmarked repos, it should return the list of repos from github instead
+      });
     });
 
-    it('should parse repository path', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/my-repo');
-      expect(result.type).toBe('repo');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('my-repo');
-    });
+    describe('Non-existent directories', () => {
+      it('should throw ENOENT error for non-existent directory', async () => {
+        await expect(gitGateway.readdir('/nonexistent')).rejects.toThrow(
+          'ENOENT: no such file or directory, readdir'
+        );
+      });
 
-    it('should parse repository with dash in username', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/cus-w/test-repo');
-      expect(result.type).toBe('repo');
-      expect(result.username).toBe('marcus-w');
-      expect(result.repoName).toBe('test-repo');
-    });
-  });
-
-  describe('Short username sharding (1-3 characters)', () => {
-    it('should parse _repos at domain level', () => {
-      const result = gitGateway.parsePath('/github.com/_repos');
-      expect(result.type).toBe('repos-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(0);
-    });
-
-    it('should parse short username at domain level', () => {
-      const result = gitGateway.parsePath('/github.com/_repos/ab');
-      expect(result.type).toBe('username-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('ab');
-      expect(result.shardLevel).toBe(0);
-    });
-
-    it('should parse repository for short username', () => {
-      const result = gitGateway.parsePath('/github.com/_repos/ab/test-repo');
-      expect(result.type).toBe('repo');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('ab');
-      expect(result.repoName).toBe('test-repo');
-    });
-
-    it('should parse _repos at first shard level', () => {
-      const result = gitGateway.parsePath('/github.com/a/_repos');
-      expect(result.type).toBe('repos-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(3);
-      expect(result.prefix).toBe('a');
-    });
-
-    it('should parse _repos at second shard level', () => {
-      const result = gitGateway.parsePath('/github.com/a/b/_repos');
-      expect(result.type).toBe('repos-shard');
-      expect(result.domain).toBe('github.com');
-      expect(result.shardLevel).toBe(4);
-      expect(result.prefix).toBe('ab');
-    });
-  });
-
-  describe('Bookmark-related paths', () => {
-    it('should parse bookmark directory', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/my-repo/.gateway-bookmarked');
-      expect(result.type).toBe('bookmark-dir');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('my-repo');
-    });
-
-    it('should parse bookmark file "no"', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/my-repo/.gateway-bookmarked/no');
-      expect(result.type).toBe('bookmark-file');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('my-repo');
-      expect(result.bookmarkFile).toBe('no');
-    });
-
-    it('should parse bookmark file "yes"', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/my-repo/.gateway-bookmarked/yes');
-      expect(result.type).toBe('bookmark-file');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('my-repo');
-      expect(result.bookmarkFile).toBe('yes');
-    });
-
-    it('should parse bookmark directory for short username', () => {
-      const result = gitGateway.parsePath('/github.com/_repos/ab/test-repo/.gateway-bookmarked');
-      expect(result.type).toBe('bookmark-dir');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('ab');
-      expect(result.repoName).toBe('test-repo');
-    });
-
-    it('should parse bookmark file for short username', () => {
-      const result = gitGateway.parsePath('/github.com/_repos/ab/test-repo/.gateway-bookmarked/no');
-      expect(result.type).toBe('bookmark-file');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('ab');
-      expect(result.repoName).toBe('test-repo');
-      expect(result.bookmarkFile).toBe('no');
+      it('should throw ENOENT for nested non-existent path', async () => {
+        await expect(
+          gitGateway.readdir('/github.com/nonexistentuser/deeply/nested/path')
+        ).rejects.toThrow('ENOENT: no such file or directory, readdir');
+      });
     });
   });
 
-  describe('Bookmarked section', () => {
-    it('should parse bookmarked root', () => {
-      const result = gitGateway.parsePath('/bookmarked');
-      expect(result.type).toBe('bookmarked-root');
+  describe('stat', () => {
+    describe('Root directory (/)', () => {
+      it('should return directory stats for root', async () => {
+        const stats = await gitGateway.stat('/');
+
+        expect(stats.isDirectory()).toBe(true);
+        expect(stats.isFile()).toBe(false);
+        expect(stats.isSymbolicLink()).toBe(false);
+        expect(stats.mode).toBe(0o755);
+        expect(stats.size).toBe(4096);
+      });
     });
 
-    it('should parse bookmarked section entry', () => {
-      // First bookmark a repo
-      gitGateway.addRepo('github.com', 'martin-lysk', 'my-repo', true);
+    describe('/github.com directory', () => {
+      it('should return directory stats and create storage folder on first access', async () => {
+        const stats = await gitGateway.stat('/github.com');
 
-      const result = gitGateway.parsePath('/bookmarked/github.com/martin-lysk/my-repo');
-      expect(result.type).toBe('bookmarked-section');
-      expect(result.domain).toBe('github.com');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('my-repo');
+        expect(stats.isDirectory()).toBe(true);
+        expect(stats.isFile()).toBe(false);
+
+        // Verify storage folder was created
+        const exists = await storageFs.promises
+          .access('/storage/bookmarks/github.com')
+          .then(() => true)
+          .catch(() => false);
+
+        expect(exists).toBe(true);
+      });
     });
 
-    it('should return not-found for non-bookmarked repo in bookmarked section', () => {
-      // Repo is not bookmarked
-      gitGateway.addRepo('github.com', 'martin-lysk', 'my-repo', false);
+    describe('/github.com/username directories', () => {
+      it('should return directory stats for user and create storage folder', async () => {
+        // Mock GitHub API to return user exists
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
 
-      const result = gitGateway.parsePath('/bookmarked/github.com/martin-lysk/my-repo');
-      expect(result.type).toBe('not-found');
+        const stats = await gitGateway.stat('/github.com/testuser');
+
+        expect(stats.isDirectory()).toBe(true);
+        expect(stats.isFile()).toBe(false);
+
+        // Verify user folder was NOT created in storage (unmaterialized)
+        const exists = await storageFs.promises
+          .access('/storage/bookmarks/github.com/testuser')
+          .then(() => true)
+          .catch(() => false);
+
+        expect(exists).toBe(false);
+      });
+
+      it('should return consistent stats for multiple calls to same user', async () => {
+        // Mock GitHub API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        const stats1 = await gitGateway.stat('/github.com/testuser');
+        const stats2 = await gitGateway.stat('/github.com/testuser');
+
+        expect(stats1.isDirectory()).toBe(stats2.isDirectory());
+        expect(stats1.mode).toBe(stats2.mode);
+        expect(stats1.size).toBe(stats2.size);
+      });
     });
 
-    it('should return not-found for unknown repo in bookmarked section', () => {
-      const result = gitGateway.parsePath('/bookmarked/github.com/unknown-user/repo');
-      expect(result.type).toBe('not-found');
+    describe('Stat properties', () => {
+      it('should return valid timestamp properties', async () => {
+        const stats = await gitGateway.stat('/github.com');
+
+        // Just verify timestamps are reasonable (not checking exact times due to async)
+        expect(stats.atime).toBeDefined();
+        expect(stats.mtime).toBeDefined();
+        expect(stats.ctime).toBeDefined();
+        expect(stats.birthtime).toBeDefined();
+
+        // Verify they're Date objects
+        expect(stats.atime instanceof Date).toBe(true);
+        expect(stats.mtime instanceof Date).toBe(true);
+        expect(stats.ctime instanceof Date).toBe(true);
+        expect(stats.birthtime instanceof Date).toBe(true);
+      });
+
+      it('should return unique inode for each stat call', async () => {
+        // Mock GitHub API for user1
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        const stats1 = await gitGateway.stat('/github.com');
+        const stats2 = await gitGateway.stat('/github.com/user1');
+
+        expect(stats1.ino).not.toBe(stats2.ino);
+      });
     });
   });
 
-  describe('Edge cases and error handling', () => {
-    it('should handle paths with extra slashes', () => {
-      const result = gitGateway.parsePath('/github.com//m///a/');
-      expect(result.type).toBe('second-shard');
-      expect(result.domain).toBe('github.com');
+  describe('GitHub API Integration', () => {
+    describe('User validation via GitHub API', () => {
+      it('should return ENOENT for non-existent GitHub user', async () => {
+        // Mock GitHub API to return 404
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        } as any);
+
+        await expect(gitGateway.stat('/github.com/nonexistentuser')).rejects.toThrow(
+          'ENOENT'
+        );
+      });
+
+      it('should return stats for existing GitHub user without materializing', async () => {
+        // Mock GitHub API to return user exists
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        const stats = await gitGateway.stat('/github.com/validuser');
+
+        expect(stats.isDirectory()).toBe(true);
+
+        // Verify user folder was NOT created in storage (unmaterialized)
+        const exists = await storageFs.promises
+          .access('/storage/bookmarks/github.com/validuser')
+          .then(() => true)
+          .catch(() => false);
+
+        expect(exists).toBe(false);
+      });
+
+      it('should cache user validation result in unmaterialized map', async () => {
+        // Mock GitHub API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        // First call - should hit API
+        await gitGateway.stat('/github.com/cacheduser');
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+
+        // Second call - should use cache, no API call
+        await gitGateway.stat('/github.com/cacheduser');
+        expect(global.fetch).toHaveBeenCalledTimes(1); // Still 1
+      });
     });
 
-    it('should return not-found for unknown repository', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/unknown-repo');
-      expect(result.type).toBe('not-found');
+    describe('Fetching repos via GitHub API', () => {
+      it('should fetch and return repos for unmaterialized user', async () => {
+        // Mock repos API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => [
+            { name: 'repo1' },
+            { name: 'repo2' },
+            { name: 'repo3' },
+          ],
+        } as any);
+
+        const repos = await gitGateway.readdir('/github.com/userwithrepos');
+
+        expect(repos).toEqual(['repo1', 'repo2', 'repo3']);
+      });
+
+      it('should keep user unmaterialized after fetching repos', async () => {
+        // Mock user exists
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        // Mock repos API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => [{ name: 'repo1' }],
+        } as any);
+
+        await gitGateway.readdir('/github.com/userwithrepos');
+
+        // Verify user folder was NOT created in storage (still unmaterialized)
+        const exists = await storageFs.promises
+          .access('/storage/bookmarks/github.com/userwithrepos')
+          .then(() => true)
+          .catch(() => false);
+
+        expect(exists).toBe(false);
+      });
     });
 
-    it('should return not-found for incomplete sharded path', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/unknown-remainder/repo');
-      expect(result.type).toBe('not-found');
+    describe('Materialization on repo access', () => {
+      it('should return stats for repo without materializing user', async () => {
+        // Mock user exists
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        // Mock repos API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => [{ name: 'repo1' }, { name: 'repo2' }],
+        } as any);
+
+        // Access a specific repo - should NOT materialize, just validate
+        const stats = await gitGateway.stat('/github.com/userwithrepo/repo1');
+
+        expect(stats.isDirectory()).toBe(true);
+
+        // Verify user folder was NOT created in storage (still unmaterialized)
+        const userExists = await storageFs.promises
+          .access('/storage/bookmarks/github.com/userwithrepo')
+          .then(() => true)
+          .catch(() => false);
+
+        expect(userExists).toBe(false);
+      });
+
+      it('should return ENOENT for non-existent repo', async () => {
+        // Mock user exists
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+        } as any);
+
+        // Mock repos API
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => [{ name: 'existing-repo' }],
+        } as any);
+
+        await expect(
+          gitGateway.stat('/github.com/userwithrepo/non-existent-repo')
+        ).rejects.toThrow('ENOENT');
+      });
     });
 
-    it('should handle numeric first character', () => {
-      const result = gitGateway.parsePath('/github.com/1');
-      expect(result.type).toBe('first-shard');
-      expect(result.prefix).toBe('1');
-    });
+    describe('Filtering invalid paths', () => {
+      it('should return ENOENT for .git (not a valid GitHub user)', async () => {
+        // Mock GitHub API to return 404
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        } as any);
 
-    it('should handle dash at second level', () => {
-      const result = gitGateway.parsePath('/github.com/m/-');
-      expect(result.type).toBe('second-shard');
-      expect(result.prefix).toBe('m-');
-    });
+        await expect(gitGateway.stat('/github.com/.git')).rejects.toThrow('ENOENT');
+      });
 
-    it('should handle dash at third level', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/-');
-      expect(result.type).toBe('third-shard');
-      expect(result.prefix).toBe('ma-');
-    });
-  });
+      it('should return ENOENT for .gitignore (not a valid GitHub user)', async () => {
+        // Mock GitHub API to return 404
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        } as any);
 
-  describe('Character sets', () => {
-    it('should accept all lowercase letters', () => {
-      for (const char of 'abcdefghijklmnopqrstuvwxyz') {
-        const result = gitGateway.parsePath(`/github.com/${char}`);
-        expect(result.type).toBe('first-shard');
-        expect(result.prefix).toBe(char);
-      }
-    });
-
-    it('should accept all digits', () => {
-      for (const char of '0123456789') {
-        const result = gitGateway.parsePath(`/github.com/${char}`);
-        expect(result.type).toBe('first-shard');
-        expect(result.prefix).toBe(char);
-      }
-    });
-
-    it('should accept dash at second level', () => {
-      const result = gitGateway.parsePath('/github.com/m/-');
-      expect(result.type).toBe('second-shard');
-    });
-
-    it('should accept dash at third level', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/-');
-      expect(result.type).toBe('third-shard');
-    });
-  });
-
-  describe('Real-world examples', () => {
-    it('should parse path for plate-sdk repo', () => {
-      const result = gitGateway.parsePath('/github.com/p/l/ate/plate-sdk');
-      expect(result.type).toBe('repo');
-      expect(result.username).toBe('plate');
-      expect(result.repoName).toBe('plate-sdk');
-    });
-
-    it('should parse path for about-me repo', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/about-me');
-      expect(result.type).toBe('repo');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('about-me');
-    });
-
-    it('should parse bookmark state for my-repo', () => {
-      const result = gitGateway.parsePath('/github.com/m/a/r/tin-lysk/my-repo/.gateway-bookmarked/no');
-      expect(result.type).toBe('bookmark-file');
-      expect(result.username).toBe('martin-lysk');
-      expect(result.repoName).toBe('my-repo');
-      expect(result.bookmarkFile).toBe('no');
+        await expect(gitGateway.stat('/github.com/.gitignore')).rejects.toThrow('ENOENT');
+      });
     });
   });
 });
