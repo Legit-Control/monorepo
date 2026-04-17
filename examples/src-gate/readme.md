@@ -1,6 +1,6 @@
-# Gitaway - Virtual Git Gateway via NFS
+# src-gate - Virtual Git Gateway via NFS
 
-Gitaway is a virtual filesystem that provides a gateway to git repositories through an NFS mount on macOS.
+`src-gate` is a virtual filesystem that provides a gateway to git repositories through an NFS mount on macOS.
 
 ## Architecture
 

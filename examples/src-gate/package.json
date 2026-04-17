@@ -1,11 +1,12 @@
 {
-  "name": "@legit-sdk/gitaway",
+  "name": "src-gate",
   "version": "0.0.1",
-  "description": "Virtual git gateway via NFS on macOS",
+  "description": "Virtual gateway to GitHub via NFS on macOS",
   "type": "module",
   "main": "dist/start-server.js",
   "bin": {
-    "gitaway": "dist/start-server.js"
+    "gitaway": "dist/start-server.js",
+    "src-gate": "dist/src-gate.js"
   },
   "files": [
     "dist",
@@ -16,7 +17,8 @@
     "build": "vite build",
     "test": "vitest",
     "test:run": "vitest run",
-    "dev": "tsx bin/start-server.ts --path ./gitaway",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "dev": "tsx --inspect-brk bin/start-server.ts --path ~/src-gate",
     "prepublishOnly": "pnpm run build"
   },
   "keywords": [
@@ -33,10 +35,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@legit-sdk/isomorphic-git": "workspace:*",
     "@legit-sdk/nfs-serve": "workspace:*",
     "commander": "^12.1.0",
-    "isomorphic-git": "^1.27.1",
-    "memfs": "^4.57.1"
+    "memfs": "^4.57.1",
+    "p-limit": "^7.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

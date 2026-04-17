@@ -4,26 +4,30 @@ import fs from 'node:fs';
 export default defineConfig({
   build: {
     lib: {
-      entry: './bin/start-server.ts',
-      name: 'gnfs',
-      fileName: 'start-server',
+      entry: {
+        'start-server': './bin/start-server.ts',
+        'src-gate': './bin/src-gate.ts'
+      },
       formats: ['es']
     },
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        entryFileNames: 'start-server.js',
+        entryFileNames: '[name].js',
         preserveModules: false,
       },
       external: [
         '@legit-sdk/nfs-serve',
+        '@legit-sdk/isomorphic-git',
         'commander',
         'node:*',
         'fs',
         'net',
         'path',
         'child_process',
+        'memfs',
+        'p-limit'
       ]
     },
     minify: false,
@@ -34,10 +38,13 @@ export default defineConfig({
     {
       name: 'chmod-executable',
       writeBundle() {
-        // Make the output file executable
-        const outputPath = 'dist/start-server.js';
-        if (fs.existsSync(outputPath)) {
-          fs.chmodSync(outputPath, 0o755);
+        // Make all output files executable
+        const files = ['start-server.js', 'src-gate.js'];
+        for (const file of files) {
+          const outputPath = `dist/${file}`;
+          if (fs.existsSync(outputPath)) {
+            fs.chmodSync(outputPath, 0o755);
+          }
         }
       }
     }
