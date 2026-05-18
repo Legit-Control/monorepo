@@ -19,6 +19,7 @@ import { Command } from 'commander';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { resolvePath, resolvePaths, resolvePackageWithVersion } from '../lib/resolve-path/index.js';
+import { isServerRunning, getServerPid, spawnServerDaemon, killServer } from '../lib/server/index.js';
 
 const program = new Command();
 
@@ -28,23 +29,35 @@ const REPOS_MOUNT_PATH = (basePath: string) => path.join(basePath, 'repos');
 const STORAGE_PATH = (basePath: string) => basePath;
 
 // ============================================================================
-// Helper functions using the resolve-path module
+// Helper functions
 // ============================================================================
 
 /**
- * Check if the NFS server is running
- *
- * TODO: Implement proper server status check
- * Could check for PID file, mount status, or process existence
+ * Ensure server is running, auto-start if needed
  */
-function isServerRunning(basePath: string): boolean {
-  const mountPath = REPOS_MOUNT_PATH(basePath);
-  // TODO: Check if mount point is actually mounted
-  // TODO: Check if server process is running
+async function ensureServerRunning(basePath: string, verbose: boolean = false): Promise<void> {
+  if (isServerRunning(basePath)) {
+    if (verbose) {
+      console.error(`✅ Server is already running (PID ${getServerPid(basePath)})`);
+    }
+    return;
+  }
+
+  if (verbose) {
+    console.error('Starting src-gate server in background...');
+  }
+
   try {
-    return fs.existsSync(mountPath);
-  } catch {
-    return false;
+    const pid = await spawnServerDaemon(basePath, {
+      verbose,
+      timeout: 10000, // Wait up to 10 seconds for server to be ready
+    });
+
+    if (verbose) {
+      console.error(`✅ Server started (PID ${pid})`);
+    }
+  } catch (error) {
+    throw new Error(`Failed to start server: ${(error as Error).message}`);
   }
 }
 
@@ -130,12 +143,8 @@ program
       process.exit(1);
     }
 
-    // Ensure server is running
-    if (!isServerRunning(basePath)) {
-      console.error('Error: src-gate server is not running');
-      console.error(`Run "src-gate start" to start the server`);
-      process.exit(1);
-    }
+    // Auto-start server if not running
+    await ensureServerRunning(basePath, options.verbose);
 
     // Resolve paths for all packages using the new integrated function
     for (const pkg of packages) {
@@ -283,12 +292,16 @@ program
   .option('-p, --path <path>', 'Base path for src-gate data', DEFAULT_BASE_PATH)
   .option('-P, --port <number>', 'Port for NFS server')
   .option('--verbose', 'Show detailed server logs')
+  .option('--inspect', 'Enable debugger (inspect mode)')
+  .option('--debug', 'Enable debugger (break on start)')
   .action(async (options) => {
     const basePath = path.resolve(options.path);
     const mountPath = REPOS_MOUNT_PATH(basePath);
 
     if (isServerRunning(basePath)) {
+      const pid = getServerPid(basePath);
       console.log('✅ src-gate server is already running');
+      console.log(`📄 PID: ${pid}`);
       console.log(`📁 Mount point: ${mountPath}`);
       return;
     }
@@ -298,23 +311,29 @@ program
     console.log(`📁 Mount point: ${mountPath}`);
 
     try {
-      // TODO: Import and start the actual NFS server
-      // TODO: Dynamic import start-server module to avoid loading unless needed
-      // const { startNfsServer, mountNfsShare, findAvailablePort } = await import('./start-server.js');
-      // const port = options.port ? parseInt(options.port) : await findAvailablePort(13618);
-      // const nfsServer = startNfsServer(basePath, mountPath, port);
-      // await nfsServer.ready;
-      // await mountNfsShare(mountPath, port);
+      const pid = await spawnServerDaemon(basePath, {
+        verbose: options.verbose,
+        inspect: options.inspect,
+        debug: options.debug,
+        timeout: 10000,
+      });
 
-      console.log('\n✅ src-gate filesystem mounted successfully!');
+      console.log('\n✅ src-gate server started successfully!');
+      console.log(`📄 PID: ${pid}`);
       console.log(`📁 Mount point: ${mountPath}`);
-      console.log('\nPress Ctrl+C to stop the server.\n');
+      console.log(`📄 Logs: ${path.join(basePath, 'server.log')}`);
 
-      // TODO: Implement graceful shutdown handling
-      // TODO: Keep process alive and manage server lifecycle
+      if (options.inspect || options.debug) {
+        console.log(`\n🐛 Debugger enabled!`);
+        console.log(`   To find the actual debugger port, run:`);
+        console.log(`   lsof -nP -iTCP -sTCP:LISTEN | grep ${pid}`);
+        console.log(`\n   Or check the logs for "Debugger listening on..."`);
+        console.log(`   tail -f ${path.join(basePath, 'server.log')}`);
+        console.log(`\n   Then connect in Chrome at chrome://inspect`);
+        console.log(`   Add the target as: localhost:<port>`);
+      }
 
-      // Mock: Keep process alive
-      await new Promise(() => {});
+      console.log('\n💡 Use "src-gate stop" to stop the server');
     } catch (error) {
       const err = error as Error;
       console.error('❌ Failed to start src-gate:', err.message);
@@ -333,22 +352,17 @@ program
   .option('-p, --path <path>', 'Base path for src-gate data', DEFAULT_BASE_PATH)
   .action(async (options) => {
     const basePath = path.resolve(options.path);
-    const mountPath = REPOS_MOUNT_PATH(basePath);
 
-    if (!isServerRunning(basePath)) {
+    const pid = getServerPid(basePath);
+    if (!pid) {
       console.log('ℹ️  src-gate server is not running');
       return;
     }
 
-    console.log('🛑 Stopping src-gate server...');
+    console.log(`🛑 Stopping src-gate server (PID ${pid})...`);
 
     try {
-      // TODO: Implement server stop logic
-      // TODO: Unmount NFS share
-      // TODO: Stop server process
-      // const { unmountNfsShare } = await import('./start-server.js');
-      // await unmountNfsShare(mountPath);
-
+      await killServer(pid);
       console.log('✅ src-gate server stopped successfully');
     } catch (error) {
       const err = error as Error;
@@ -371,8 +385,11 @@ program
     const mountPath = REPOS_MOUNT_PATH(basePath);
 
     if (isServerRunning(basePath)) {
+      const pid = getServerPid(basePath);
       console.log('✅ src-gate server is running');
+      console.log(`📄 PID: ${pid}`);
       console.log(`📁 Mount point: ${mountPath}`);
+      console.log(`📄 Logs: ${path.join(basePath, 'server.log')}`);
     } else {
       console.log('❌ src-gate server is not running');
       console.log(`💡 Run "src-gate start" to start the server`);

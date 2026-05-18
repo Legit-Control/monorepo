@@ -11,6 +11,7 @@ import {
   createFileHandleManager,
 } from '@legit-sdk/nfs-serve';
 import { GitGateway } from '../lib/git-gateway/index.js';
+import { writePid, removePid, getSocketPath } from '../lib/server/index.js';
 
 // Function to check if a port is available
 function isPortAvailable(port: number): Promise<boolean> {
@@ -222,6 +223,38 @@ function unmountNfsShare(mountFolderPath: string): Promise<void> {
 interface ProgramOptions {
   path: string;
   port?: number;
+  daemon?: boolean;
+  verbose?: boolean;
+  debug?: boolean;
+  inspect?: boolean;
+}
+
+/**
+ * Create Unix socket to signal server readiness
+ */
+function createReadySocket(socketPath: string): net.Server {
+  // Remove socket file if it exists
+  try {
+    fsDisk.unlinkSync(socketPath);
+  } catch {
+    // Ignore if file doesn't exist
+  }
+
+  // Create Unix socket server
+  const socketServer = net.createServer((connection) => {
+    // Accept connection and immediately close
+    connection.on('data', () => {
+      connection.write('OK\n');
+      connection.end();
+    });
+  });
+
+  // Listen on the socket file
+  socketServer.listen(socketPath, () => {
+    console.log(`Ready socket created at: ${socketPath}`);
+  });
+
+  return socketServer;
 }
 
 async function main() {
@@ -239,13 +272,81 @@ async function main() {
     .option(
       '--port <number>',
       'Port for NFS server (default: first free port starting from 13618)'
+    )
+    .option(
+      '--daemon',
+      'Run as a background daemon'
+    )
+    .option(
+      '--verbose',
+      'Enable verbose logging'
+    )
+    .option(
+      '--debug',
+      'Enable debug mode (break on start)'
+    )
+    .option(
+      '--inspect',
+      'Enable inspect mode (debugger on dynamic port)'
     );
 
   const options = program.parse().opts() as ProgramOptions;
-  console.log('Starting Gitaway with options:', options);
 
+  if (options.daemon) {
+    // Daemon mode: redirect console to log file
+    const logFile = path.join(options.path, 'server.log');
+    const logStream = fsDisk.createWriteStream(logFile, { flags: 'a' });
+
+    console.log = function(...args: any[]) {
+      logStream.write(args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ') + '\n');
+    };
+
+    console.error = function(...args: any[]) {
+      const timestamp = new Date().toISOString();
+      logStream.write(`[${timestamp}] ERROR: ` + args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ') + '\n');
+    };
+
+    // Write PID file
+    writePid(options.path, process.pid);
+
+    console.log(`Gitaway daemon started with PID ${process.pid}`);
+  }
+
+  if (options.verbose || !options.daemon) {
+    console.log('Starting Gitaway with options:', options);
+  }
+
+  // Find available NFS port if not specified (dynamic allocation)
   if (options.port === undefined) {
     options.port = await findAvailablePort(13618);
+    console.log(`Using NFS port: ${options.port}`);
+  }
+
+  // Store NFS port information for clients
+  const portInfoPath = path.join(options.path, 'server.port');
+  fsDisk.writeFileSync(portInfoPath, options.port.toString(), 'utf-8');
+
+  // Enable debugger if requested (with dynamic port)
+  let debuggerPort: number | undefined;
+  if (options.inspect || options.debug) {
+    // Node.js inspector automatically allocates a port when using --inspect=0
+    // We need to extract the actual allocated port
+    // process.debugPort gives the default (9229), not the actual allocated port
+    // So we use 9229 as fallback, but the actual port is printed to stderr on startup
+
+    // Try to get actual port from inspect URL if available
+    debuggerPort = (process as any).inspectPort || process.debugPort;
+
+    console.log(`Debugger enabled on port: ${debuggerPort}`);
+    console.log(`Attach Chrome debugger to: chrome://inspect`);
+    console.log(`Or add target: localhost:${debuggerPort}`);
+    console.log(`Debugger URL: devtools://devtools/bundled/inspector.html?ws=localhost:${debuggerPort}/node`);
+
+    // Store debugger port
+    if (debuggerPort) {
+      const debuggerPortPath = path.join(options.path, 'debugger.port');
+      fsDisk.writeFileSync(debuggerPortPath, debuggerPort.toString(), 'utf-8');
+    }
   }
 
   // Convert path to absolute path relative to current working directory
@@ -275,10 +376,25 @@ async function main() {
   console.log('Port:', options.port);
 
   let nfsServer: NfsServerResult | undefined;
+  let readySocket: net.Server | undefined;
 
   // Handle graceful shutdown on SIGINT/SIGTERM
   const handleShutdown = async (signal: string) => {
     console.log(`\nReceived ${signal}, shutting down gracefully...`);
+
+    // Remove PID file
+    if (options.daemon) {
+      removePid(options.path);
+    }
+
+    // Close ready socket
+    if (readySocket) {
+      try {
+        readySocket.close();
+      } catch {
+        // Ignore
+      }
+    }
 
     try {
       // Try to unmount
@@ -311,6 +427,10 @@ async function main() {
     // Wait for NFS server to be ready
     await nfsServer.ready;
 
+    // Create ready socket to signal that server is ready
+    const socketPath = getSocketPath(options.path);
+    readySocket = createReadySocket(socketPath);
+
     // Mount the NFS share
     await mountNfsShare(
       reposPath,
@@ -323,11 +443,23 @@ async function main() {
     console.log('\n📖 Quick start:');
     console.log(`   cd ${reposPath}/github.com/username`);
     console.log(`   ls -la`);
-    console.log('\nPress Ctrl+C to stop the server and unmount.\n');
+
+    if (!options.daemon) {
+      console.log('\nPress Ctrl+C to stop the server and unmount.\n');
+    } else {
+      console.log(`\n✅ Daemon is running in background.`);
+      console.log(`📄 Logs: ${path.join(options.path, 'server.log')}`);
+      console.log(`\nUse "gitaway stop" to stop the daemon.\n`);
+    }
   } catch (error) {
     const err = error as Error;
     console.error('\nFailed to start Gitaway:', err.message);
     console.error(err.stack);
+
+    // Clean up PID file on error
+    if (options.daemon) {
+      removePid(options.path);
+    }
 
     // Try to unmount on error
     try {

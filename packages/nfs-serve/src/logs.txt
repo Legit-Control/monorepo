@@ -1,0 +1,768 @@
+
+
+        q       [NFSH /Users/martinlysk/nfs/mount1] Lookup request for path: /my_serve_folder/untitled folder/file.txt
+[GNFS /Users/martinlysk/nfs/mount1] Received body update (asked for) for path /my_serve_folder/file.txt Hello from shared backing store!
+[GNFS /Users/martinlysk/nfs/mount1] put() Creating new resource for rename: /my_serve_folder/untitled folder/file.txt
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder/untitled folder headerUpdate 
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder/untitled folder update 
+[GNFS /Users/martinlysk/nfs/mount1] put() Creating headers for rename: /my_serve_folder/untitled folder/file.txt
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder/untitled folder headerUpdate 
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder/untitled folder update 
+[GNFS /Users/martinlysk/nfs/mount1] Deleting old path after rename: /my_serve_folder/file.txt
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder/file.txt delete 
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder headerUpdate 
+[GNFS /Users/martinlysk/nfs/mount2] notifyWatchers path /my_serve_folder update 
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder/file.txt: delete
+[SC /Users/martinlysk/nfs/mount2] - onFileDelete starting delete sidetrack for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Captured cached attributes for /my_serve_folder/file.txt before starting delete
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Captured: Type = FILE, mode = 644, size = 32
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Started delete for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Current phase: delete_started
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Accepted calls: getattr, lookup, remove
+[SC /Users/martinlysk/nfs/mount2] starting FS sidechannel fs.promises.rm('/Users/martinlysk/nfs/mount2/my_serve_folder/file.txt')
+[GNFS /Users/martinlysk/nfs/mount1] Started watching: /my_serve_folder/untitled folder/file.txt
+[NFSH /Users/martinlysk/nfs/mount1] Lookup request for path: /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'getattr' accepted in phase delete_started
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[NFSH /Users/martinlysk/nfs/mount2] GetAttributes - intercepted for sidetrack on /my_serve_folder/file.txt returning cached attributes {
+  mode: 420,
+  size: 32,
+  atimeMs: 1775674690077,
+  mtimeMs: 1775674690077,
+  ctimeMs: 1775674690077,
+  birthtimeMs: 1775674690077,
+  atime: 2026-04-08T18:58:10.077Z,
+  mtime: 2026-04-08T18:58:10.077Z,
+  ctime: 2026-04-08T18:58:10.077Z,
+  birthtime: 2026-04-08T18:58:10.077Z,
+  isFile: [Function: isFile],
+  isDirectory: [Function: isDirectory],
+  isSymbolicLink: [Function: isSymbolicLink],
+  isBlockDevice: [Function: isBlockDevice],
+  isCharacterDevice: [Function: isCharacterDevice],
+  isSocket: [Function: isSocket],
+  isFIFO: [Function: isFIFO],
+  dev: 0,
+  ino: 2,
+  nlink: 1,
+  uid: 0,
+  gid: 0,
+  rdev: 0,
+  blksize: 4096,
+  blocks: 0,
+  fileId: 986734690000004n
+}
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'getattr' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[NFSH /Users/martinlysk/nfs/mount2] GetAttributes - intercepted for sidetrack on /my_serve_folder/file.txt returning cached attributes {
+  mode: 420,
+  size: 32,
+  atimeMs: 1775674690077,
+  mtimeMs: 1775674690077,
+  ctimeMs: 1775674690077,
+  birthtimeMs: 1775674690077,
+  atime: 2026-04-08T18:58:10.077Z,
+  mtime: 2026-04-08T18:58:10.077Z,
+  ctime: 2026-04-08T18:58:10.077Z,
+  birthtime: 2026-04-08T18:58:10.077Z,
+  isFile: [Function: isFile],
+  isDirectory: [Function: isDirectory],
+  isSymbolicLink: [Function: isSymbolicLink],
+  isBlockDevice: [Function: isBlockDevice],
+  isCharacterDevice: [Function: isCharacterDevice],
+  isSocket: [Function: isSocket],
+  isFIFO: [Function: isFIFO],
+  dev: 0,
+  ino: 2,
+  nlink: 1,
+  uid: 0,
+  gid: 0,
+  rdev: 0,
+  blksize: 4096,
+  blocks: 0,
+  fileId: 986734690000004n
+}
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'getattr' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[NFSH /Users/martinlysk/nfs/mount2] GetAttributes - intercepted for sidetrack on /my_serve_folder/file.txt returning cached attributes {
+  mode: 420,
+  size: 32,
+  atimeMs: 1775674690077,
+  mtimeMs: 1775674690077,
+  ctimeMs: 1775674690077,
+  birthtimeMs: 1775674690077,
+  atime: 2026-04-08T18:58:10.077Z,
+  mtime: 2026-04-08T18:58:10.077Z,
+  ctime: 2026-04-08T18:58:10.077Z,
+  birthtime: 2026-04-08T18:58:10.077Z,
+  isFile: [Function: isFile],
+  isDirectory: [Function: isDirectory],
+  isSymbolicLink: [Function: isSymbolicLink],
+  isBlockDevice: [Function: isBlockDevice],
+  isCharacterDevice: [Function: isCharacterDevice],
+  isSocket: [Function: isSocket],
+  isFIFO: [Function: isFIFO],
+  dev: 0,
+  ino: 2,
+  nlink: 1,
+  uid: 0,
+  gid: 0,
+  rdev: 0,
+  blksize: 4096,
+  blocks: 0,
+  fileId: 986734690000004n
+}
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'getattr' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[NFSH /Users/martinlysk/nfs/mount2] GetAttributes - intercepted for sidetrack on /my_serve_folder/file.txt returning cached attributes {
+  mode: 420,
+  size: 32,
+  atimeMs: 1775674690077,
+  mtimeMs: 1775674690077,
+  ctimeMs: 1775674690077,
+  birthtimeMs: 1775674690077,
+  atime: 2026-04-08T18:58:10.077Z,
+  mtime: 2026-04-08T18:58:10.077Z,
+  ctime: 2026-04-08T18:58:10.077Z,
+  birthtime: 2026-04-08T18:58:10.077Z,
+  isFile: [Function: isFile],
+  isDirectory: [Function: isDirectory],
+  isSymbolicLink: [Function: isSymbolicLink],
+  isBlockDevice: [Function: isBlockDevice],
+  isCharacterDevice: [Function: isCharacterDevice],
+  isSocket: [Function: isSocket],
+  isFIFO: [Function: isFIFO],
+  dev: 0,
+  ino: 2,
+  nlink: 1,
+  uid: 0,
+  gid: 0,
+  rdev: 0,
+  blksize: 4096,
+  blocks: 0,
+  fileId: 986734690000004n
+}
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'lookup' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[NFSH /Users/martinlysk/nfs/mount2] Lookup - intercepted for DELETE sidetrack on /my_serve_folder/file.txt, returning cached attributes
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'getattr' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[NFSH /Users/martinlysk/nfs/mount2] GetAttributes - intercepted for sidetrack on /my_serve_folder/file.txt returning cached attributes {
+  mode: 420,
+  size: 32,
+  atimeMs: 1775674690077,
+  mtimeMs: 1775674690077,
+  ctimeMs: 1775674690077,
+  birthtimeMs: 1775674690077,
+  atime: 2026-04-08T18:58:10.077Z,
+  mtime: 2026-04-08T18:58:10.077Z,
+  ctime: 2026-04-08T18:58:10.077Z,
+  birthtime: 2026-04-08T18:58:10.077Z,
+  isFile: [Function: isFile],
+  isDirectory: [Function: isDirectory],
+  isSymbolicLink: [Function: isSymbolicLink],
+  isBlockDevice: [Function: isBlockDevice],
+  isCharacterDevice: [Function: isCharacterDevice],
+  isSocket: [Function: isSocket],
+  isFIFO: [Function: isFIFO],
+  dev: 0,
+  ino: 2,
+  nlink: 1,
+  uid: 0,
+  gid: 0,
+  rdev: 0,
+  blksize: 4096,
+  blocks: 0,
+  fileId: 986734690000004n
+}
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'lookup' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/file.txt: Transitioned to delete_attr_obtained
+[NFSH /Users/martinlysk/nfs/mount2] Lookup - intercepted for DELETE sidetrack on /my_serve_folder/file.txt, returning cached attributes
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Returning preserved attributes from active delete operation for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] getCachedAttributes: Type = FILE, mode = 644, size = 32
+[NFSH /Users/martinlysk/nfs/mount2] Lookup request for path: /my_serve_folder/._file.txt
+[NFSH ${handlerId}] Remove handler called
+[NFSH ${handlerId}] Remove handler called- check if folder exists
+[NFSH ${handlerId}] Remove handler called- get dir stats
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: 'remove' accepted in phase delete_attr_obtained
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/file.txt: Completed delete (total calls: 8)
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Call history: getattr → getattr → getattr → getattr → lookup → getattr → lookup → remove
+[NFSH /Users/martinlysk/nfs/mount2] Remove - intercepted for sidetrack on /my_serve_folder/file.txt
+[NFSH /Users/martinlysk/nfs/mount1] Lookup request for path: /my_serve_folder/untitled folder/file.txt
+[NFSH /Users/martinlysk/nfs/mount2] Lookup request for path: /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder: headerUpdate
+[SC /Users/martinlysk/nfs/mount2] headerUpdate for folder not yet handled
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder: update
+[SC /Users/martinlysk/nfs/mount2] - onFolderChange for /my_serve_folder comparing cached entries [file.txt, untitled folder] with current entries [untitled folder] for folder /my_serve_folder
+[SC /Users/martinlysk/nfs/mount2] - onFileDelete starting delete sidetrack for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Captured cached attributes for /my_serve_folder/file.txt before starting delete
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Captured: Type = FILE, mode = 644, size = 32
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Started delete for /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Current phase: delete_started
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Accepted calls: getattr, lookup, remove
+[SC /Users/martinlysk/nfs/mount2] starting FS sidechannel fs.promises.rm('/Users/martinlysk/nfs/mount2/my_serve_folder/file.txt')
+[SC /Users/martinlysk/nfs/mount2] Sidechannel revmoves entry file.txt from cache for folder /my_serve_folder
+[SC /Users/martinlysk/nfs/mount2] Sidechannel setup for change folder done and started {
+  'untitled folder': {
+    mode: 493,
+    size: 0,
+    atimeMs: 1775674703037,
+    mtimeMs: 1775674703037,
+    ctimeMs: 1775674703037,
+    birthtimeMs: 1775674703037,
+    atime: 2026-04-08T18:58:23.037Z,
+    mtime: 2026-04-08T18:58:23.037Z,
+    ctime: 2026-04-08T18:58:23.037Z,
+    birthtime: 2026-04-08T18:58:23.037Z,
+    isFile: [Function: isFile],
+    isDirectory: [Function: isDirectory],
+    isSymbolicLink: [Function: isSymbolicLink],
+    isBlockDevice: [Function: isBlockDevice],
+    isCharacterDevice: [Function: isCharacterDevice],
+    isSocket: [Function: isSocket],
+    isFIFO: [Function: isFIFO],
+    dev: 0,
+    ino: 3,
+    nlink: 1,
+    uid: 0,
+    gid: 0,
+    rdev: 0,
+    blksize: 4096,
+    blocks: 0,
+    fileId: 986734690000005n
+  }
+}
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder/untitled folder: headerUpdate
+[SC /Users/martinlysk/nfs/mount2] headerUpdate for folder not yet handled
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder/untitled folder: update
+[SC /Users/martinlysk/nfs/mount2] - onFolderChange for /my_serve_folder/untitled folder comparing cached entries [] with current entries [file.txt] for folder /my_serve_folder/untitled folder
+[SC /Users/martinlysk/nfs/mount2] Detected new entry file.txt in folder /my_serve_folder/untitled folder, checking if file or folder
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder/untitled folder: headerUpdate
+[SC /Users/martinlysk/nfs/mount2] headerUpdate for folder not yet handled
+[SC /Users/martinlysk/nfs/mount2] - onFileCreate starting create sidetrack for /my_serve_folder/untitled folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Warning: No cached attributes found for /my_serve_folder/untitled folder/file.txt when starting create
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Started create for /my_serve_folder/untitled folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Current phase: create_started
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Accepted calls: lookup, create
+[SC /Users/martinlysk/nfs/mount2] Sidechannel setup for change folder done and started {
+  'file.txt': {
+    mode: 420,
+    size: 32,
+    atimeMs: 1775674704180,
+    mtimeMs: 1775674690077,
+    ctimeMs: 1775674690077,
+    birthtimeMs: 1775674690077,
+    atime: 2026-04-08T18:58:24.180Z,
+    mtime: 2026-04-08T18:58:10.077Z,
+    ctime: 2026-04-08T18:58:10.077Z,
+    birthtime: 2026-04-08T18:58:10.077Z,
+    isFile: [Function: isFile],
+    isDirectory: [Function: isDirectory],
+    isSymbolicLink: [Function: isSymbolicLink],
+    isBlockDevice: [Function: isBlockDevice],
+    isCharacterDevice: [Function: isCharacterDevice],
+    isSocket: [Function: isSocket],
+    isFIFO: [Function: isFIFO],
+    dev: 0,
+    ino: 4,
+    nlink: 1,
+    uid: 0,
+    gid: 0,
+    rdev: 0,
+    blksize: 4096,
+    blocks: 0,
+    fileId: 0n
+  }
+}
+[SC /Users/martinlysk/nfs/mount2] Received event for /my_serve_folder/untitled folder: update
+[SC /Users/martinlysk/nfs/mount2] - onFolderChange for /my_serve_folder/untitled folder comparing cached entries [file.txt] with current entries [file.txt] for folder /my_serve_folder/untitled folder
+[SC /Users/martinlysk/nfs/mount2] Sidechannel setup for change folder done and started {
+  'file.txt': {
+    mode: 420,
+    size: 32,
+    atimeMs: 1775674704180,
+    mtimeMs: 1775674690077,
+    ctimeMs: 1775674690077,
+    birthtimeMs: 1775674690077,
+    atime: 2026-04-08T18:58:24.180Z,
+    mtime: 2026-04-08T18:58:10.077Z,
+    ctime: 2026-04-08T18:58:10.077Z,
+    birthtime: 2026-04-08T18:58:10.077Z,
+    isFile: [Function: isFile],
+    isDirectory: [Function: isDirectory],
+    isSymbolicLink: [Function: isSymbolicLink],
+    isBlockDevice: [Function: isBlockDevice],
+    isCharacterDevice: [Function: isCharacterDevice],
+    isSocket: [Function: isSocket],
+    isFIFO: [Function: isFIFO],
+    dev: 0,
+    ino: 4,
+    nlink: 1,
+    uid: 0,
+    gid: 0,
+    rdev: 0,
+    blksize: 4096,
+    blocks: 0,
+    fileId: 0n
+  }
+}
+Error removing file /Users/martinlysk/nfs/mount2/my_serve_folder/file.txt in side track: [Error: ENOENT: no such file or directory, lstat '/Users/martinlysk/nfs/mount2/my_serve_folder/file.txt'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'lstat',
+  path: '/Users/martinlysk/nfs/mount2/my_serve_folder/file.txt'
+}
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'lookup' accepted in phase create_started
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to create_lookup_done
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'create' accepted in phase create_lookup_done
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: Completed create (total calls: 2)
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Call history: lookup → create
+[NFSH /Users/martinlysk/nfs/mount2] Create - intercepted for sidetrack on /my_serve_folder/untitled folder/file.txt
+[NFSH /Users/martinlysk/nfs/mount2] Lookup request for path: /my_serve_folder/untitled folder/._file.txt
+NFS SETATTR procedure
+[GNFS /Users/martinlysk/nfs/mount2] Opening file /my_serve_folder/untitled folder/file.txt with flags a+, file exists: true
+[GNFS /Users/martinlysk/nfs/mount2] Opening file /my_serve_folder/untitled folder/file.txt with flags a+, file exists: true - returning file handle
+[GNFS /Users/martinlysk/nfs/mount1] notifyWatchers path /my_serve_folder/untitled folder/file.txt headerUpdate 
+[GNFS /Users/martinlysk/nfs/mount1] notifyWatchers path /my_serve_folder/untitled folder headerUpdate 
+[GNFS /Users/martinlysk/nfs/mount1] notifyWatchers path /my_serve_folder/untitled folder update 
+[NFSH /Users/martinlysk/nfs/mount2] setattr  {
+  mode: 420,
+  uid: undefined,
+  gid: undefined,
+  size: undefined,
+  atime: undefined,
+  mtime: undefined
+}
+Sent SETATTR reply
+[GNFS /Users/martinlysk/nfs/mount2] Started watching: /my_serve_folder/untitled folder/file.txt
+(node:2515) Warning: Closing file descriptor 25 on garbage collection
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2515) [DEP0137] DeprecationWarning: Closing a FileHandle object on garbage collection is deprecated. Please close FileHandle objects explicitly using FileHandle.prototype.close(). In the future, an error will be thrown if a file descriptor is closed during garbage collection.
+[SC /Users/martinlysk/nfs/mount1] Received event for /my_serve_folder/untitled folder/file.txt: headerUpdate
+[SC /Users/martinlysk/nfs/mount1] - onModify starting modify sidetrack for /my_serve_folder/untitled folder/file.txt
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] Warning: No cached attributes found for /my_serve_folder/untitled folder/file.txt when starting modify
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] Started modify for /my_serve_folder/untitled folder/file.txt
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] Current phase: modify_started
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] Accepted calls: setattr, getattr
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_started
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+Error modifying file /Users/martinlysk/nfs/mount1//my_serve_folder/untitled folder/file.txt in side track: Error: EIO: i/o error, utime '/Users/martinlysk/nfs/mount1//my_serve_folder/untitled folder/file.txt'
+    at async Object.utimes (node:internal/fs/promises:1136:10) {
+  errno: -5,
+  code: 'EIO',
+  syscall: 'utime',
+  path: '/Users/martinlysk/nfs/mount1//my_serve_folder/untitled folder/file.txt'
+}
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] Received event for /my_serve_folder/untitled folder: headerUpdate
+[SC /Users/martinlysk/nfs/mount1] headerUpdate for folder not yet handled
+[SC /Users/martinlysk/nfs/mount1] Received event for /my_serve_folder/untitled folder: update
+[SC /Users/martinlysk/nfs/mount1] - onFolderChange for /my_serve_folder/untitled folder comparing cached entries [] with current entries [file.txt] for folder /my_serve_folder/untitled folder
+[SC /Users/martinlysk/nfs/mount1] Detected new entry file.txt in folder /my_serve_folder/untitled folder, checking if file or folder
+[SC /Users/martinlysk/nfs/mount1] - onFileCreate skipped, already active operation for /my_serve_folder/untitled folder/file.txt
+[SC /Users/martinlysk/nfs/mount1] Sidechannel setup for change folder done and started {
+  'file.txt': {
+    mode: 420,
+    size: 32,
+    atimeMs: 1775674704180,
+    mtimeMs: 1775674690077,
+    ctimeMs: 1775674690077,
+    birthtimeMs: 1775674690077,
+    atime: 2026-04-08T18:58:24.180Z,
+    mtime: 2026-04-08T18:58:10.077Z,
+    ctime: 2026-04-08T18:58:10.077Z,
+    birthtime: 2026-04-08T18:58:10.077Z,
+    isFile: [Function: isFile],
+    isDirectory: [Function: isDirectory],
+    isSymbolicLink: [Function: isSymbolicLink],
+    isBlockDevice: [Function: isBlockDevice],
+    isCharacterDevice: [Function: isCharacterDevice],
+    isSocket: [Function: isSocket],
+    isFIFO: [Function: isFIFO],
+    dev: 0,
+    ino: 4,
+    nlink: 1,
+    uid: 0,
+    gid: 0,
+    rdev: 0,
+    blksize: 4096,
+    blocks: 0,
+    fileId: 0n
+  }
+}
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] ✓ /my_serve_folder/untitled folder/file.txt: 'getattr' accepted in phase modify_attributes_received
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] → /my_serve_folder/untitled folder/file.txt: Transitioned to modify_attributes_received
+Error handling GETATTR request: Error: [SC /Users/martinlysk/nfs/mount1] getCachedAttributes: No cached attributes found for /my_serve_folder/untitled folder/file.txt. This should not happen if checkCall was called first and returned true.
+    at EventSideChanel.getCachedAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/eventSideChannel.ts:370:11)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/createAsyncNfsHandler.ts:1331:49)
+    at getAttributes (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/procedures/getAttributes.ts:51:26)
+    at handleNfsRequest (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/rpc/nfs/handleNfsRequest.ts:98:13)
+    at handleRecord (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:138:11)
+    at <anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:232:21)
+    at processQueue (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:201:19)
+    at Socket.<anonymous> (/Users/martinlysk/legit/monorepo/packages/nfs-serve/src/server.ts:234:13)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Timeout for delete on /my_serve_folder/file.txt
+[SC /Users/martinlysk/nfs/mount2] [STATE MACHINE] Call history: []
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] Timeout for modify on /my_serve_folder/untitled folder/file.txt
+[SC /Users/martinlysk/nfs/mount1] [STATE MACHINE] Call history: [
+  { call: 'getattr', timestamp: 1775674716402 },
+  { call: 'getattr', timestamp: 1775674716412 },
+  { call: 'getattr', timestamp: 1775674716414 },
+  { call: 'getattr', timestamp: 1775674717057 },
+  { call: 'getattr', timestamp: 1775674717060 },
+  { call: 'getattr', timestamp: 1775674717062 },
+  { call: 'getattr', timestamp: 1775674717065 },
+  { call: 'getattr', timestamp: 1775674717066 },
+  { call: 'getattr', timestamp: 1775674717067 },
+  { call: 'getattr', timestamp: 1775674717069 },
+  { call: 'getattr', timestamp: 1775674717071 },
+  { call: 'getattr', timestamp: 1775674717073 },
+  { call: 'getattr', timestamp: 1775674717074 },
+  { call: 'getattr', timestamp: 1775674717076 },
+  { call: 'getattr', timestamp: 1775674717077 },
+  { call: 'getattr', timestamp: 1775674717082 },
+  { call: 'getattr', timestamp: 1775674717085 },
+  { call: 'getattr', timestamp: 1775674717086 },
+  { call: 'getattr', timestamp: 1775674717087 },
+  { call: 'getattr', timestamp: 1775674717088 },
+  { call: 'getattr', timestamp: 1775674717089 },
+  { call: 'getattr', timestamp: 1775674717385 },
+  { call: 'getattr', timestamp: 1775674717386 },
+  { call: 'getattr', timestamp: 1775674717387 },
+  { call: 'getattr', timestamp: 1775674717387 },
+  { call: 'getattr', timestamp: 1775674717388 }
+]

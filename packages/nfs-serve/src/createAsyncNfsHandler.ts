@@ -1173,10 +1173,14 @@ export const createAsyncNfsHandler = (args: {
     },
 
     read: async (handle, offset = 0n, count) => {
+      console.log(`[NFS READ] ========== READ OPERATION STARTED ==========`);
+      console.log(`[NFS READ] Handle: ${handle.toString('hex').substring(0, 16)}...`);
+      console.log(`[NFS READ] Offset: ${offset}, Count: ${count}`);
+
       const nfsHandle = fileHandleManager.getHandle(handle);
 
       if (!nfsHandle) {
-        console.error(`Invalid file handle: ${handle.toString('hex')}`);
+        console.error(`[NFS READ] Invalid file handle: ${handle.toString('hex')}`);
         return {
           status: nfsstat3.ERR_STALE,
           error: new Error(`Invalid file handle: ${handle.toString('hex')}`),
@@ -1184,13 +1188,20 @@ export const createAsyncNfsHandler = (args: {
       }
 
       let fsHandle = nfsHandle.fsHandle.fh;
+      const filePath = fileHandleManager.getPathFromHandle(handle)!;
+
+      console.log(`[NFS READ] File: ${filePath}, Offset: ${offset}, Count: ${count}`);
+      console.log(`[NFS READ] Cached fsHandle: ${fsHandle ? 'YES (reusing)' : 'NO (will open)'}`);
 
       let closeAfterRead = false;
 
       if (fsHandle === undefined) {
         closeAfterRead = true;
-        const path = fileHandleManager.getPathFromHandle(handle)!;
-        fsHandle = await asyncFs.open(path, 'r+');
+        console.log(`[NFS READ] Opening file: ${filePath} with mode 'r+'`);
+        fsHandle = await asyncFs.open(filePath, 'r+');
+        console.log(`[NFS READ] File opened successfully`);
+      } else {
+        console.log(`[NFS READ] Reusing cached file handle, not calling open()`);
       }
 
       try {
@@ -1348,8 +1359,10 @@ export const createAsyncNfsHandler = (args: {
 
         // Handle regular files - open with FileHandle
         if (pathStats.isFile()) {
+          console.log(`[NFS SETATTR] Opening regular file: ${path} with mode 'a+'`);
           nfsHandle.fsHandle.fh = await asyncFs.open(path, 'a+');
           fsHandle = nfsHandle.fsHandle.fh;
+          console.log(`[NFS SETATTR] File opened and handle stored`);
         }
       }
 
